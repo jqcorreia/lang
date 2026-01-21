@@ -145,6 +145,30 @@ parse_expression :: proc(p: ^Parser) -> ^Expr {
 	return {}
 }
 
+Expr :: struct {
+	kind: Expr_Kind,
+	data: Expr_Data,
+}
+
+Expr_Kind :: enum {
+	Int_Lit,
+	Binary,
+}
+
+Expr_Data :: union {
+	Expr_Int_Lit,
+	Expr_Binary,
+}
+
+Expr_Int_Lit :: struct {
+	value: i64,
+}
+
+Expr_Binary :: struct {
+	op:          Token_Kind,
+	left, right: ^Expr,
+}
+
 make_expr_int_lit :: proc(value: i64) -> ^Expr {
 	expr := new(Expr)
 	expr.kind = .Int_Lit
@@ -163,65 +187,6 @@ make_expr_binary :: proc(left, right: ^Expr, op: Token_Kind) -> ^Expr {
 		right = right,
 	}
 	return expr
-}
-
-// Expr_Kind :: enum {
-// 	Number,
-// 	Binary,
-// }
-
-// Binary_Op :: enum {
-// 	Add,
-// 	Sub,
-// 	Mul,
-// 	Div,
-// }
-
-// Expr :: struct {
-// 	kind: Expr_Kind,
-// }
-
-// Expr_Number :: struct {
-// 	using base: Expr,
-// 	value:      i64,
-// }
-
-// Expr_Binary :: struct {
-// 	using base: Expr,
-// 	op:         Binary_Op,
-// 	left:       ^Expr,
-// 	right:      ^Expr,
-// }
-
-// print_expr :: proc(expr: ^Expr) {
-// 	#partial switch expr.kind {
-// 	case .Binary:
-// 		e := cast(^Expr_Binary)(expr)
-// 		fmt.println(e.right, e.left)
-// 	}
-// }
-Expr_Int_Lit :: struct {
-	value: i64,
-}
-
-Expr_Binary :: struct {
-	op:          Token_Kind,
-	left, right: ^Expr,
-}
-
-Expr_Data :: union {
-	Expr_Int_Lit,
-	Expr_Binary,
-}
-
-Expr_Kind :: enum {
-	Int_Lit,
-	Binary,
-}
-
-Expr :: struct {
-	kind: Expr_Kind,
-	data: Expr_Data,
 }
 
 main :: proc() {
