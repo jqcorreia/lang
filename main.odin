@@ -124,50 +124,104 @@ match :: proc(p: ^Parser, kind: Token_Kind) -> bool {
 	return false
 }
 
-parse_expression :: proc(p: ^Parser) -> Expr {
+parse_expression :: proc(p: ^Parser) -> ^Expr {
 	t := advance(p)
 
+	fmt.println(t)
 	if t.kind == .Number {
 		c := current(p)
 		#partial switch c.kind {
 		case .Plus:
-			return Expr_Binary {
-				kind = .Binary,
-				left = Expr_Number{value = i64(t.value)},
-				op = .Add,
-				right = Expr_Number{value = i64(t.value)},
-			}
+			advance(p)
+			return make_expr_binary(
+				left = make_expr_int_lit(i64(t.value)),
+				right = parse_expression(p),
+				op = .Plus,
+			)
+		case .EOF:
+			return make_expr_int_lit(value = i64(t.value))
 		}
 	}
 	return {}
 }
 
-Expr_Kind :: enum {
-	Number,
-	Binary,
+make_expr_int_lit :: proc(value: i64) -> ^Expr {
+	expr := new(Expr)
+	expr.kind = .Int_Lit
+	expr.data = Expr_Int_Lit {
+		value = value,
+	}
+	return expr
 }
 
-Binary_Op :: enum {
-	Add,
-	Sub,
-	Mul,
-	Div,
+make_expr_binary :: proc(left, right: ^Expr, op: Token_Kind) -> ^Expr {
+	expr := new(Expr)
+	expr.kind = .Binary
+	expr.data = Expr_Binary {
+		op    = op,
+		left  = left,
+		right = right,
+	}
+	return expr
+}
+
+// Expr_Kind :: enum {
+// 	Number,
+// 	Binary,
+// }
+
+// Binary_Op :: enum {
+// 	Add,
+// 	Sub,
+// 	Mul,
+// 	Div,
+// }
+
+// Expr :: struct {
+// 	kind: Expr_Kind,
+// }
+
+// Expr_Number :: struct {
+// 	using base: Expr,
+// 	value:      i64,
+// }
+
+// Expr_Binary :: struct {
+// 	using base: Expr,
+// 	op:         Binary_Op,
+// 	left:       ^Expr,
+// 	right:      ^Expr,
+// }
+
+// print_expr :: proc(expr: ^Expr) {
+// 	#partial switch expr.kind {
+// 	case .Binary:
+// 		e := cast(^Expr_Binary)(expr)
+// 		fmt.println(e.right, e.left)
+// 	}
+// }
+Expr_Int_Lit :: struct {
+	value: i64,
+}
+
+Expr_Binary :: struct {
+	op:          Token_Kind,
+	left, right: ^Expr,
+}
+
+Expr_Data :: union {
+	Expr_Int_Lit,
+	Expr_Binary,
+}
+
+Expr_Kind :: enum {
+	Int_Lit,
+	Binary,
 }
 
 Expr :: struct {
 	kind: Expr_Kind,
-}
-
-Expr_Number :: struct {
-	using base: Expr,
-	value:      i64,
-}
-
-Expr_Binary :: struct {
-	using base: Expr,
-	op:         Binary_Op,
-	left:       Expr,
-	right:      Expr,
+	data: Expr_Data,
 }
 
 main :: proc() {
@@ -177,6 +231,8 @@ main :: proc() {
 	parser := Parser {
 		tokens = tokens,
 	}
+	// fmt.println(Binary{left = &Number{value = 100}, right = &Number{value = 200}})
 	pexpr := parse_expression(&parser)
 	fmt.println(pexpr)
+	// print_expr(&pexpr)
 }
