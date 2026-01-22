@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:strings"
 
 gen :: proc(e: ^Expr, ctx: ContextRef, builder: BuilderRef) -> ValueRef {
 	int32 := Int32TypeInContext(ctx)
@@ -54,8 +55,40 @@ generate :: proc(e: ^Expr, ctx: ContextRef, module: ModuleRef, builder: BuilderR
 	PositionBuilderAtEnd(builder, entry)
 
 	ret := gen(e, ctx, builder)
+	args := []ValueRef {
+		fmt_ptr,
+		ret, // i32
+	}
+	i8 := Int8TypeInContext(ctx)
+	i32 := Int32TypeInContext(ctx)
+	i8p := PointerType(i8, 0)
 
-	BuildRet(builder, ret)
+	printf_ty = FunctionType(
+		i32, // return type
+		&i8p, // first arg: char *
+		1,
+		true, // variadic
+	)
+
+	printf_fn = AddFunction(module, "printf", printf_ty)
+	fmt_ptr = BuildGlobalStringPtr(builder, "%d", "fmt")
+
+	BuildCall2(
+		builder,
+		printf_ty, // <-- REQUIRED
+		printf_fn,
+		&args[0],
+		u32(len(args)),
+		"",
+	)
+	BuildRet(builder, ConstInt(int32, 0, true))
+}
+
+printf_fn: ValueRef
+fmt_ptr: ValueRef
+printf_ty: TypeRef
+
+setup_runtime :: proc(ctx: ContextRef, module: ModuleRef, builder: BuilderRef) {
 }
 
 main :: proc() {
@@ -74,6 +107,7 @@ main :: proc() {
 	ctx := ContextCreate()
 	module := ModuleCreateWithNameInContext("calc", ctx)
 	builder := CreateBuilderInContext(ctx)
+	setup_runtime(ctx, module, builder)
 
 	generate(pexpr, ctx, module, builder)
 
