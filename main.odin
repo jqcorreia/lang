@@ -1,11 +1,68 @@
 package main
 
 import "core:fmt"
+import "core:os"
+
+gen :: proc(e: ^Expr, ctx: ContextRef, builder: BuilderRef) -> ValueRef {
+	int32 := Int32TypeInContext(ctx)
+	switch e.kind {
+	case .Int_Lit:
+		return ConstInt(int32, u64(e.data.(Expr_Int_Lit).value), false)
+	case .Binary:
+		fmt.println(e)
+		#partial switch e.data.(Expr_Binary).op {
+		case .Plus:
+			return BuildAdd(
+				builder,
+				gen(e.data.(Expr_Binary).left, ctx, builder),
+				gen(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		case .Minus:
+			return BuildSub(
+				builder,
+				gen(e.data.(Expr_Binary).left, ctx, builder),
+				gen(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		case .Star:
+			return BuildMul(
+				builder,
+				gen(e.data.(Expr_Binary).left, ctx, builder),
+				gen(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		case .Slash:
+			return BuildUDiv(
+				builder,
+				gen(e.data.(Expr_Binary).left, ctx, builder),
+				gen(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		}
+	}
+	return ConstInt(int32, 42, true)
+}
+
+generate :: proc(e: ^Expr, ctx: ContextRef, module: ModuleRef, builder: BuilderRef) {
+	int32 := Int32TypeInContext(ctx)
+	fn_type := FunctionType(int32, nil, 0, 0)
+
+	main_f := AddFunction(module, "main", fn_type)
+
+	entry := AppendBasicBlockInContext(ctx, main_f, "entry")
+	PositionBuilderAtEnd(builder, entry)
+
+	ret := gen(e, ctx, builder)
+
+	BuildRet(builder, ret)
+}
 
 main :: proc() {
-	expr := "12 + 34 + 35"
-	tokens := lex(expr)
+	expr := os.read_entire_file("test.z") or_else panic("No file found")
+	tokens := lex(string(expr))
 
+	fmt.println(tokens)
 	parser := Parser {
 		tokens = tokens,
 	}
@@ -18,15 +75,7 @@ main :: proc() {
 	module := ModuleCreateWithNameInContext("calc", ctx)
 	builder := CreateBuilderInContext(ctx)
 
-	int32 := Int32TypeInContext(ctx)
-	fn_type := FunctionType(int32, nil, 0, 0)
-
-	main_f := AddFunction(module, "main", fn_type)
-
-	entry := AppendBasicBlockInContext(ctx, main_f, "entry")
-
-	PositionBuilderAtEnd(builder, entry)
-	BuildRet(builder, ConstInt(int32, 42, 0))
+	generate(pexpr, ctx, module, builder)
 
 	InitializeX86Target()
 	InitializeX86TargetInfo()

@@ -40,6 +40,7 @@ lex :: proc(input: string) -> []Token {
 	tokens: [dynamic]Token
 
 	for {
+		ignore := false
 		if lexer.pos >= len(lexer.input) {
 			append(&tokens, Token{kind = .EOF})
 			break
@@ -83,6 +84,14 @@ lex :: proc(input: string) -> []Token {
 		case '*':
 			token.kind = .Star
 		case '/':
+			if lexer.input[lexer.pos + 1] == '/' {
+				ignore = true
+				for {
+					lexer.pos += 1
+					if lexer.pos > len(lexer.input) - 1 do panic("Invalid token")
+					if lexer.input[lexer.pos] == '\n' do break
+				}
+			}
 			token.kind = .Slash
 		case '(':
 			token.kind = .LParen
@@ -92,8 +101,10 @@ lex :: proc(input: string) -> []Token {
 			token.kind = .Invalid
 		}
 
-		lexer.pos += 1
-		append(&tokens, token)
+		if !ignore {
+			lexer.pos += 1
+			append(&tokens, token)
+		}
 	}
 
 	return tokens[:]

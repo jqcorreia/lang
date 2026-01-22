@@ -24,26 +24,52 @@ match :: proc(p: ^Parser, kind: Token_Kind) -> bool {
 	}
 	return false
 }
+expect :: proc(p: ^Parser, kind: Token_Kind) {
+	if current(p).kind != kind {
+		panic(fmt.tprintf("Expected %v, got %v", kind, current(p).kind))
+	}
+	advance(p)
+}
 
-parse_expression :: proc(p: ^Parser) -> ^Expr {
+precedence :: proc(op: Token_Kind) -> int {
+	#partial switch op {
+	case .Plus, .Minus:
+		return 10
+	case .Star, .Slash:
+		return 20
+	}
+	return -1
+}
+
+parse_expression :: proc(p: ^Parser, min_lbp: int = 0) -> ^Expr {
 	t := advance(p)
 
-	fmt.println(t)
-	if t.kind == .Number {
-		c := current(p)
-		#partial switch c.kind {
-		case .Plus:
-			advance(p)
-			return make_expr_binary(
-				left = make_expr_int_lit(i64(t.value)),
-				right = parse_expression(p),
-				op = .Plus,
-			)
-		case .EOF:
-			return make_expr_int_lit(value = i64(t.value))
-		}
+	left: ^Expr
+
+	#partial switch t.kind {
+	case .Number:
+		left = make_expr_int_lit(i64(t.value))
+	case .LParen:
+		left = parse_expression(p, 0)
+		expect(p, .RParen)
+	case:
+		panic("Invalid expression")
 	}
-	return {}
+
+	for {
+		op := current(p)
+		fmt.println(op)
+		lbp := precedence(op.kind)
+
+		if lbp < min_lbp do break
+		advance(p)
+
+		rbp := lbp + 1
+
+		right := parse_expression(p, rbp)
+		left = make_expr_binary(left = left, right = right, op = op.kind)
+	}
+	return left
 }
 
 Expr :: struct {
