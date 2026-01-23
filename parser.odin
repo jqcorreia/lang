@@ -97,7 +97,7 @@ parse_statement :: proc(p: ^Parser) -> ^Stmt {
 parse_program :: proc(p: ^Parser) -> []^Stmt {
 	stmts: [dynamic]^Stmt
 
-	if current(p).kind != .EOF {
+	for current(p).kind != .EOF {
 		append(&stmts, parse_statement(p))
 	}
 
