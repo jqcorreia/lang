@@ -1,7 +1,7 @@
+#+feature dynamic-literals
+
 package main
 
-import "core:fmt"
-import "core:strings"
 Token_Kind :: enum {
 	Invalid,
 	EOF,
@@ -14,6 +14,8 @@ Token_Kind :: enum {
 	RParen, // )
 	Identifier,
 	NewLine,
+	Function,
+	Equal,
 }
 
 Token :: struct {
@@ -43,6 +45,10 @@ is_whitespace :: proc(c: byte) -> bool {
 is_alphanumeric :: proc(c: byte) -> bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 
+}
+
+Keyword_Map: map[string]Token_Kind = {
+	"fn" = .Function,
 }
 
 lex :: proc(input: string) -> []Token {
@@ -87,21 +93,16 @@ lex :: proc(input: string) -> []Token {
 		// Identifiers
 		if is_alphanumeric(c) {
 			start := lexer.pos
-			sb := strings.builder_make()
 
 			for lexer.pos < len(lexer.input) &&
 			    (is_alphanumeric(lexer.input[lexer.pos]) || is_digit(lexer.input[lexer.pos])) {
-				fmt.sbprint(&sb, strings.clone_from_bytes({lexer.input[lexer.pos]}))
 				lexer.pos += 1
 			}
-			append(
-				&tokens,
-				Token {
-					kind = .Identifier,
-					lexeme = lexer.input[start:lexer.pos],
-					value = strings.to_string(sb),
-				},
-			)
+			text := lexer.input[start:lexer.pos]
+
+			kind := Keyword_Map[text] or_else .Identifier
+			append(&tokens, Token{kind = kind, lexeme = text, value = text})
+
 			continue
 		}
 
@@ -132,6 +133,8 @@ lex :: proc(input: string) -> []Token {
 			token.kind = .LParen
 		case ')':
 			token.kind = .RParen
+		case '=':
+			token.kind = .Equal
 		case:
 			token.kind = .Invalid
 		}

@@ -114,16 +114,19 @@ expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
 }
 
 main :: proc() {
-	expr := os.read_entire_file("test.z") or_else panic("No file found")
+	file := os.args[1]
+	expr := os.read_entire_file(file) or_else panic("No file found")
 	tokens := lex(string(expr))
-	// tokens_print(tokens)
+	tokens_print(tokens)
 
 	parser := Parser {
 		tokens = tokens,
 	}
 	// fmt.println(Binary{left = &Number{value = 100}, right = &Number{value = 200}})
-	pexpr := parse_expression(&parser)
-	expr_print(pexpr)
+	stmts := parse_program(&parser)
+	for stmt in stmts {
+		fmt.println(stmt)
+	}
 
 	// ctx := ContextCreate()
 	// module := ModuleCreateWithNameInContext("calc", ctx)
