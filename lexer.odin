@@ -2,28 +2,27 @@
 
 package main
 
-import "core:fmt"
-
 Token_Kind :: enum {
 	Invalid,
 	EOF,
 	Number,
-	Plus, // +
-	Minus, // -
-	Star, // *
-	Slash, // /
-	LParen, // (
-	RParen, // )
+	Plus,
+	Minus,
+	Star,
+	Slash,
+	LParen,
+	RParen,
 	Identifier,
 	NewLine,
-	Function,
+	Function_Keyword,
 	Equal,
+	Comma,
 }
 
 Token :: struct {
 	kind:   Token_Kind,
 	lexeme: string,
-	value:  Token_Val, // only valid if kind == Number
+	value:  Token_Val,
 }
 
 
@@ -31,6 +30,7 @@ Token_Val :: union {
 	int,
 	string,
 }
+
 Lexer :: struct {
 	input: string,
 	pos:   int,
@@ -54,7 +54,7 @@ is_alphanumeric :: proc(c: byte) -> bool {
 }
 
 Keyword_Map: map[string]Token_Kind = {
-	"fn" = .Function,
+	"fn" = .Function_Keyword,
 }
 
 lex :: proc(input: string) -> []Token {
@@ -137,7 +137,10 @@ lex :: proc(input: string) -> []Token {
 				for {
 					lexer.pos += 1
 					if lexer.pos > len(lexer.input) - 1 do panic("Invalid token")
-					if lexer.input[lexer.pos] == '\n' do break
+					if lexer.input[lexer.pos] == '\n' {
+						lexer.pos += 1 // Consume '\n'
+						break
+					}
 				}
 			}
 			token.kind = .Slash
@@ -147,6 +150,8 @@ lex :: proc(input: string) -> []Token {
 			token.kind = .RParen
 		case '=':
 			token.kind = .Equal
+		case ',':
+			token.kind = .Comma
 		case:
 			token.kind = .Invalid
 		}
