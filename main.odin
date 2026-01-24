@@ -70,60 +70,62 @@ main :: proc() {
 	// file := os.args[1]
 	expr := os.read_entire_file("test2.z") or_else panic("No file found")
 	tokens := lex(string(expr))
+
+	// fmt.println(tokens)
 	tokens_print(tokens)
 
-	parser := Parser {
-		tokens = tokens,
-	}
-
-	stmts := parse_program(&parser)
-
-	// for stmt in stmts {
-	// 	fmt.println(stmt)
-	// 	data := stmt.data.(Stmt_Let)
-	// 	expr_print(data.value)
+	// parser := Parser {
+	// 	tokens = tokens,
 	// }
 
-	ctx := ContextCreate()
-	module := ModuleCreateWithNameInContext("calc", ctx)
-	builder := CreateBuilderInContext(ctx)
-	setup_runtime(ctx, module, builder)
+	// stmts := parse_program(&parser)
 
-	generate(stmts, ctx, module, builder)
-	// generate(pexpr, ctx, module, builder)
+	// // for stmt in stmts {
+	// // 	fmt.println(stmt)
+	// // 	data := stmt.data.(Stmt_Let)
+	// // 	expr_print(data.value)
+	// // }
 
-	InitializeX86Target()
-	InitializeX86TargetInfo()
-	InitializeX86TargetMC()
-	InitializeX86AsmPrinter()
+	// ctx := ContextCreate()
+	// module := ModuleCreateWithNameInContext("calc", ctx)
+	// builder := CreateBuilderInContext(ctx)
+	// setup_runtime(ctx, module, builder)
 
-	triple := GetDefaultTargetTriple()
+	// generate(stmts, ctx, module, builder)
+	// // generate(pexpr, ctx, module, builder)
 
-	target: TargetRef
+	// InitializeX86Target()
+	// InitializeX86TargetInfo()
+	// InitializeX86TargetMC()
+	// InitializeX86AsmPrinter()
 
-	error: cstring
-	if GetTargetFromTriple(triple, &target, &error) > 0 {
-		fmt.println(triple, string(error))
-		return
-	}
-	SetTarget(module, triple)
+	// triple := GetDefaultTargetTriple()
 
-	fmt.println(target, triple)
-	tm := CreateTargetMachine(
-		target,
-		triple,
-		"generic",
-		"",
-		.CodeGenLevelDefault,
-		.RelocPIC,
-		.CodeModelDefault,
-	)
+	// target: TargetRef
 
-	SetModuleDataLayout(module, CreateTargetDataLayout(tm))
-	if VerifyModule(module, .AbortProcessAction, &error) > 0 {
-		fmt.println(error)
-	}
-	if TargetMachineEmitToFile(tm, module, "calc.o", .ObjectFile, &error) > 0 {
-		fmt.println(error)
-	}
+	// error: cstring
+	// if GetTargetFromTriple(triple, &target, &error) > 0 {
+	// 	fmt.println(triple, string(error))
+	// 	return
+	// }
+	// SetTarget(module, triple)
+
+	// fmt.println(target, triple)
+	// tm := CreateTargetMachine(
+	// 	target,
+	// 	triple,
+	// 	"generic",
+	// 	"",
+	// 	.CodeGenLevelDefault,
+	// 	.RelocPIC,
+	// 	.CodeModelDefault,
+	// )
+
+	// SetModuleDataLayout(module, CreateTargetDataLayout(tm))
+	// if VerifyModule(module, .AbortProcessAction, &error) > 0 {
+	// 	fmt.println(error)
+	// }
+	// if TargetMachineEmitToFile(tm, module, "calc.o", .ObjectFile, &error) > 0 {
+	// 	fmt.println(error)
+	// }
 }
