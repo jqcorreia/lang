@@ -46,25 +46,25 @@ tokens_print :: proc(tokens: []Token) {
 		fmt.println(token)
 	}
 }
-expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
-	if expr == nil {
-		return
-	}
-	for _ in 0 ..< lvl {
-		fmt.print(" ")
-	}
-	#partial switch expr.kind {
-	case .Int_Lit:
-		fmt.println("Int ", expr.data.(Expr_Int_Lit).value)
-	case .Ident:
-		fmt.println("Identifier ", expr.data.(Expr_Ident).value)
-	case .Binary:
-		data, _ := expr.data.(Expr_Binary)
-		fmt.println("Binary ", data.op)
-		expr_print(data.left, lvl + 1)
-		expr_print(data.right, lvl + 1)
-	}
-}
+// expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
+// 	if expr == nil {
+// 		return
+// 	}
+// 	for _ in 0 ..< lvl {
+// 		fmt.print(" ")
+// 	}
+// 	#partial switch expr.kind {
+// 	case .Int_Lit:
+// 		fmt.println("Int ", expr.data.(Expr_Int_Lit).value)
+// 	case .Ident:
+// 		fmt.println("Identifier ", expr.data.(Expr_Ident).value)
+// 	case .Binary:
+// 		data, _ := expr.data.(Expr_Binary)
+// 		fmt.println("Binary ", data.op)
+// 		expr_print(data.left, lvl + 1)
+// 		expr_print(data.right, lvl + 1)
+// 	}
+// }
 
 main :: proc() {
 	// file := os.args[1]
@@ -74,11 +74,17 @@ main :: proc() {
 	// fmt.println(tokens)
 	tokens_print(tokens)
 
-	// parser := Parser {
-	// 	tokens = tokens,
-	// }
+	parser := Parser {
+		tokens = tokens,
+	}
 
-	// stmts := parse_program(&parser)
+	stmts := parse_program(&parser)
+	for stmt in stmts {
+		statement_print(stmt)
+		// fmt.println(stmt)
+		// e := stmt.data.(Statement_Assignment).expr
+		// expr_print(e)
+	}
 
 	// // for stmt in stmts {
 	// // 	fmt.println(stmt)

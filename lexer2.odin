@@ -2,7 +2,6 @@ package main
 
 import "core:fmt"
 
-
 Token_Kind :: enum {
 	NewLine,
 	LParen,
@@ -73,19 +72,22 @@ lex :: proc(input: string) -> []Token {
 			lexer.pos += 1
 		case is_numeric(c):
 			start := lexer.pos
+			value := 0
 			for lexer.pos < len(lexer.input) && is_numeric(lexer.input[lexer.pos]) {
+				value = value * 10 + int(lexer.input[lexer.pos] - '0')
 				lexer.pos += 1
 			}
 			end := lexer.pos
-			append(&tokens, Token{kind = .Number, lexeme = lexer.input[start:end]})
+			append(&tokens, Token{kind = .Number, lexeme = lexer.input[start:end], value = value})
 		case is_alphanumeric(c):
 			start := lexer.pos
 			for lexer.pos < len(lexer.input) &&
-			    (is_numeric(lexer.input[lexer.pos]) || is_alphanumeric(lexer.input[lexer.pos])) {
+			    (is_alphanumeric(lexer.input[lexer.pos]) || is_numeric(lexer.input[lexer.pos])) {
 				lexer.pos += 1
 			}
 			end := lexer.pos
-			append(&tokens, Token{kind = .Identifier, lexeme = lexer.input[start:end]})
+			lexeme := lexer.input[start:end]
+			append(&tokens, Token{kind = .Identifier, lexeme = lexeme, value = lexeme})
 		case c == '+':
 			append(&tokens, Token{kind = .Plus, lexeme = "+"})
 			lexer.pos += 1
