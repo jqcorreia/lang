@@ -37,6 +37,9 @@ statement_print :: proc(s: ^Statement, lvl: u32 = 0) {
 		a := s.data.(Statement_Assignment)
 		fmt.println("Assignment ", a.name)
 		expr_print(a.expr, lvl + 1)
+	case .Expr:
+		a := s.data.(Statement_Expr)
+		expr_print(a.expr, lvl + 1)
 	}
 }
 expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
@@ -56,5 +59,11 @@ expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
 		fmt.println("Binary ", data.op)
 		expr_print(data.left, lvl + 1)
 		expr_print(data.right, lvl + 1)
+	case .Call:
+		data, _ := expr.data.(Expr_Call)
+		fmt.println("Call ", data.callee.data.(Expr_Identifier).value)
+		for arg in data.args {
+			expr_print(arg, lvl + 1)
+		}
 	}
 }

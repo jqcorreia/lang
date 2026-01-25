@@ -14,6 +14,7 @@ Token_Kind :: enum {
 	Slash,
 	Star,
 	EOF,
+	Comma,
 }
 
 Token_Val :: union {
@@ -115,6 +116,9 @@ lex :: proc(input: string) -> []Token {
 			lexer.pos += 1
 		case c == '=':
 			append(&tokens, Token{kind = .Equal, lexeme = "="})
+			lexer.pos += 1
+		case c == ',':
+			append(&tokens, Token{kind = .Comma, lexeme = ","})
 			lexer.pos += 1
 		case:
 			lexer.pos += 1

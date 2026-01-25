@@ -40,12 +40,14 @@ Expr_Kind :: enum {
 	Int_Literal,
 	Binary,
 	Identifier,
+	Call,
 }
 
 Expr_Data :: union {
 	Expr_Int_Literal,
 	Expr_Binary,
 	Expr_Identifier,
+	Expr_Call,
 }
 
 Expr_Int_Literal :: struct {
@@ -60,6 +62,11 @@ Expr_Binary :: struct {
 
 Expr_Identifier :: struct {
 	value: string,
+}
+
+Expr_Call :: struct {
+	callee: ^Expr,
+	args:   []^Expr,
 }
 
 current :: proc(p: ^Parser) -> Token {
@@ -84,17 +91,18 @@ expect :: proc(p: ^Parser, kind: Token_Kind) {
 }
 
 parse_program :: proc(p: ^Parser) -> []^Statement {
-
 	stmts: [dynamic]^Statement
 	done := false
 	for !done {
 		t := current(p)
-		fmt.println(t)
+		// fmt.println(t)
 		switch {
 		case t.kind == .EOF:
 			done = true
 		case t.kind == .Identifier:
-			if peek(p).kind == .Equal {
+			switch {
+			// ASSIGNMENT
+			case peek(p).kind == .Equal:
 				// Get variable name
 				name_tok := current(p)
 
@@ -112,13 +120,22 @@ parse_program :: proc(p: ^Parser) -> []^Statement {
 
 				append(&stmts, s)
 				expect(p, .NewLine) // This should end with newline
+			// FUNCTION CALL
+			case peek(p).kind == .LParen:
+				expr := parse_expression(p)
+
+				s := new(Statement)
+				s.kind = .Expr
+				s.data = Statement_Expr {
+					expr = expr,
+				}
+				append(&stmts, s)
+				expect(p, .NewLine)
+			case:
+				unimplemented()
 			}
 		case:
-			// Ignore statement, read until newline
-			for {
-				token := advance(p)
-				if token.kind == .NewLine || token.kind == .EOF do break
-			}
+			unimplemented()
 		}
 	}
 
@@ -155,6 +172,16 @@ expr_ident :: proc(value: string) -> ^Expr {
 	}
 	return expr
 
+}
+
+expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr {
+	expr := new(Expr)
+	expr.kind = .Call
+	expr.data = Expr_Call {
+		callee = callee,
+		args   = args,
+	}
+	return expr
 }
 
 precedence :: proc(op: Token_Kind) -> int {
@@ -195,9 +222,8 @@ parse_expression :: proc(p: ^Parser, min_lbp: int = 0) -> ^Expr {
 
 		#partial switch op.kind {
 		case .LParen:
-		// Function call parsing for now disable
-		// args := parse_call_args(p)
-		// left = make_expr_call(left.data.(Expr_Ident).value, args)
+			args := parse_call_args(p)
+			left = expr_call(left, args)
 		case:
 			rbp := lbp + 1
 
@@ -206,4 +232,29 @@ parse_expression :: proc(p: ^Parser, min_lbp: int = 0) -> ^Expr {
 		}
 	}
 	return left
+}
+
+parse_call_args :: proc(p: ^Parser) -> []^Expr {
+	args: [dynamic]^Expr
+
+	// '(' already consumed
+	if current(p).kind == .RParen {
+		advance(p)
+		return args[:]
+	}
+
+	for {
+		arg := parse_expression(p, 0)
+		append(&args, arg)
+
+		if current(p).kind == .Comma {
+			advance(p)
+			continue
+		}
+
+		break
+	}
+
+	expect(p, .RParen)
+	return args[:]
 }

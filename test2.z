@@ -1,2 +1,5 @@
 // this is a comment
 a = 10 * (2 + 30)
+b = 1000
+print(a)
+print(print(a), b)
