@@ -14,9 +14,10 @@ Function :: struct {
 }
 
 State :: struct {
-	funcs:     map[string]Function,
-	vars:      map[string]ValueRef,
-	ret_value: ValueRef,
+	funcs:       map[string]Function,
+	vars:        map[string]ValueRef,
+	ret_value:   ValueRef,
+	line_starts: [dynamic]int,
 }
 
 state := State{}

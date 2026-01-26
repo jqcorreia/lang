@@ -100,61 +100,64 @@ expect :: proc(p: ^Parser, kind: Token_Kind) -> Token {
 
 parse_program :: proc(p: ^Parser) -> []^Statement {
 	stmts: [dynamic]^Statement
-	done := false
-	for !done {
+	for {
 		t := current(p)
-		// fmt.println(t)
-		switch {
-		case t.kind == .EOF:
-			done = true
-		case t.kind == .Identifier:
-			switch {
-			case peek(p).kind == .Equal:
-				// --- Assignment ---
-				// Get variable name
-				name_tok := current(p)
+		if t.kind == .EOF do break
 
-				// Advance and expect an '='
-				advance(p)
-				expect(p, .Equal)
-
-				// Construct statement
-				s := new(Statement)
-				s.kind = .Assignment
-				s.data = Statement_Assignment {
-					name = name_tok.lexeme,
-					expr = parse_expression(p, 0),
-				}
-
-				append(&stmts, s)
-				expect(p, .NewLine) // This should end with newline
-			case peek(p).kind == .LParen:
-				// --- Function Call ---
-				expr := parse_expression(p)
-
-				s := new(Statement)
-				s.kind = .Expr
-				s.data = Statement_Expr {
-					expr = expr,
-				}
-				append(&stmts, s)
-				expect(p, .NewLine)
-			case:
-				unimplemented()
-			}
-		case t.kind == .Func_Keyword:
-			// --- Funcion decl ---
-			advance(p)
-			append(&stmts, parse_function_decl(p))
-		case:
-			unimplemented(fmt.tprintf("Unexpected token: %s", t.lexeme))
-		}
+		stmt := parse_statement(p)
+		append(&stmts, stmt)
 	}
 
 	return stmts[:]
 }
+
 parse_statement :: proc(p: ^Parser) -> ^Statement {
-	return {}
+	t := current(p)
+	stmt: ^Statement
+	switch {
+	case t.kind == .Identifier:
+		switch {
+		case peek(p).kind == .Equal:
+			// --- Assignment ---
+			// Get variable name
+			name_tok := current(p)
+
+			// Advance and expect an '='
+			advance(p)
+			expect(p, .Equal)
+
+			// Construct statement
+			s := new(Statement)
+			s.kind = .Assignment
+			s.data = Statement_Assignment {
+				name = name_tok.lexeme,
+				expr = parse_expression(p, 0),
+			}
+
+			stmt = s
+			expect(p, .NewLine) // This should end with newline
+		case peek(p).kind == .LParen:
+			// --- Function Call ---
+			expr := parse_expression(p)
+
+			s := new(Statement)
+			s.kind = .Expr
+			s.data = Statement_Expr {
+				expr = expr,
+			}
+			stmt = s
+			expect(p, .NewLine)
+		case:
+			unimplemented()
+		}
+	case t.kind == .Func_Keyword:
+		// --- Funcion decl ---
+		advance(p)
+		stmt = parse_function_decl(p)
+	case:
+		unimplemented(fmt.tprintf("Unexpected token: %s", t.lexeme))
+	}
+	return stmt
 }
 
 expr_int_literal :: proc(value: i64) -> ^Expr {
@@ -323,23 +326,25 @@ parse_function_decl_params :: proc(p: ^Parser) -> []string {
 	return params[:]
 }
 
-// parse_function_body :: proc(p: ^Parser) -> []^Statement {
-// 	res: [dynamic]^Statement
-
-// 	expect(p, .LBrace)
-
-// 	for advance(p).kind != .RBrace {
-// 		append(&res, parse_statement(p))
-// 	}
-
-// 	return res[:]
-// }
-
 parse_function_body :: proc(p: ^Parser) -> []^Statement {
+	res: [dynamic]^Statement
+
 	expect(p, .LBrace)
 
-	for advance(p).kind != .RBrace {}
-	advance(p)
+	for {
+		t := current(p)
+		if t.kind == .RBrace do break
+		append(&res, parse_statement(p))
+	}
 
-	return {}
+	return res[:]
 }
+
+// parse_function_body :: proc(p: ^Parser) -> []^Statement {
+// 	expect(p, .LBrace)
+
+// 	for advance(p).kind != .RBrace {}
+// 	advance(p)
+
+// 	return {}
+// }

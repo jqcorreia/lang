@@ -41,6 +41,12 @@ statement_print :: proc(s: ^Statement, lvl: u32 = 0) {
 	case .Expr:
 		a := s.data.(Statement_Expr)
 		expr_print(a.expr, lvl + 1)
+	case .Function:
+		a := s.data.(Statement_Function)
+		fmt.println("Function", a.name, a.params)
+		for st in a.body {
+			statement_print(st, lvl + 1)
+		}
 	}
 }
 
@@ -71,4 +77,9 @@ expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
 }
 unexpected_token :: proc(token: Token) {
 	unimplemented(fmt.tprintf("Unexpected token: %s", token.lexeme))
+}
+
+one_char_span :: proc(lexer: Lexer) -> Span {
+	return Span{start = lexer.pos, end = lexer.pos}
+
 }

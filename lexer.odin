@@ -28,15 +28,23 @@ Token_Val :: union {
 	string,
 }
 
+
+Span :: struct {
+	start: int,
+	end:   int,
+}
+
 Token :: struct {
 	kind:   Token_Kind,
 	lexeme: string,
 	value:  Token_Val,
+	span:   Span,
 }
 
 Lexer :: struct {
-	input: string,
-	pos:   int,
+	input:       string,
+	pos:         int,
+	line_starts: []int,
 }
 
 is_numeric :: proc(c: byte) -> bool {
@@ -66,6 +74,9 @@ lex :: proc(input: string) -> []Token {
 		pos   = 0,
 	}
 
+	// Always a line start at offset 0
+	append(&state.line_starts, 0)
+
 	for {
 		if lexer.pos >= len(lexer.input) {
 			append(&tokens, Token{kind = .EOF})
@@ -80,9 +91,10 @@ lex :: proc(input: string) -> []Token {
 		case is_whitespace(c):
 			lexer.pos += 1
 		case is_newline(c):
-			append(&tokens, Token{kind = .NewLine, lexeme = "\n"})
+			append(&tokens, Token{kind = .NewLine, lexeme = "\n", span = one_char_span(lexer)})
 			lexer.pos += 1
-			// Remove any repeated newlines
+			append(&state.line_starts, lexer.pos)
+			// Skip any repeated newlines
 			for lexer.pos < len(lexer.input) && is_newline(lexer.input[lexer.pos]) {
 				lexer.pos += 1
 			}
@@ -94,7 +106,15 @@ lex :: proc(input: string) -> []Token {
 				lexer.pos += 1
 			}
 			end := lexer.pos
-			append(&tokens, Token{kind = .Number, lexeme = lexer.input[start:end], value = value})
+			append(
+				&tokens,
+				Token {
+					kind = .Number,
+					lexeme = lexer.input[start:end],
+					value = value,
+					span = Span{start = start, end = end},
+				},
+			)
 		case is_alphanumeric(c):
 			start := lexer.pos
 			for lexer.pos < len(lexer.input) &&
@@ -106,15 +126,26 @@ lex :: proc(input: string) -> []Token {
 
 			// Check if the lexeme is a keyword
 			if kind, exists := Keyword_Map[lexeme]; exists {
-				append(&tokens, Token{kind = kind, lexeme = lexeme})
+				append(
+					&tokens,
+					Token{kind = kind, lexeme = lexeme, span = Span{start = start, end = end}},
+				)
 			} else {
-				append(&tokens, Token{kind = .Identifier, lexeme = lexeme, value = lexeme})
+				append(
+					&tokens,
+					Token {
+						kind = .Identifier,
+						lexeme = lexeme,
+						value = lexeme,
+						span = Span{start = start, end = end},
+					},
+				)
 			}
 		case c == '+':
-			append(&tokens, Token{kind = .Plus, lexeme = "+"})
+			append(&tokens, Token{kind = .Plus, lexeme = "+", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '-':
-			append(&tokens, Token{kind = .Minus, lexeme = "-"})
+			append(&tokens, Token{kind = .Minus, lexeme = "-", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '/':
 			if lexer.input[lexer.pos] == '/' {
@@ -123,29 +154,29 @@ lex :: proc(input: string) -> []Token {
 				}
 				lexer.pos += 1 // Consume final newline
 			} else {
-				append(&tokens, Token{kind = .Slash, lexeme = "/"})
+				append(&tokens, Token{kind = .Slash, lexeme = "/", span = one_char_span(lexer)})
 				lexer.pos += 1
 			}
 		case c == '*':
-			append(&tokens, Token{kind = .Star, lexeme = "*"})
+			append(&tokens, Token{kind = .Star, lexeme = "*", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '(':
-			append(&tokens, Token{kind = .LParen, lexeme = "("})
+			append(&tokens, Token{kind = .LParen, lexeme = "(", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == ')':
-			append(&tokens, Token{kind = .RParen, lexeme = ")"})
+			append(&tokens, Token{kind = .RParen, lexeme = ")", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '{':
-			append(&tokens, Token{kind = .LBrace, lexeme = "{"})
+			append(&tokens, Token{kind = .LBrace, lexeme = "{", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '}':
-			append(&tokens, Token{kind = .RBrace, lexeme = "}"})
+			append(&tokens, Token{kind = .RBrace, lexeme = "}", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '=':
-			append(&tokens, Token{kind = .Equal, lexeme = "="})
+			append(&tokens, Token{kind = .Equal, lexeme = "=", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == ',':
-			append(&tokens, Token{kind = .Comma, lexeme = ","})
+			append(&tokens, Token{kind = .Comma, lexeme = ",", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case:
 			unimplemented(fmt.tprintf("Token not recongnized: %c", c))
