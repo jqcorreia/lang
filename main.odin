@@ -50,11 +50,11 @@ tokens_print :: proc(tokens: []Token) {
 
 main :: proc() {
 	// file := os.args[1]
-	expr := os.read_entire_file("test2.z") or_else panic("No file found")
+	expr := os.read_entire_file("test3.z") or_else panic("No file found")
 	tokens := lex(string(expr))
 
 	// fmt.println(tokens)
-	// tokens_print(tokens)
+	tokens_print(tokens)
 
 	parser := Parser {
 		tokens = tokens,

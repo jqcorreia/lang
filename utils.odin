@@ -14,8 +14,8 @@ expr_print_sb :: proc(expr: ^Expr, lvl: u32 = 0) -> string {
 	#partial switch expr.kind {
 	case .Int_Literal:
 		fmt.sbprint(&sb, "Int ", expr.data.(Expr_Int_Literal).value)
-	case .Identifier:
-		fmt.sbprint(&sb, "Identifier ", expr.data.(Expr_Identifier).value)
+	case .Variable:
+		fmt.sbprint(&sb, "Identifier ", expr.data.(Expr_Variable).value)
 	case .Binary:
 		data, _ := expr.data.(Expr_Binary)
 		fmt.sbprintln(&sb, "Binary ", data.op)
@@ -54,8 +54,8 @@ expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
 	#partial switch expr.kind {
 	case .Int_Literal:
 		fmt.println("Int ", expr.data.(Expr_Int_Literal).value)
-	case .Identifier:
-		fmt.println("Identifier ", expr.data.(Expr_Identifier).value)
+	case .Variable:
+		fmt.println("Identifier ", expr.data.(Expr_Variable).value)
 	case .Binary:
 		data, _ := expr.data.(Expr_Binary)
 		fmt.println("Binary ", data.op)
@@ -63,9 +63,12 @@ expr_print :: proc(expr: ^Expr, lvl: u32 = 0) {
 		expr_print(data.right, lvl + 1)
 	case .Call:
 		data, _ := expr.data.(Expr_Call)
-		fmt.println("Call ", data.callee.data.(Expr_Identifier).value)
+		fmt.println("Call ", data.callee.data.(Expr_Variable).value)
 		for arg in data.args {
 			expr_print(arg, lvl + 1)
 		}
 	}
+}
+unexpected_token :: proc(token: Token) {
+	unimplemented(fmt.tprintln("Unexpected token: %s", token.lexeme))
 }

@@ -1,3 +1,5 @@
+#+feature dynamic-literals
+
 package main
 
 import "core:fmt"
@@ -6,6 +8,8 @@ Token_Kind :: enum {
 	NewLine,
 	LParen,
 	RParen,
+	LBrace,
+	RBrace,
 	Identifier,
 	Equal,
 	Number,
@@ -15,6 +19,7 @@ Token_Kind :: enum {
 	Star,
 	EOF,
 	Comma,
+	Func_Keyword,
 }
 
 Token_Val :: union {
@@ -48,6 +53,10 @@ is_newline :: proc(c: byte) -> bool {
 	return c == '\n' || c <= '\r'
 }
 
+Keyword_Map: map[string]Token_Kind = {
+	"fn" = .Func_Keyword,
+}
+
 lex :: proc(input: string) -> []Token {
 	tokens: [dynamic]Token
 	lexer := Lexer {
@@ -71,6 +80,10 @@ lex :: proc(input: string) -> []Token {
 		case is_newline(c):
 			append(&tokens, Token{kind = .NewLine, lexeme = "\n"})
 			lexer.pos += 1
+			// Remove any repeated newlines
+			for lexer.pos < len(lexer.input) && is_newline(lexer.input[lexer.pos]) {
+				lexer.pos += 1
+			}
 		case is_numeric(c):
 			start := lexer.pos
 			value := 0
@@ -88,7 +101,13 @@ lex :: proc(input: string) -> []Token {
 			}
 			end := lexer.pos
 			lexeme := lexer.input[start:end]
-			append(&tokens, Token{kind = .Identifier, lexeme = lexeme, value = lexeme})
+
+			// Check if the lexeme is a keyword
+			if kind, exists := Keyword_Map[lexeme]; exists {
+				append(&tokens, Token{kind = kind, lexeme = lexeme})
+			} else {
+				append(&tokens, Token{kind = .Identifier, lexeme = lexeme, value = lexeme})
+			}
 		case c == '+':
 			append(&tokens, Token{kind = .Plus, lexeme = "+"})
 			lexer.pos += 1
@@ -114,6 +133,12 @@ lex :: proc(input: string) -> []Token {
 		case c == ')':
 			append(&tokens, Token{kind = .RParen, lexeme = ")"})
 			lexer.pos += 1
+		case c == '{':
+			append(&tokens, Token{kind = .LBrace, lexeme = "{"})
+			lexer.pos += 1
+		case c == '}':
+			append(&tokens, Token{kind = .RBrace, lexeme = "}"})
+			lexer.pos += 1
 		case c == '=':
 			append(&tokens, Token{kind = .Equal, lexeme = "="})
 			lexer.pos += 1
@@ -121,7 +146,7 @@ lex :: proc(input: string) -> []Token {
 			append(&tokens, Token{kind = .Comma, lexeme = ","})
 			lexer.pos += 1
 		case:
-			lexer.pos += 1
+			unimplemented(fmt.tprintf("Token not recongnized: %c", c))
 		}
 	}
 	return tokens[:]

@@ -15,11 +15,13 @@ Statement :: struct {
 Statement_Kind :: enum {
 	Expr,
 	Assignment,
+	Function,
 }
 
 Statement_Data :: union {
 	Statement_Expr,
 	Statement_Assignment,
+	Statement_Function,
 }
 
 Statement_Expr :: struct {
@@ -31,6 +33,12 @@ Statement_Assignment :: struct {
 	expr: ^Expr,
 }
 
+Statement_Function :: struct {
+	name:   string,
+	params: []string,
+	body:   []^Statement,
+}
+
 Expr :: struct {
 	kind: Expr_Kind,
 	data: Expr_Data,
@@ -39,14 +47,14 @@ Expr :: struct {
 Expr_Kind :: enum {
 	Int_Literal,
 	Binary,
-	Identifier,
+	Variable,
 	Call,
 }
 
 Expr_Data :: union {
 	Expr_Int_Literal,
 	Expr_Binary,
-	Expr_Identifier,
+	Expr_Variable,
 	Expr_Call,
 }
 
@@ -60,7 +68,7 @@ Expr_Binary :: struct {
 	right: ^Expr,
 }
 
-Expr_Identifier :: struct {
+Expr_Variable :: struct {
 	value: string,
 }
 
@@ -83,11 +91,11 @@ advance :: proc(p: ^Parser) -> Token {
 	return t
 }
 
-expect :: proc(p: ^Parser, kind: Token_Kind) {
+expect :: proc(p: ^Parser, kind: Token_Kind) -> Token {
 	if current(p).kind != kind {
 		panic(fmt.tprintf("Expected %v, got %v", kind, current(p).kind))
 	}
-	advance(p)
+	return advance(p)
 }
 
 parse_program :: proc(p: ^Parser) -> []^Statement {
@@ -134,8 +142,11 @@ parse_program :: proc(p: ^Parser) -> []^Statement {
 			case:
 				unimplemented()
 			}
+		case t.kind == .Func_Keyword:
+			advance(p)
+			parse_function_decl(p)
 		case:
-			unimplemented()
+			unimplemented(fmt.tprintf("Unexpected token: %s", t.lexeme))
 		}
 	}
 
@@ -165,9 +176,9 @@ expr_binary :: proc(op: Token_Kind, left: ^Expr, right: ^Expr) -> ^Expr {
 expr_ident :: proc(value: string) -> ^Expr {
 	expr := new(Expr)
 
-	expr.kind = .Identifier
+	expr.kind = .Variable
 
-	expr.data = Expr_Identifier {
+	expr.data = Expr_Variable {
 		value = value,
 	}
 	return expr
@@ -257,4 +268,51 @@ parse_call_args :: proc(p: ^Parser) -> []^Expr {
 
 	expect(p, .RParen)
 	return args[:]
+}
+
+parse_function_decl :: proc(p: ^Parser) -> ^Statement {
+	func_name := expect(p, .Identifier).value.(string)
+	fmt.println(func_name)
+	args := parse_function_decl_params(p)
+
+	func := new(Statement)
+	func.kind = .Function
+
+	func.data = Statement_Function {
+		name   = func_name,
+		params = args,
+		body   = parse_function_body(p),
+	}
+	return func
+}
+
+parse_function_decl_params :: proc(p: ^Parser) -> []string {
+	params: [dynamic]string
+	done := false
+	expect(p, .LParen)
+	for !done {
+		arg_name := expect(p, .Identifier).lexeme
+		append(&params, arg_name)
+
+		#partial switch current(p).kind {
+		case .Comma:
+			advance(p)
+		case .RParen:
+			advance(p)
+			done = true
+		case:
+			unexpected_token(current(p))
+		}
+	}
+
+	return params[:]
+}
+
+parse_function_body :: proc(p: ^Parser) -> []^Statement {
+	expect(p, .LBrace)
+
+	for advance(p).kind != .RBrace {}
+	advance(p)
+
+	return {}
 }
