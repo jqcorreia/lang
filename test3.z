@@ -1,6 +1,11 @@
 fn foo() {
-    print(1000)
     print(42)
 }
 
+fn bar() {
+    a = 100
+    print(a)
+}
+
 foo()
+bar()

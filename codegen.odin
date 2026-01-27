@@ -54,7 +54,11 @@ emit_print_call :: proc(e: Expr_Call, ctx: ContextRef, builder: BuilderRef) -> V
 
 emit_call :: proc(e: Expr_Call, ctx: ContextRef, builder: BuilderRef) -> ValueRef {
 	fmt_ptr = BuildGlobalStringPtr(builder, "%d\n", "")
-	func := state.funcs[e.callee.data.(Expr_Variable).value]
+	fn_name := e.callee.data.(Expr_Variable).value
+	func, ok := state.funcs[e.callee.data.(Expr_Variable).value]
+	if !ok {
+		panic(fmt.tprintln("Function", fn_name, "not found"))
+	}
 	// args := []ValueRef{fmt_ptr, emit_expr(e.args[0], ctx, builder)}
 
 	// call := BuildCall2(builder, func.ty, func.fn, &args[0], u32(len(args)), "")
