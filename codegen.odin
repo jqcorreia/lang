@@ -22,10 +22,11 @@ emit_stmt :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: M
 		fn := AddFunction(module, strings.clone_to_cstring(data.name), fn_type)
 
 
-		state.funcs[data.name] = Function {
-			ty = fn_type,
-			fn = fn,
-		}
+		// By now the function must exist in state
+		// Complete the information with TypeRef and ValueRef
+		func := &state.funcs[data.name]
+		func.ty = fn_type
+		func.fn = fn
 
 		SetLinkage(fn, .InternalLinkage)
 		entry := AppendBasicBlockInContext(ctx, fn, "")

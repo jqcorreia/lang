@@ -193,6 +193,8 @@ expr_ident :: proc(value: string) -> ^Expr {
 }
 
 expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr {
+	// func := state.funcs[callee.data.(Expr_Variable).value]
+
 	expr := new(Expr)
 	expr.kind = .Call
 	expr.data = Expr_Call {
@@ -274,21 +276,26 @@ parse_call_args :: proc(p: ^Parser) -> []^Expr {
 	}
 
 	expect(p, .RParen)
+
 	return args[:]
 }
 
 parse_function_decl :: proc(p: ^Parser) -> ^Statement {
 	func_name := expect(p, .Identifier).value.(string)
-	fmt.println(func_name)
 	args := parse_function_decl_params(p)
+	body := parse_function_body(p)
 
 	func := new(Statement)
 	func.kind = .Function
 
+	state.funcs[func_name] = {
+		name   = func_name,
+		params = args,
+	}
 	func.data = Statement_Function {
 		name   = func_name,
 		params = args,
-		body   = parse_function_body(p),
+		body   = body,
 	}
 	return func
 }
@@ -343,12 +350,3 @@ parse_function_body :: proc(p: ^Parser) -> []^Statement {
 
 	return res[:]
 }
-
-// parse_function_body :: proc(p: ^Parser) -> []^Statement {
-// 	expect(p, .LBrace)
-
-// 	for advance(p).kind != .RBrace {}
-// 	advance(p)
-
-// 	return {}
-// }

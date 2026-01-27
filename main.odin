@@ -3,6 +3,7 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:time"
 
 printf_fn: ValueRef
 fmt_ptr: ValueRef
@@ -10,8 +11,10 @@ printf_ty: TypeRef
 
 
 Function :: struct {
-	ty: TypeRef,
-	fn: ValueRef,
+	name:   string,
+	params: []string,
+	ty:     TypeRef,
+	fn:     ValueRef,
 }
 
 State :: struct {
@@ -63,6 +66,7 @@ tokens_print :: proc(tokens: []Token) {
 }
 
 main :: proc() {
+	start_time := time.now()
 	filename := "test3.z"
 
 	if len(os.args) > 1 {
@@ -136,4 +140,5 @@ main :: proc() {
 		fmt.println(error)
 	}
 	// DumpModule(module)
+	fmt.println("--- Compilation done in", time.diff(start_time, time.now()), "---")
 }
