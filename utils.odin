@@ -44,7 +44,7 @@ statement_print :: proc(s: ^Statement, lvl: u32 = 0) {
 	case .Function:
 		a := s.data.(Statement_Function)
 		fmt.println("Function", a.name, a.params)
-		for st in a.body {
+		for st in a.body.statements {
 			statement_print(st, lvl + 1)
 		}
 	}

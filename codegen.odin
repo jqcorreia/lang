@@ -72,7 +72,7 @@ emit_function :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, modul
 		}
 	}
 
-	for bst in data.body {
+	for bst in data.body.statements {
 		emit_stmt(bst, ctx, builder, module)
 	}
 	if func.return_type == "" {

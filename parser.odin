@@ -17,6 +17,7 @@ Statement_Kind :: enum {
 	Assignment,
 	Function,
 	Return,
+	Block,
 }
 
 Statement_Data :: union {
@@ -24,6 +25,7 @@ Statement_Data :: union {
 	Statement_Assignment,
 	Statement_Function,
 	Statement_Return,
+	Statement_Block,
 }
 
 Statement_Expr :: struct {
@@ -38,13 +40,18 @@ Statement_Assignment :: struct {
 Statement_Function :: struct {
 	name:     string,
 	params:   []string,
-	body:     []^Statement,
+	body:     ^Statement_Block,
 	ret_type: string,
+}
+
+Statement_Block :: struct {
+	statements: []^Statement,
 }
 
 Statement_Return :: struct {
 	expr: ^Expr,
 }
+
 Expr :: struct {
 	kind: Expr_Kind,
 	data: Expr_Data,
@@ -321,7 +328,7 @@ parse_function_decl :: proc(p: ^Parser) -> ^Statement {
 	func_name := expect(p, .Identifier).value.(string)
 	args := parse_function_decl_params(p)
 	ret_type := parse_function_ret_type(p)
-	body := parse_function_body(p)
+	body := parse_block(p)
 
 	func := new(Statement)
 	func.kind = .Function
@@ -387,7 +394,7 @@ parse_function_ret_type :: proc(p: ^Parser) -> string {
 	return ""
 }
 
-parse_function_body :: proc(p: ^Parser) -> []^Statement {
+parse_block :: proc(p: ^Parser) -> ^Statement_Block {
 	res: [dynamic]^Statement
 
 	expect(p, .LBrace)
@@ -402,5 +409,8 @@ parse_function_body :: proc(p: ^Parser) -> []^Statement {
 	advance(p)
 	if current(p).kind == .NewLine do advance(p)
 
-	return res[:]
+	sb := new(Statement_Block)
+	sb.statements = res[:]
+
+	return sb
 }
