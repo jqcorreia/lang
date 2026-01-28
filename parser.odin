@@ -18,6 +18,7 @@ Statement_Kind :: enum {
 	Function,
 	Return,
 	Block,
+	If,
 }
 
 Statement_Data :: union {
@@ -26,6 +27,7 @@ Statement_Data :: union {
 	Statement_Function,
 	Statement_Return,
 	Statement_Block,
+	Statement_If,
 }
 
 Statement_Expr :: struct {
@@ -50,6 +52,12 @@ Statement_Block :: struct {
 
 Statement_Return :: struct {
 	expr: ^Expr,
+}
+
+Statement_If :: struct {
+	cond:       ^Expr,
+	then_block: ^Statement_Block,
+	else_block: ^Statement_Block, // nil if no else
 }
 
 Expr :: struct {
@@ -421,10 +429,22 @@ parse_block :: proc(p: ^Parser) -> ^Statement_Block {
 
 parse_if :: proc(p: ^Parser) -> ^Statement {
 	advance(p)
-	parse_expression(p)
-	parse_block(p)
-	advance(p)
-	parse_block(p)
+	cond := parse_expression(p)
+	then_block := parse_block(p)
+	else_block: ^Statement_Block = nil
+	if advance(p).kind == .Else_Keyword {
+		else_block = parse_block(p)
+	}
 
-	return nil
+	stmt_if: Statement_If = {
+		cond       = cond,
+		then_block = then_block,
+		else_block = else_block,
+	}
+
+	stmt := new(Statement)
+	stmt.kind = .If
+	stmt.data = stmt_if
+
+	return stmt
 }
