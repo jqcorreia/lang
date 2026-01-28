@@ -23,4 +23,5 @@ sum(10, 20)
 fn square(a) -> i32 {
     return a * a
 }
-print(square(5))
+
+print(square(5 + square(2))) // 81
