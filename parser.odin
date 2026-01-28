@@ -104,6 +104,12 @@ parse_program :: proc(p: ^Parser) -> []^Statement {
 		t := current(p)
 		if t.kind == .EOF do break
 
+		// Deal with rogue newlines, like at the beginning of a line
+		if t.kind == .NewLine {
+			advance(p)
+			continue
+		}
+
 		stmt := parse_statement(p)
 		append(&stmts, stmt)
 	}

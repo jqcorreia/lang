@@ -87,7 +87,7 @@ main :: proc() {
 	tokens := lex(string(expr))
 
 	// fmt.println(tokens)
-	// tokens_print(tokens)
+	tokens_print(tokens)
 
 	parser := Parser {
 		tokens = tokens,

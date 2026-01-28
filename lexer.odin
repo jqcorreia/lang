@@ -67,6 +67,14 @@ Keyword_Map: map[string]Token_Kind = {
 	"return" = .Return_Keyword,
 }
 
+lex_current :: proc(lexer: ^Lexer) -> u8 {
+	return lexer.input[lexer.pos]
+}
+
+lex_peek :: proc(lexer: ^Lexer, n: int = 0) -> u8 {
+	return lexer.input[lexer.pos + n]
+}
+
 lex :: proc(input: string) -> []Token {
 	tokens: [dynamic]Token
 	lexer := Lexer {
@@ -97,6 +105,7 @@ lex :: proc(input: string) -> []Token {
 			// Skip any repeated newlines
 			for lexer.pos < len(lexer.input) && is_newline(lexer.input[lexer.pos]) {
 				lexer.pos += 1
+				append(&state.line_starts, lexer.pos)
 			}
 		case is_numeric(c):
 			start := lexer.pos
@@ -148,11 +157,11 @@ lex :: proc(input: string) -> []Token {
 			append(&tokens, Token{kind = .Minus, lexeme = "-", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '/':
-			if lexer.input[lexer.pos] == '/' {
-				for lexer.pos < len(lexer.input) && lexer.input[lexer.pos] != '\n' {
+			if lexer.input[lexer.pos + 1] == '/' {
+				for lexer.pos < len(lexer.input) && lex_current(&lexer) != '\n' {
 					lexer.pos += 1
+					fmt.printf("%c\n", lexer.input[lexer.pos])
 				}
-				lexer.pos += 1 // Consume final newline
 			} else {
 				append(&tokens, Token{kind = .Slash, lexeme = "/", span = one_char_span(lexer)})
 				lexer.pos += 1
