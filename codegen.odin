@@ -16,6 +16,9 @@ emit_stmt :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: M
 	// state.ret_value = fmt_ptr
 	case .Function:
 		emit_function(s, ctx, builder, module)
+	case .Return:
+		data := s.data.(Statement_Return)
+		BuildRet(builder, emit_expr(data.expr, ctx, builder))
 	case:
 		unimplemented(fmt.tprint("Unimplement emit statement", s))
 	}
@@ -32,19 +35,16 @@ emit_function :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, modul
 	param_types: [dynamic]TypeRef
 
 	fn_type: TypeRef
+	ret_type_ref := func.return_type == "" ? VoidTypeInContext(ctx) : Int32TypeInContext(ctx)
+
 	if len(func.params) > 0 {
 		for _ in data.params {
 			append(&param_types, int32)
 		}
 
-		fn_type = FunctionType(
-			VoidTypeInContext(ctx),
-			&param_types[0],
-			u32(len(param_types)),
-			false,
-		)
+		fn_type = FunctionType(ret_type_ref, &param_types[0], u32(len(param_types)), false)
 	} else {
-		fn_type = FunctionType(VoidTypeInContext(ctx), nil, 0, false)
+		fn_type = FunctionType(ret_type_ref, nil, 0, false)
 
 	}
 
@@ -75,7 +75,9 @@ emit_function :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, modul
 	for bst in data.body {
 		emit_stmt(bst, ctx, builder, module)
 	}
-	BuildRetVoid(builder)
+	if func.return_type == "" {
+		BuildRetVoid(builder)
+	}
 	PositionBuilderAtEnd(builder, old_pos)
 	DumpValue(fn)
 	state.vars = old_vars

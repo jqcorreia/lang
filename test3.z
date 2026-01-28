@@ -19,3 +19,8 @@ foo()
 bar()
 qux(7000)
 sum(10, 20)  
+
+fn square(a) -> i32 {
+    return a * a
+}
+print(square(5))

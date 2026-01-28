@@ -11,10 +11,11 @@ printf_ty: TypeRef
 
 
 Function :: struct {
-	name:   string,
-	params: []string,
-	ty:     TypeRef,
-	fn:     ValueRef,
+	name:        string,
+	params:      []string,
+	ty:          TypeRef,
+	fn:          ValueRef,
+	return_type: string,
 }
 
 State :: struct {

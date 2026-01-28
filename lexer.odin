@@ -17,10 +17,13 @@ Token_Kind :: enum {
 	Minus,
 	Slash,
 	Star,
-	EOF,
+	Greater,
+	Lesser,
 	Comma,
 	Func_Keyword,
 	Return_Keyword,
+	RightArrow,
+	EOF,
 }
 
 Token_Val :: union {
@@ -71,7 +74,7 @@ lex_current :: proc(lexer: ^Lexer) -> u8 {
 	return lexer.input[lexer.pos]
 }
 
-lex_peek :: proc(lexer: ^Lexer, n: int = 0) -> u8 {
+lex_peek :: proc(lexer: ^Lexer, n: int = 1) -> u8 {
 	return lexer.input[lexer.pos + n]
 }
 
@@ -154,8 +157,21 @@ lex :: proc(input: string) -> []Token {
 			append(&tokens, Token{kind = .Plus, lexeme = "+", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '-':
-			append(&tokens, Token{kind = .Minus, lexeme = "-", span = one_char_span(lexer)})
-			lexer.pos += 1
+			fmt.printf("%c\n", lex_peek(&lexer))
+			if lex_peek(&lexer) == '>' {
+				append(
+					&tokens,
+					Token {
+						kind = .RightArrow,
+						lexeme = "->",
+						span = Span{start = lexer.pos, end = lexer.pos + 1},
+					},
+				)
+				lexer.pos += 2
+			} else {
+				append(&tokens, Token{kind = .Minus, lexeme = "-", span = one_char_span(lexer)})
+				lexer.pos += 1
+			}
 		case c == '/':
 			if lexer.input[lexer.pos + 1] == '/' {
 				for lexer.pos < len(lexer.input) && lex_current(&lexer) != '\n' {

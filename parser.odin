@@ -16,12 +16,14 @@ Statement_Kind :: enum {
 	Expr,
 	Assignment,
 	Function,
+	Return,
 }
 
 Statement_Data :: union {
 	Statement_Expr,
 	Statement_Assignment,
 	Statement_Function,
+	Statement_Return,
 }
 
 Statement_Expr :: struct {
@@ -34,11 +36,15 @@ Statement_Assignment :: struct {
 }
 
 Statement_Function :: struct {
-	name:   string,
-	params: []string,
-	body:   []^Statement,
+	name:     string,
+	params:   []string,
+	body:     []^Statement,
+	ret_type: string,
 }
 
+Statement_Return :: struct {
+	expr: ^Expr,
+}
 Expr :: struct {
 	kind: Expr_Kind,
 	data: Expr_Data,
@@ -160,6 +166,18 @@ parse_statement :: proc(p: ^Parser) -> ^Statement {
 		// --- Funcion decl ---
 		advance(p)
 		stmt = parse_function_decl(p)
+	case t.kind == .Return_Keyword:
+		// --- Return statment ---
+		advance(p)
+		expr := parse_expression(p, 0)
+		expect(p, .NewLine)
+
+		s := new(Statement)
+		s.kind = .Return
+		s.data = Statement_Return {
+			expr = expr,
+		}
+		stmt = s
 	case:
 		unimplemented(fmt.tprintf("Unexpected token: %s", token_serialize(t)))
 	}
@@ -302,6 +320,7 @@ parse_call_args :: proc(p: ^Parser) -> []^Expr {
 parse_function_decl :: proc(p: ^Parser) -> ^Statement {
 	func_name := expect(p, .Identifier).value.(string)
 	args := parse_function_decl_params(p)
+	ret_type := parse_function_ret_type(p)
 	body := parse_function_body(p)
 
 	func := new(Statement)
@@ -309,14 +328,16 @@ parse_function_decl :: proc(p: ^Parser) -> ^Statement {
 
 	// Initial declaration of a function
 	state.funcs[func_name] = {
-		name   = func_name,
-		params = args,
+		name        = func_name,
+		params      = args,
+		return_type = ret_type,
 	}
 
 	func.data = Statement_Function {
-		name   = func_name,
-		params = args,
-		body   = body,
+		name     = func_name,
+		params   = args,
+		body     = body,
+		ret_type = ret_type,
 	}
 	return func
 }
@@ -352,6 +373,18 @@ parse_function_decl_params :: proc(p: ^Parser) -> []string {
 	}
 
 	return params[:]
+}
+
+parse_function_ret_type :: proc(p: ^Parser) -> string {
+	if current(p).kind == .RightArrow {
+		advance(p)
+		type := expect(p, .Identifier)
+
+		fmt.println("ret type", type.value.(string))
+		return type.value.(string)
+	}
+
+	return ""
 }
 
 parse_function_body :: proc(p: ^Parser) -> []^Statement {

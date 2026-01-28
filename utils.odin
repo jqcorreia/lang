@@ -98,7 +98,7 @@ span_to_location :: proc(span: Span) -> (line: int, col: int) {
 		case left <= start && right <= start:
 			idx += 1
 		case left <= start && right >= start:
-			return idx, start - left
+			return idx + 1, start - left + 1
 		}
 	}
 }
