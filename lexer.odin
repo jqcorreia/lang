@@ -12,6 +12,7 @@ Token_Kind :: enum {
 	RBrace,
 	Identifier,
 	Equal,
+	DoubleEqual,
 	Number,
 	Plus,
 	Minus,
@@ -19,6 +20,8 @@ Token_Kind :: enum {
 	Star,
 	Greater,
 	Lesser,
+	GreaterOrEqual,
+	LesserOrEqual,
 	Comma,
 	Func_Keyword,
 	Return_Keyword,
@@ -202,17 +205,41 @@ lex :: proc(input: string) -> []Token {
 			append(&tokens, Token{kind = .RBrace, lexeme = "}", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '=':
-			append(&tokens, Token{kind = .Equal, lexeme = "=", span = one_char_span(lexer)})
-			lexer.pos += 1
+			if lex_peek(&lexer) == '=' {
+				append(
+					&tokens,
+					Token{kind = .DoubleEqual, lexeme = ">", span = one_char_span(lexer)},
+				)
+				lexer.pos += 2
+			} else {
+				append(&tokens, Token{kind = .Equal, lexeme = ">", span = one_char_span(lexer)})
+				lexer.pos += 1
+			}
 		case c == ',':
 			append(&tokens, Token{kind = .Comma, lexeme = ",", span = one_char_span(lexer)})
 			lexer.pos += 1
-		case c == '<':
-			append(&tokens, Token{kind = .Greater, lexeme = ">", span = one_char_span(lexer)})
-			lexer.pos += 1
 		case c == '>':
-			append(&tokens, Token{kind = .Lesser, lexeme = "<", span = one_char_span(lexer)})
-			lexer.pos += 1
+			if lex_peek(&lexer) == '=' {
+				append(
+					&tokens,
+					Token{kind = .GreaterOrEqual, lexeme = ">", span = one_char_span(lexer)},
+				)
+				lexer.pos += 2
+			} else {
+				append(&tokens, Token{kind = .Greater, lexeme = ">", span = one_char_span(lexer)})
+				lexer.pos += 1
+			}
+		case c == '<':
+			if lex_peek(&lexer) == '=' {
+				append(
+					&tokens,
+					Token{kind = .LesserOrEqual, lexeme = ">", span = one_char_span(lexer)},
+				)
+				lexer.pos += 2
+			} else {
+				append(&tokens, Token{kind = .Lesser, lexeme = ">", span = one_char_span(lexer)})
+				lexer.pos += 1
+			}
 		case:
 			unimplemented(fmt.tprintf("Token not recongnized: %c", c))
 		}

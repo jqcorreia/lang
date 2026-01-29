@@ -189,13 +189,95 @@ emit_expr :: proc(e: ^Expr, ctx: ContextRef, builder: BuilderRef) -> ValueRef {
 				emit_expr(e.data.(Expr_Binary).right, ctx, builder),
 				"foo",
 			)
+		case .Greater:
+			return BuildICmp(
+				builder,
+				.IntUGT,
+				emit_expr(e.data.(Expr_Binary).left, ctx, builder),
+				emit_expr(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		case .Lesser:
+			return BuildICmp(
+				builder,
+				.IntULT,
+				emit_expr(e.data.(Expr_Binary).left, ctx, builder),
+				emit_expr(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		case .GreaterOrEqual:
+			return BuildICmp(
+				builder,
+				.IntUGE,
+				emit_expr(e.data.(Expr_Binary).left, ctx, builder),
+				emit_expr(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
+		case .LesserOrEqual:
+			return BuildICmp(
+				builder,
+				.IntULE,
+				emit_expr(e.data.(Expr_Binary).left, ctx, builder),
+				emit_expr(e.data.(Expr_Binary).right, ctx, builder),
+				"foo",
+			)
 		}
 	}
 	return ConstInt(int32, 42, true)
 }
 
-emit_if :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
+emit_block :: proc(
+	block: ^Statement_Block,
+	ctx: ContextRef,
+	builder: BuilderRef,
+	module: ModuleRef,
+) {
+	for bst in block.statements {
+		emit_stmt(bst, ctx, builder, module)
+		if bst.kind == .Return {
+			block.terminated = true
+		}
+	}
+}
 
+emit_if :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
+	if_stmt := s.data.(Statement_If)
+	cond_val := emit_expr(if_stmt.cond, ctx, builder)
+
+	cond_bool: ValueRef
+	cond_val_type := TypeOf(cond_val)
+	if GetTypeKind(cond_val_type) == .IntegerTypeKind && GetIntTypeWidth(cond_val_type) == 1 {
+		cond_bool = cond_val
+	} else {
+		zero := ConstInt(Int32Type(), 0, false)
+		cond_bool = BuildICmp(builder, .IntNE, cond_val, zero, "ifcond")
+	}
+
+	function := GetBasicBlockParent(GetInsertBlock(builder))
+
+	then_bb := AppendBasicBlock(function, "then")
+	else_bb := AppendBasicBlock(function, "else")
+	merge_bb := AppendBasicBlock(function, "ifcont")
+
+	if s.data.(Statement_If).else_block != nil {
+		BuildCondBr(builder, cond_bool, then_bb, else_bb)
+	} else {
+		BuildCondBr(builder, cond_bool, then_bb, merge_bb)
+	}
+	PositionBuilderAtEnd(builder, then_bb)
+	emit_block(if_stmt.then_block, ctx, builder, module)
+	// If block didn’t already return:
+	if !if_stmt.then_block.terminated {
+		BuildBr(builder, merge_bb)
+	}
+	if if_stmt.else_block != nil {
+		PositionBuilderAtEnd(builder, else_bb)
+		emit_block(if_stmt.else_block, ctx, builder, module)
+		if !if_stmt.else_block.terminated {
+			BuildBr(builder, merge_bb)
+		}
+	}
+	PositionBuilderAtEnd(builder, merge_bb)
 }
 
 generate :: proc(stmts: []^Statement, ctx: ContextRef, module: ModuleRef, builder: BuilderRef) {

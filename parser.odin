@@ -48,6 +48,7 @@ Statement_Function :: struct {
 
 Statement_Block :: struct {
 	statements: []^Statement,
+	terminated: bool,
 }
 
 Statement_Return :: struct {
@@ -266,7 +267,7 @@ precedence :: proc(op: Token_Kind) -> int {
 		return 20
 	case .Plus, .Minus:
 		return 10
-	case .Lesser, .Greater:
+	case .Lesser, .Greater, .GreaterOrEqual, .LesserOrEqual:
 		return 5
 	}
 	return -1
@@ -340,10 +341,6 @@ parse_function_decl :: proc(p: ^Parser) -> ^Statement {
 	func_name := expect(p, .Identifier).value.(string)
 	args := parse_function_decl_params(p)
 	ret_type := parse_function_ret_type(p)
-	body := parse_block(p)
-
-	func := new(Statement)
-	func.kind = .Function
 
 	// Initial declaration of a function
 	state.funcs[func_name] = {
@@ -351,6 +348,11 @@ parse_function_decl :: proc(p: ^Parser) -> ^Statement {
 		params      = args,
 		return_type = ret_type,
 	}
+
+	body := parse_block(p)
+
+	func := new(Statement)
+	func.kind = .Function
 
 	func.data = Statement_Function {
 		name     = func_name,

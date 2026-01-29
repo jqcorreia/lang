@@ -101,7 +101,7 @@ main :: proc() {
 
 	fmt.println(state)
 	start_time := time.now()
-	filename := "test3.z"
+	filename := "test4.z"
 
 	if len(os.args) > 1 {
 		filename = os.args[1]
