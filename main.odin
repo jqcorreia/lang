@@ -4,6 +4,7 @@ import "core:container/queue"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:sys/posix"
 import "core:time"
 
 printf_fn: ValueRef
@@ -163,4 +164,7 @@ main :: proc() {
 	}
 	// DumpModule(module)
 	fmt.println("--- Compilation done in", time.diff(start_time, time.now()), "---")
+
+	posix.system("cc -o calc calc.o")
+	posix.system("./calc")
 }

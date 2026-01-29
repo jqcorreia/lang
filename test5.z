@@ -13,7 +13,8 @@
 // loop()
 
 fn foo() {
-    if a == 0 {
-        b = 100
-    }
+    b = 5
+    print(b)
 }
+
+foo()
