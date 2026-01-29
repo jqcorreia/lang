@@ -170,7 +170,6 @@ lex :: proc(input: string) -> []Token {
 			if lexer.input[lexer.pos + 1] == '/' {
 				for lexer.pos < len(lexer.input) && lex_current(&lexer) != '\n' {
 					lexer.pos += 1
-					fmt.printf("%c\n", lexer.input[lexer.pos])
 				}
 			} else {
 				append(&tokens, Token{kind = .Slash, lexeme = "/", span = one_char_span(lexer)})
