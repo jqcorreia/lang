@@ -1,20 +1,9 @@
-// fn loop() {
-//     i = 0
-// 
-//     for {
-//         i = i + 1
-//         print(i)
-//         if i >= 10 {
-//             break
-//         }
-//     }
-// }
-// 
-// loop()
+a = 10
 
 fn foo() {
-    b = 5
-    print(b)
+    if a < 10 {
+        print(12) 
+    }
 }
 
 foo()

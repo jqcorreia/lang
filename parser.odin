@@ -437,14 +437,17 @@ parse_block :: proc(p: ^Parser) -> ^Statement_Block {
 	expect(p, .LBrace)
 
 	if current(p).kind == .NewLine do advance(p)
-	for {
-		t := current(p)
-		if t.kind == .RBrace do break
-		append(&res, parse_statement(p))
+
+	for current(p).kind != .RBrace {
+		stmt := parse_statement(p)
+		statement_print(stmt)
+		append(&res, stmt)
 	}
-	// Advance final RBrace and possible final newline
 	advance(p)
-	if current(p).kind == .NewLine do advance(p)
+
+	if current(p).kind == .NewLine {
+		advance(p)
+	}
 
 	sb := new(Statement_Block)
 	sb.statements = res[:]
@@ -454,9 +457,12 @@ parse_block :: proc(p: ^Parser) -> ^Statement_Block {
 
 parse_if :: proc(p: ^Parser) -> ^Statement {
 	cond := parse_expression(p)
+	fmt.println("#############", current(p).kind)
 	then_block := parse_block(p)
 	else_block: ^Statement_Block = nil
-	if advance(p).kind == .Else_Keyword {
+
+	if current(p).kind == .Else_Keyword {
+		advance(p)
 		else_block = parse_block(p)
 	}
 

@@ -209,11 +209,11 @@ lex :: proc(input: string) -> []Token {
 			if lex_peek(&lexer) == '=' {
 				append(
 					&tokens,
-					Token{kind = .DoubleEqual, lexeme = ">", span = two_char_span(lexer)},
+					Token{kind = .DoubleEqual, lexeme = "==", span = two_char_span(lexer)},
 				)
 				lexer.pos += 2
 			} else {
-				append(&tokens, Token{kind = .Equal, lexeme = ">", span = one_char_span(lexer)})
+				append(&tokens, Token{kind = .Equal, lexeme = "=", span = one_char_span(lexer)})
 				lexer.pos += 1
 			}
 		case c == ',':

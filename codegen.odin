@@ -265,10 +265,11 @@ emit_if :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: Mod
 	function := GetBasicBlockParent(GetInsertBlock(builder))
 
 	then_bb := AppendBasicBlock(function, "then")
-	else_bb := AppendBasicBlock(function, "else")
 	merge_bb := AppendBasicBlock(function, "ifcont")
 
+	else_bb: BasicBlockRef
 	if s.data.(Statement_If).else_block != nil {
+		else_bb = AppendBasicBlock(function, "else")
 		BuildCondBr(builder, cond_bool, then_bb, else_bb)
 	} else {
 		BuildCondBr(builder, cond_bool, then_bb, merge_bb)
