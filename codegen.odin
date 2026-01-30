@@ -1,5 +1,6 @@
 package main
 
+import "core:container/queue"
 import "core:fmt"
 import "core:strings"
 
@@ -26,12 +27,13 @@ emit_stmt :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: M
 	case .Function:
 		emit_function(s, ctx, builder, module)
 	case .Return:
-		data := s.data.(Statement_Return)
-		BuildRet(builder, emit_expr(data.expr, ctx, builder))
+		emit_return(s, ctx, builder, module)
 	case .If:
 		emit_if(s, ctx, builder, module)
 	case .For:
 		emit_for_loop(s, ctx, builder, module)
+	case .Break:
+		emit_break(s, ctx, builder, module)
 	case:
 		unimplemented(fmt.tprint("Unimplement emit statement", s))
 	}
@@ -39,11 +41,19 @@ emit_stmt :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: M
 
 emit_assigment :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
 	data := s.data.(Statement_Assignment)
+	// Build local variables
+	// If the variable exists, just emit a Store, otherwise emit Alloca + Store
 	if !scope_top_level() {
-		ptr := BuildAlloca(builder, Int32Type(), "")
-		BuildStore(builder, emit_expr(data.expr, ctx, builder), ptr)
-		scope_current().vars[data.name] = ptr
+		ptr, exists := scope_current().vars[data.name]
+		if exists {
+			BuildStore(builder, emit_expr(data.expr, ctx, builder), ptr)
+		} else {
+			ptr = BuildAlloca(builder, Int32Type(), "")
+			BuildStore(builder, emit_expr(data.expr, ctx, builder), ptr)
+			scope_current().vars[data.name] = ptr
+		}
 	} else {
+		// Create global variables, only constant for now
 		if data.expr.kind == .Int_Literal {
 			ptr := AddGlobal(module, Int32Type(), strings.clone_to_cstring(data.name))
 			SetInitializer(
@@ -112,6 +122,11 @@ emit_function :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, modul
 	DumpValue(fn)
 
 	scope_pop()
+}
+
+emit_return :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
+	data := s.data.(Statement_Return)
+	BuildRet(builder, emit_expr(data.expr, ctx, builder))
 }
 
 // This a hacked printf-type emission until we have proper external functions
@@ -255,6 +270,9 @@ emit_if :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: Mod
 
 	cond_bool: ValueRef
 	cond_val_type := TypeOf(cond_val)
+
+	// If the expression eval result is a i1 (one bit integer) then use it directly
+	// Otherwise emit a comparison to zero and the cond_bool
 	if GetTypeKind(cond_val_type) == .IntegerTypeKind && GetIntTypeWidth(cond_val_type) == 1 {
 		cond_bool = cond_val
 	} else {
@@ -274,16 +292,21 @@ emit_if :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: Mod
 	} else {
 		BuildCondBr(builder, cond_bool, then_bb, merge_bb)
 	}
+
 	PositionBuilderAtEnd(builder, then_bb)
 	emit_block(if_stmt.then_block, ctx, builder, module)
-	// If block didn’t already return:
-	if !if_stmt.then_block.terminated {
+
+	bb := GetInsertBlock(builder)
+	if GetBasicBlockTerminator(bb) == nil {
 		BuildBr(builder, merge_bb)
 	}
+
 	if if_stmt.else_block != nil {
 		PositionBuilderAtEnd(builder, else_bb)
 		emit_block(if_stmt.else_block, ctx, builder, module)
-		if !if_stmt.else_block.terminated {
+
+		bb = GetInsertBlock(builder)
+		if GetBasicBlockTerminator(bb) == nil {
 			BuildBr(builder, merge_bb)
 		}
 	}
@@ -291,11 +314,37 @@ emit_if :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: Mod
 }
 
 emit_for_loop :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
+	for_stmt := s.data.(Statement_For)
+	function := GetBasicBlockParent(GetInsertBlock(builder))
 
+	loop_bb := AppendBasicBlock(function, "loop")
+	after_bb := AppendBasicBlock(function, "after")
+
+	BuildBr(builder, loop_bb)
+	queue.push_front(&state.loops, Loop{break_block = after_bb})
+	PositionBuilderAtEnd(builder, loop_bb)
+	emit_block(for_stmt.body, ctx, builder, module)
+
+	if GetBasicBlockTerminator(GetInsertBlock(builder)) == nil {
+		BuildBr(builder, loop_bb)
+	}
+
+	queue.pop_front(&state.loops)
+	PositionBuilderAtEnd(builder, after_bb)
 }
 
 emit_break :: proc(s: ^Statement, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
+	if queue.len(state.loops) == 0 {
+		panic("Breaking outside of a loop")
+	}
+	loop := queue.front(&state.loops)
 
+	BuildBr(builder, loop.break_block)
+
+	// Move builder away from terminated block
+	fn := GetBasicBlockParent(GetInsertBlock(builder))
+	dead := AppendBasicBlock(fn, "after_break")
+	PositionBuilderAtEnd(builder, dead)
 }
 
 generate :: proc(stmts: []^Statement, ctx: ContextRef, module: ModuleRef, builder: BuilderRef) {

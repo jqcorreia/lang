@@ -258,17 +258,14 @@ expr_ident :: proc(value: string) -> ^Expr {
 }
 
 expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr {
-	// fmt.println("------------", state)
 	func, ok := state.funcs[callee.data.(Expr_Variable).value]
 	if !ok {
 		panic("function not found")
 	}
-	// fmt.println(func, callee.data.(Expr_Variable).value)
 
 	if len(args) < len(func.params) {
 		panic(fmt.tprintf("Missing arguments in call to function '%s'", func.name))
 	}
-	// fmt.println(func.name, len(args), len(func.params))
 	if len(args) > len(func.params) {
 		panic(fmt.tprintf("Extra arguments in call to function '%s'", func.name))
 	}
@@ -424,7 +421,6 @@ parse_function_ret_type :: proc(p: ^Parser) -> string {
 		advance(p)
 		type := expect(p, .Identifier)
 
-		fmt.println("ret type", type.value.(string))
 		return type.value.(string)
 	}
 
@@ -457,7 +453,6 @@ parse_block :: proc(p: ^Parser) -> ^Statement_Block {
 
 parse_if :: proc(p: ^Parser) -> ^Statement {
 	cond := parse_expression(p)
-	fmt.println("#############", current(p).kind)
 	then_block := parse_block(p)
 	else_block: ^Statement_Block = nil
 

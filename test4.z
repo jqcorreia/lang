@@ -1,3 +1,5 @@
+// This is a simple test of function definition and recursion
+// Also tests if/then/else statements and variable scope
 fn fib(n) -> i32 {
     if n <= 1 {
         return n
@@ -7,4 +9,13 @@ fn fib(n) -> i32 {
     return 0
 }
 
-print(fib(43)) 
+print(fib(10)) 
+
+a = 7
+fn foo() {
+    if a < 10 {
+        print(12) 
+    }
+}
+
+foo()

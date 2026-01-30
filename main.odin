@@ -24,12 +24,17 @@ Scope :: struct {
 	vars: map[string]ValueRef,
 }
 
+Loop :: struct {
+	break_block: BasicBlockRef,
+}
+
 State :: struct {
 	funcs:        map[string]Function,
 	ret_value:    ValueRef,
 	line_starts:  [dynamic]int,
 	scopes:       queue.Queue(Scope),
 	global_scope: Scope,
+	loops:        queue.Queue(Loop),
 }
 
 state := State{}
@@ -111,8 +116,7 @@ main :: proc() {
 	expr := os.read_entire_file(filename) or_else panic("No file found")
 	tokens := lex(string(expr))
 
-	// fmt.println(tokens)
-	tokens_print(tokens)
+	// tokens_print(tokens)
 
 	parser := Parser {
 		tokens = tokens,
