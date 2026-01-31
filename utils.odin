@@ -32,7 +32,7 @@ statement_print :: proc(s: ^Ast_Node, lvl: u32 = 0) {
 	for _ in 0 ..< lvl {
 		fmt.print(" ")
 	}
-	#partial switch node in s {
+	#partial switch node in s.node {
 	case Ast_Assignment:
 		fmt.println("Assignment ", node.name)
 		expr_print(node.expr, lvl + 1)

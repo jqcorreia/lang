@@ -18,7 +18,7 @@ resolve_var :: proc(name: string) -> ValueRef {
 }
 
 emit_stmt :: proc(s: ^Ast_Node, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
-	#partial switch &node in s {
+	#partial switch &node in s.node {
 	case Ast_Expr:
 		emit_expr(node.expr, ctx, builder)
 	case Ast_Assignment:
@@ -256,7 +256,7 @@ emit_expr :: proc(expr: ^Expr, ctx: ContextRef, builder: BuilderRef) -> ValueRef
 emit_block :: proc(block: ^Ast_Block, ctx: ContextRef, builder: BuilderRef, module: ModuleRef) {
 	for bst in block.statements {
 		emit_stmt(bst, ctx, builder, module)
-		if _, ok := bst.(Ast_Return); ok {
+		if _, ok := bst.node.(Ast_Return); ok {
 			block.terminated = true
 		}
 	}

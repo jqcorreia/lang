@@ -7,16 +7,19 @@ Parser :: struct {
 	pos:    int,
 }
 
-Ast_Node :: union {
-	Ast_Expr,
-	Ast_Assignment,
-	Ast_Function,
-	Ast_Return,
-	Ast_Block,
-	Ast_If,
-	Ast_For,
-	Ast_Break,
-	Ast_Continue,
+Ast_Node :: struct {
+	node: union {
+		Ast_Expr,
+		Ast_Assignment,
+		Ast_Function,
+		Ast_Return,
+		Ast_Block,
+		Ast_If,
+		Ast_For,
+		Ast_Break,
+		Ast_Continue,
+	},
+	span: Span,
 }
 
 
@@ -127,7 +130,8 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 
 parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	t := current(p)
-	stmt := new(Ast_Node)
+	ast_node := new(Ast_Node)
+	stmt := &ast_node.node
 
 	switch {
 	case t.kind == .Identifier:
@@ -184,7 +188,7 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	case:
 		unimplemented(fmt.tprintf("Unexpected token: %s", token_serialize(t)))
 	}
-	return stmt
+	return ast_node
 }
 
 expr_int_literal :: proc(value: i64) -> ^Expr {
