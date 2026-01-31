@@ -189,30 +189,36 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	return stmt
 }
 
-expr_int_literal :: proc(value: i64) -> ^Expr_Int_Literal {
+expr_int_literal :: proc(value: i64) -> ^Expr {
 	expr := new(Expr_Int_Literal)
 	expr.value = value
 
-	return expr
+	ret := new(Expr)
+	ret^ = expr^
+	return ret
 }
 
-expr_binary :: proc(op: Token_Kind, left: ^Expr, right: ^Expr) -> ^Expr_Binary {
+expr_binary :: proc(op: Token_Kind, left: ^Expr, right: ^Expr) -> ^Expr {
 	expr := new(Expr_Binary)
 	expr.op = op
 	expr.left = left
 	expr.right = right
 
-	return expr
+	ret := new(Expr)
+	ret^ = expr^
+	return ret
 }
-expr_ident :: proc(value: string) -> ^Expr_Variable {
+expr_ident :: proc(value: string) -> ^Expr {
 	expr := new(Expr_Variable)
 
 	expr.value = value
 
-	return expr
+	ret := new(Expr)
+	ret^ = expr^
+	return ret
 }
 
-expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr_Call {
+expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr {
 	func, ok := state.funcs[callee.(Expr_Variable).value]
 	if !ok {
 		panic("function not found")
@@ -229,7 +235,9 @@ expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr_Call {
 	expr.callee = callee
 	expr.args = args
 
-	return expr
+	ret := new(Expr)
+	ret^ = expr^
+	return ret
 }
 
 precedence :: proc(op: Token_Kind) -> int {
