@@ -51,7 +51,7 @@ main :: proc() {
 		fmt.sbprintf(&linker_libs, "-l%s ", lib)
 	}
 	build_command := fmt.tprintf(
-		"cc -o out calc.o %s",
+		"ld -o out /usr/lib/crt1.o /usr/lib/crti.o calc.o %s-lc -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/crtn.o",
 		strings.to_string(linker_libs),
 	)
 	// Link and run
