@@ -9,13 +9,18 @@ import "core:time"
 
 Options :: struct {
 	command: string `args:"pos=0,required"`,
-	file:    os.Handle `args:"pos=1,required,file=r,required"`,
+	file:    os.Handle `args:"pos=1,file=r"`,
 }
 
 main :: proc() {
 	opt: Options
 
 	flags.parse_or_exit(&opt, os.args, .Unix)
+
+	if opt.command == "lsp" {
+		lsp_run()
+		return
+	}
 
 	compiler_init()
 
