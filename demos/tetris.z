@@ -80,6 +80,7 @@ fn new_random_block(grid: Grid) -> Block {
     ]
 
     idx := random() % 7
+    // idx := 4
 
     return blocks[idx]
 }
@@ -87,19 +88,23 @@ fn new_random_block(grid: Grid) -> Block {
 fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
     max_x : i32= 0
     max_y : i32= 0
-    min_x : i32 = -1
-    min_y : i32 = -1
+    min_x : i32 = 9999
+    min_y : i32 = 9999
     
 
     for y in 0..block.h {
         for x in 0..block.w {
             if block.data[y][x] == 1 {
-                max_x = x
-                max_y = y
-                if min_x == -1 {
+                if x > max_x {
+                    max_x = x
+                }
+                if y > max_y {
+                    max_y = y
+                }
+                if x < min_x {
                     min_x = x
                 }
-                if min_y == -1 {
+                if y < min_y {
                     min_y = y
                 }
             }
