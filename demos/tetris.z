@@ -5,6 +5,7 @@ struct Block {
     x: i32
     y: i32
     data: [4][4]u8
+    color: Color
 }
 
 struct Grid {
@@ -79,7 +80,7 @@ fn stamp(grid: &Grid, block: Block) {
             if block.data[y][x] == 1 {
                 cell := &grid.data[block.y + y][block.x + x]
                 cell.active = true
-                cell.color = rect_color
+                cell.color = block.color
             }
         }
     }
@@ -135,58 +136,57 @@ fn new_random_block(grid: Grid) -> Block {
     x := grid.w / 2
     y := 0
 
-    shapes: [7][4][4]u8 = [
-        [ // square
+    blocks: [7]Block = [
+        Block { x = x, y = y, data = [ // square
             [0, 0, 0, 0],
             [0, 1, 1, 0],
             [0, 1, 1, 0],
             [0, 0, 0, 0],
-        ],
-        [ // line
+        ], color = Color { r = 255, g = 255, b = 0, a = 255 } },
+        Block { x = x, y = y, data = [ // line
             [1, 0, 0, 0],
             [1, 0, 0, 0],
             [1, 0, 0, 0],
             [1, 0, 0, 0],
-        ],
-        [ // lshape
+        ], color = Color { r = 0, g = 255, b = 255, a = 255 } },
+        Block { x = x, y = y, data = [ // lshape
             [0, 1, 0, 0],
             [0, 1, 0, 0],
             [0, 1, 1, 0],
             [0, 0, 0, 0],
-        ],
-        [ // lshape2
+        ], color = Color { r = 255, g = 165, b = 0, a = 255 } },
+        Block { x = x, y = y, data = [ // lshape2
             [0, 0, 1, 0],
             [0, 0, 1, 0],
             [0, 1, 1, 0],
             [0, 0, 0, 0],
-        ],
-        [ // zshape
+        ], color = Color { r = 0, g = 0, b = 255, a = 255 } },
+        Block { x = x, y = y, data = [ // zshape
             [1, 1, 0, 0],
             [0, 1, 1, 0],
             [0, 0, 0, 0],
             [0, 0, 0, 0],
-        ],
-        [ // zshape2
+        ], color = Color { r = 255, g = 0, b = 0, a = 255 } },
+        Block { x = x, y = y, data = [ // zshape2
             [0, 0, 1, 1],
             [0, 1, 1, 0],
             [0, 0, 0, 0],
             [0, 0, 0, 0],
-        ],
-        [ // tshape
+        ], color = Color { r = 0, g = 255, b = 0, a = 255 } },
+        Block { x = x, y = y, data = [ // tshape
             [0, 0, 0, 0],
             [0, 1, 1, 1],
             [0, 0, 1, 0],
             [0, 0, 0, 0],
-        ],
+        ], color = Color { r = 160, g = 0, b = 255, a = 255 } },
     ]
 
     idx := random() % 7
 
-    return Block { x = x, y = y, data = shapes[idx] }
+    return blocks[idx]
 }
 
 background_color := Color{ r = 55, g = 55, b = 55, a = 255 }
-rect_color := Color { r = 200, b = 20, g = 0, a = 255 }
 border_color := Color { r = 25, g = 150, b = 0, a = 255 }
 score: i64 = 0
 
@@ -266,7 +266,7 @@ fn main() {
             for x in 0..grid.w {
                 cell := grid.data[y][x]
                 if cell.active {
-                    DrawRectangle(x * cell_size, y * cell_size, cell_size - 2, cell_size - 2, rect_color)
+                    DrawRectangle(x * cell_size, y * cell_size, cell_size - 2, cell_size - 2, cell.color)
                 }
             }
         }
@@ -278,7 +278,7 @@ fn main() {
                 bx := x + block.x
                 by := y + block.y
                 if block.data[y][x] == 1 {
-                    DrawRectangle(bx * cell_size, by * cell_size, cell_size -2 , cell_size -2, rect_color)
+                    DrawRectangle(bx * cell_size, by * cell_size, cell_size -2 , cell_size -2, block.color)
                 }
             }
         }
@@ -287,7 +287,7 @@ fn main() {
         for y in 0..4 {
             for x in 0..4 {
                 if next_block.data[y][x] == 1 {
-                    DrawRectangle(x * cell_size + (W - 120), y * cell_size + 20, cell_size -2 , cell_size -2, rect_color)
+                    DrawRectangle(x * cell_size + (W - 120), y * cell_size + 20, cell_size -2 , cell_size -2, next_block.color)
                 }
             }
         }
@@ -295,7 +295,7 @@ fn main() {
 
         // Draw score
         sprintf(&score_buf[0], "Score: %d", score)
-        DrawText(&score_buf[0], 10, 700, 24, rect_color)
+        DrawText(&score_buf[0], 10, 700, 24, border_color)
         EndDrawing()
     }
 }
