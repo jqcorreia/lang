@@ -138,6 +138,9 @@ fn overlap(grid: Grid, block: Block) -> bool {
 fn stamp(grid: &Grid, block: Block) {
     for y in 0..block.h {
         for x in 0..block.w {
+            if block.y + y == 0 {
+                state = 1
+            }
             if block.data[y][x] == 1 {
                 cell := &grid.data[block.y + y][block.x + x]
                 cell.active = true
@@ -197,6 +200,7 @@ fn remove_full_rows(grid: &Grid) {
 background_color := Color{ r = 55, g = 55, b = 55, a = 255 }
 border_color := Color { r = 25, g = 150, b = 0, a = 255 }
 score: i64 = 0
+state := 0
 
 fn main() {
     score_buf: [64]u8
@@ -220,88 +224,100 @@ fn main() {
     clear_grid(&grid)
     InitWindow(W, H, "Zero Tetris")
     for {
-        // Logic
-        elapsed_time = elapsed_time + GetFrameTime()
-        
-        // keypressed := GetKeyPressed()
-        // Key mapping
-        if IsKeyPressedRepeat(263) || IsKeyPressed(263) {
-            if can_move(grid, block.x - 1, block.y, block) {
-                block.x = block.x - 1
-            }
-        }
-        if IsKeyPressedRepeat(262) || IsKeyPressed(262) {
-            if can_move(grid, block.x + 1, block.y, block) {
-                block.x = block.x + 1
-            }
-        }
-        if IsKeyPressedRepeat(264) || IsKeyPressed(264) {
-            if can_move(grid, block.x, block.y + 1, block) {
-                block.y = block.y + 1
-            }
-        }
-        if IsKeyPressed(32) {
-            rotate_block(&block)
-        }
-
         if IsKeyPressed(256) { // escape key
             break
         }
 
-        if elapsed_time > 0.5 {
-            // Tick
-            elapsed_time = 0.0
-
-            if !can_move(grid, block.x, block.y + 1, block) {
-                stamp(&grid, block)
-                remove_full_rows(&grid)
-                block = next_block
-                next_block = new_random_block(grid)
-            } else {
-                block.y = block.y + 1
-            }
-        }
-
-        // Render
-        BeginDrawing()
-        ClearBackground(background_color)
-        DrawRectangleLines(0, 0, grid.w * cell_size, grid.h * cell_size, border_color)
-
-        // Draw grid
-        for y in 0..grid.h {
-            for x in 0..grid.w {
-                cell := grid.data[y][x]
-                if cell.active {
-                    DrawRectangle(x * cell_size, y * cell_size, cell_size - 2, cell_size - 2, cell.color)
+        if state == 0 {
+            // Logic
+            elapsed_time = elapsed_time + GetFrameTime()
+            
+            // keypressed := GetKeyPressed()
+            // Key mapping
+            if IsKeyPressedRepeat(263) || IsKeyPressed(263) {
+                if can_move(grid, block.x - 1, block.y, block) {
+                    block.x = block.x - 1
                 }
             }
-        }
-
-        DrawRectangleLines(W - 120, 0, 4 * cell_size, 4 * cell_size, border_color)
-        // Draw active block
-        for y in 0..4 {
-            for x in 0..4 {
-                bx := x + block.x
-                by := y + block.y
-                if block.data[y][x] == 1 {
-                    DrawRectangle(bx * cell_size, by * cell_size, cell_size -2 , cell_size -2, block.color)
+            if IsKeyPressedRepeat(262) || IsKeyPressed(262) {
+                if can_move(grid, block.x + 1, block.y, block) {
+                    block.x = block.x + 1
                 }
             }
-        }
-
-        // Draw next block
-        for y in 0..4 {
-            for x in 0..4 {
-                if next_block.data[y][x] == 1 {
-                    DrawRectangle(x * cell_size + (W - 120), y * cell_size + 20, cell_size -2 , cell_size -2, next_block.color)
+            if IsKeyPressedRepeat(264) || IsKeyPressed(264) {
+                if can_move(grid, block.x, block.y + 1, block) {
+                    block.y = block.y + 1
                 }
             }
+            if IsKeyPressed(32) {
+                rotate_block(&block)
+            }
+
+
+            if elapsed_time > 0.5 {
+                // Tick
+                elapsed_time = 0.0
+
+                if !can_move(grid, block.x, block.y + 1, block) {
+                    stamp(&grid, block)
+                    remove_full_rows(&grid)
+                    block = next_block
+                    next_block = new_random_block(grid)
+                } else {
+                    block.y = block.y + 1
+                }
+            }
+
+            // Render
+            BeginDrawing()
+            ClearBackground(background_color)
+            DrawRectangleLines(0, 0, grid.w * cell_size, grid.h * cell_size, border_color)
+
+            // Draw grid
+            for y in 0..grid.h {
+                for x in 0..grid.w {
+                    cell := grid.data[y][x]
+                    if cell.active {
+                        DrawRectangle(x * cell_size, y * cell_size, cell_size - 2, cell_size - 2, cell.color)
+                    }
+                }
+            }
+
+            DrawRectangleLines(W - 120, 0, 4 * cell_size, 4 * cell_size, border_color)
+            // Draw active block
+            for y in 0..4 {
+                for x in 0..4 {
+                    bx := x + block.x
+                    by := y + block.y
+                    if block.data[y][x] == 1 {
+                        DrawRectangle(bx * cell_size, by * cell_size, cell_size -2 , cell_size -2, block.color)
+                    }
+                }
+            }
+
+            // Draw next block
+            for y in 0..4 {
+                for x in 0..4 {
+                    if next_block.data[y][x] == 1 {
+                        DrawRectangle(x * cell_size + (W - 120), y * cell_size + 20, cell_size -2 , cell_size -2, next_block.color)
+                    }
+                }
+            }
+
+
+            // Draw score
+            sprintf(&score_buf[0], "Score: %d", score)
+            DrawText(&score_buf[0], 10, 700, 24, border_color)
+            EndDrawing()
         }
-
-
-        // Draw score
-        sprintf(&score_buf[0], "Score: %d", score)
-        DrawText(&score_buf[0], 10, 700, 24, border_color)
-        EndDrawing()
+        if state == 1 {
+            // Game over screen
+            BeginDrawing()
+            ClearBackground(background_color)
+            DrawText("Game Over", W / 2 - 100, H / 2 - 20, 40, border_color)
+            sprintf(&score_buf[0], "Final Score: %d", score)
+            DrawText(&score_buf[0], W / 2 - 100, H / 2 + 40, 30, border_color)
+            EndDrawing()
+        }
     }
 }
