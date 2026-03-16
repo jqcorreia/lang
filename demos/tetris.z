@@ -4,6 +4,8 @@ import "vendor/raylib"
 struct Block {
     x: i32
     y: i32
+    w: i32
+    h: i32
     data: [4][4]u8
     color: Color
 }
@@ -28,6 +30,60 @@ fn clear_grid(grid: &Grid) {
     }
 }
 
+fn new_random_block(grid: Grid) -> Block {
+    x := grid.w / 2
+    y := 0
+
+    blocks: [7]Block = [
+        Block { x = x, y = y, w = 2, h = 2, data = [ // square
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ], color = Color { r = 240, g = 220, b = 130, a = 255 } },
+        Block { x = x, y = y, w = 4, h = 4, data = [ // line
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+        ], color = Color { r = 100, g = 200, b = 210, a = 255 } },
+        Block { x = x, y = y, w = 3, h = 3, data = [ // lshape
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0],
+        ], color = Color { r = 220, g = 160, b = 90, a = 255 } },
+        Block { x = x, y = y, w = 3, h = 3, data = [ // lshape2
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+        ], color = Color { r = 90, g = 120, b = 200, a = 255 } },
+        Block { x = x, y = y, w = 3, h = 3, data = [ // zshape
+            [1, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ], color = Color { r = 200, g = 95, b = 95, a = 255 } },
+        Block { x = x, y = y, w = 3, h = 3, data = [ // zshape2
+            [0, 1, 1, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ], color = Color { r = 110, g = 190, b = 110, a = 255 } },
+        Block { x = x, y = y, w = 3, h = 3, data = [ // tshape
+            [1, 1, 1, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ], color = Color { r = 160, g = 120, b = 200, a = 255 } },
+    ]
+
+    idx := random() % 7
+
+    return blocks[idx]
+}
+
 fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
     max_x : i32= 0
     max_y : i32= 0
@@ -35,8 +91,8 @@ fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
     min_y : i32 = -1
     
 
-    for y in 0..4 {
-        for x in 0..4 {
+    for y in 0..block.h {
+        for x in 0..block.w {
             if block.data[y][x] == 1 {
                 max_x = x
                 max_y = y
@@ -63,8 +119,8 @@ fn grid_cell(grid: Grid, x: i32, y: i32) -> Cell {
 
 
 fn overlap(grid: Grid, block: Block) -> bool {
-    for y in 0..4 {
-        for x in 0..4 {
+    for y in 0..block.h {
+        for x in 0..block.w {
             cell := grid_cell(grid, block.x + x, block.y + y)
             if block.data[y][x] == 1 && cell.active {
                 return true
@@ -75,8 +131,8 @@ fn overlap(grid: Grid, block: Block) -> bool {
 }
 
 fn stamp(grid: &Grid, block: Block) {
-    for y in 0..4 {
-        for x in 0..4 {
+    for y in 0..block.h {
+        for x in 0..block.w {
             if block.data[y][x] == 1 {
                 cell := &grid.data[block.y + y][block.x + x]
                 cell.active = true
@@ -90,13 +146,13 @@ fn rotate_block(block: &Block) {
   temp: [4][4]u8
 
   // Implement rotating formula: new_x = y, new_y = 3 - x
-  for y in 0..4 {
-      for x in 0..4 {
-          temp[x][4 - y - 1] = block.data[y][x]
+  for y in 0..block.h {
+      for x in 0..block.w {
+          temp[x][block.h - y - 1] = block.data[y][x]
       }
   }
-  for y in 0..4 {
-      for x in 0..4 {
+  for y in 0..block.h {
+      for x in 0..block.w {
           block.data[y][x] = temp[y][x]
       }
   }
@@ -132,59 +188,6 @@ fn remove_full_rows(grid: &Grid) {
     }
 }
 
-fn new_random_block(grid: Grid) -> Block {
-    x := grid.w / 2
-    y := 0
-
-    blocks: [7]Block = [
-        Block { x = x, y = y, data = [ // square
-            [0, 0, 0, 0],
-            [0, 1, 1, 0],
-            [0, 1, 1, 0],
-            [0, 0, 0, 0],
-        ], color = Color { r = 240, g = 220, b = 130, a = 255 } },
-        Block { x = x, y = y, data = [ // line
-            [1, 0, 0, 0],
-            [1, 0, 0, 0],
-            [1, 0, 0, 0],
-            [1, 0, 0, 0],
-        ], color = Color { r = 100, g = 200, b = 210, a = 255 } },
-        Block { x = x, y = y, data = [ // lshape
-            [0, 1, 0, 0],
-            [0, 1, 0, 0],
-            [0, 1, 1, 0],
-            [0, 0, 0, 0],
-        ], color = Color { r = 220, g = 160, b = 90, a = 255 } },
-        Block { x = x, y = y, data = [ // lshape2
-            [0, 0, 1, 0],
-            [0, 0, 1, 0],
-            [0, 1, 1, 0],
-            [0, 0, 0, 0],
-        ], color = Color { r = 90, g = 120, b = 200, a = 255 } },
-        Block { x = x, y = y, data = [ // zshape
-            [1, 1, 0, 0],
-            [0, 1, 1, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ], color = Color { r = 200, g = 95, b = 95, a = 255 } },
-        Block { x = x, y = y, data = [ // zshape2
-            [0, 0, 1, 1],
-            [0, 1, 1, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ], color = Color { r = 110, g = 190, b = 110, a = 255 } },
-        Block { x = x, y = y, data = [ // tshape
-            [0, 0, 0, 0],
-            [0, 1, 1, 1],
-            [0, 0, 1, 0],
-            [0, 0, 0, 0],
-        ], color = Color { r = 160, g = 120, b = 200, a = 255 } },
-    ]
-
-    idx := random() % 7
-
-    return blocks[idx]
-}
 
 background_color := Color{ r = 55, g = 55, b = 55, a = 255 }
 border_color := Color { r = 25, g = 150, b = 0, a = 255 }
@@ -237,9 +240,9 @@ fn main() {
             if keypressed == 32 { // space key
                 rotate_block(&block)
             }
-            if keypressed != 0 {
-                printf("Keypressed: %d\n", keypressed)
-            }
+            // if keypressed != 0 {
+            //     printf("Keypressed: %d\n", keypressed)
+            // }
         }
 
         if elapsed_time > 0.5 {
