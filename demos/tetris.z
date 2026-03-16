@@ -10,13 +10,19 @@ struct Block {
 struct Grid {
     w: i32
     h: i32
-    data: [20][10]u8
+    data: [20][10]Cell
+}
+
+struct Cell {
+    active: bool
+    color: Color
 }
 
 fn clear_grid(grid: &Grid) {
     for y in 0..grid.h {
         for x in 0..grid.w {
-            grid.data[y][x] = 0
+            cell := grid.data[y][x]
+            cell.active = false
         }
     }
 }
@@ -51,16 +57,15 @@ fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
     return in_h_bounds && in_v_bounds && free
 }
 
-fn grid_value(grid: Grid, x: i32, y: i32) -> u8 {
+fn grid_cell(grid: Grid, x: i32, y: i32) -> Cell {
     return grid.data[y][x]
 }
 
 
 fn overlap(grid: Grid, block: Block) -> bool {
-    limit: i32 = 4
-    for y in 0..limit {
-        for x in 0..limit {
-            if block.data[y][x] == 1 && grid_value(grid, block.x + x, block.y + y) != 0 {
+    for y in 0..4 {
+        for x in 0..4 {
+            if block.data[y][x] == 1 && grid_cell(grid, block.x + x, block.y + y).active {
                 return true
             }
         }
@@ -69,11 +74,12 @@ fn overlap(grid: Grid, block: Block) -> bool {
 }
 
 fn stamp(grid: &Grid, block: Block) {
-    limit: i32 = 4
-    for y in 0..limit {
-        for x in 0..limit {
+    for y in 0..4 {
+        for x in 0..4 {
             if block.data[y][x] == 1 {
-                grid.data[block.y + y][block.x + x] = 1
+                cell := grid.data[block.y + y][block.x + x]
+                cell.active = true
+                cell.color = rect_color
             }
         }
     }
@@ -81,16 +87,15 @@ fn stamp(grid: &Grid, block: Block) {
 
 fn rotate_block(block: &Block) {
   temp: [4][4]u8
-  limit: i32 = 4
 
   // Implement rotating formula: new_x = y, new_y = 3 - x
-  for y in 0..limit {
-      for x in 0..limit {
-          temp[x][limit - y - 1] = block.data[y][x]
+  for y in 0..4 {
+      for x in 0..4 {
+          temp[x][4 - y - 1] = block.data[y][x]
       }
   }
-  for y in 0..limit {
-      for x in 0..limit {
+  for y in 0..4 {
+      for x in 0..4 {
           block.data[y][x] = temp[y][x]
       }
   }
@@ -102,7 +107,8 @@ fn remove_full_rows(grid: &Grid) {
     for y in 0..grid.h {
         full := true
         for x in 0..grid.w {
-            if grid.data[y][x] == 0 {
+            cell := grid.data[y][x]
+            if !cell.active {
                 full = false
                 break
             }
@@ -117,7 +123,8 @@ fn remove_full_rows(grid: &Grid) {
             }
             // Clear top row
             for x in 0..grid.w {
-                grid.data[0][x] = 0
+                top_cell := grid.data[0][x]
+                top_cell.active = false
             }
             score = score + num_full_rows * 100
         }
@@ -257,7 +264,8 @@ fn main() {
         // Draw grid
         for y in 0..grid.h {
             for x in 0..grid.w {
-                if grid.data[y][x] != 0 {
+                cell := grid.data[y][x]
+                if cell.active {
                     DrawRectangle(x * cell_size, y * cell_size, cell_size - 2, cell_size - 2, rect_color)
                 }
             }

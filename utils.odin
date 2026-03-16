@@ -181,22 +181,15 @@ n_char_span :: proc(lexer: Lexer, n: int) -> Span {
 }
 
 span_to_location :: proc(span: Span) -> (line: int, col: int) {
-	if len(compiler.line_starts) == 1 {
-		return 1, span.start
-	}
-	idx := 0
-	start := span.start
-	left := compiler.line_starts[idx]
-	for idx < len(compiler.line_starts) - 1 {
-		left = compiler.line_starts[idx]
-		right := compiler.line_starts[idx + 1]
-
-		switch {
-		case left <= start && right <= start:
-			idx += 1
-		case left <= start && right >= start:
-			return idx + 1, start - left + 1
+	pos := span.start
+	// Find the last line_start that is <= pos
+	result_line := 0
+	for i in 0 ..< len(compiler.line_starts) {
+		if compiler.line_starts[i] <= pos {
+			result_line = i
+		} else {
+			break
 		}
 	}
-	return compiler.line_starts[len(compiler.line_starts) - 1] + 1, start - left + 1
+	return result_line + 1, pos - compiler.line_starts[result_line] + 1
 }

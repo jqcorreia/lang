@@ -46,6 +46,8 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 	runtime_parser := Parser{tokens = runtime_tokens}
 	runtime_stmts := parse_program(&runtime_parser)
 
+	// Reset line_starts so they reflect user source only (for error reporting)
+	compiler.line_starts = {}
 	tokens := lex(source)
 	when ODIN_DEBUG {
 		tokens_print(tokens)
