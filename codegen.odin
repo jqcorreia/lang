@@ -235,7 +235,9 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		}
 	}
 
-	unimplemented(fmt.tprintf("Not addressable expression %v", expr))
+	fatal_span(span, "Not addressable expresion", expr)
+	// unimplemented(fmt.tprintf("Not addressable expression %v", expr))
+	return nil
 }
 
 emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
