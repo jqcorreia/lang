@@ -70,7 +70,11 @@ resolve_types :: proc(node: ^Ast_Node) {
 
 		data.symbol.type = type_sym.type
 		for &field, idx in data.fields {
-			type_sym.type.fields[idx].type = resolve_type_expr(&field.type_expr, node.scope, node.span)
+			type_sym.type.fields[idx].type = resolve_type_expr(
+				&field.type_expr,
+				node.scope,
+				node.span,
+			)
 		}
 
 	case Ast_Function:
@@ -259,6 +263,11 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Range:
 		start_type := resolve_expr_type(e.start, scope, span)
 		end_type := resolve_expr_type(e.end, scope, span)
+		if start_type.kind == .Untyped_Int && end_type.kind == .Untyped_Int {
+			expr.type = start_type
+			return expr.type
+		}
+
 		coerced := type_coercion(start_type, end_type, scope)
 		if coerced == nil {
 			expr.type = &error_type

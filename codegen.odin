@@ -56,6 +56,10 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	if type.kind == .Pointer {
 		return PointerTypeInContext(gen.ctx, 0)
 	}
+	// Untyped integers default to i64 at codegen
+	if type.kind == .Untyped_Int {
+		return Int64TypeInContext(gen.ctx)
+	}
 	return gen.primitive_types[type]
 }
 
@@ -278,7 +282,13 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Variable:
 		ptr := emit_address(gen, expr, scope, span)
 		sym, _ := resolve_symbol(scope, e.value)
-		return BuildLoad2(gen.builder, get_llvm_type(gen, sym.type), ptr, "")
+		val := BuildLoad2(gen.builder, get_llvm_type(gen, sym.type), ptr, "")
+		// Insert integer cast if expression type differs from storage type (e.g. untyped range var coerced to i32)
+		sym_is_int := sym.type.numeric_integer || sym.type.kind == .Untyped_Int
+		if expr.type != sym.type && expr.type.numeric_integer && sym_is_int {
+			return BuildIntCast2(gen.builder, val, get_llvm_type(gen, expr.type), true, "icast")
+		}
+		return val
 	case Expr_Unary:
 		#partial switch e.op {
 		case .Bang:

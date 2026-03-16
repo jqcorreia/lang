@@ -1,0 +1,10 @@
+import "std/c"
+
+fn main() {
+    a: i32 = 1
+
+    for i in 0..10 {
+        a = a * i
+    }
+    printf("a: %d\n", a)
+}

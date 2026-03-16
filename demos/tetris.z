@@ -265,9 +265,8 @@ fn main() {
 
         DrawRectangleLines(W - 120, 0, 4 * cell_size, 4 * cell_size, border_color)
         // Draw active block
-        limit: i32 = 4
-        for y in 0..limit {
-            for x in 0..limit {
+        for y in 0..4 {
+            for x in 0..4 {
                 bx := x + block.x
                 by := y + block.y
                 if block.data[y][x] == 1 {
@@ -277,9 +276,8 @@ fn main() {
         }
 
         // Draw next block
-        xlimit: i32 = 4
-        for y in 0..xlimit {
-            for x in 0..xlimit {
+        for y in 0..4 {
+            for x in 0..4 {
                 if next_block.data[y][x] == 1 {
                     DrawRectangle(x * cell_size + (W - 120), y * cell_size + 20, cell_size -2 , cell_size -2, rect_color)
                 }
