@@ -108,8 +108,8 @@ fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
 
     in_h_bounds := nx + min_x >= 0 && (nx + max_x) < grid.w 
     in_v_bounds := ny + min_y >= 0 && (ny + max_y) < grid.h 
-    // free := grid_value(grid, nx, ny) == 0
-    free := !overlap(grid, Block { x = nx, y = ny, data = block.data })
+
+    free := !overlap(grid, Block { x = nx, y = ny, data = block.data, w = block.w, h = block.h, color = block.color })
     return in_h_bounds && in_v_bounds && free
 }
 
@@ -210,6 +210,7 @@ fn main() {
 
     elapsed_time: f32 = 0.0
 
+    keys: [256]bool
 
     clear_grid(&grid)
     InitWindow(W, H, "Zero Tetris")
@@ -217,32 +218,29 @@ fn main() {
         // Logic
         elapsed_time = elapsed_time + GetFrameTime()
         
+        // keypressed := GetKeyPressed()
         // Key mapping
+        if IsKeyPressedRepeat(263) || IsKeyPressed(263) {
+            if can_move(grid, block.x - 1, block.y, block) {
+                block.x = block.x - 1
+            }
+        }
+        if IsKeyPressedRepeat(262) || IsKeyPressed(262) {
+            if can_move(grid, block.x + 1, block.y, block) {
+                block.x = block.x + 1
+            }
+        }
+        if IsKeyPressedRepeat(264) || IsKeyPressed(264) {
+            if can_move(grid, block.x, block.y + 1, block) {
+                block.y = block.y + 1
+            }
+        }
+        if IsKeyPressed(32) {
+            rotate_block(&block)
+        }
+
         if IsKeyPressed(256) { // escape key
             break
-        } else {
-            keypressed := GetKeyPressed()
-            if keypressed == 263 {
-                if can_move(grid, block.x - 1, block.y, block) {
-                    block.x = block.x - 1
-                }
-            }
-            if keypressed == 262 {
-                if can_move(grid, block.x + 1, block.y, block) {
-                    block.x = block.x + 1
-                }
-            }
-            if keypressed == 264 {
-                if can_move(grid, block.x, block.y + 1, block) {
-                    block.y = block.y + 1
-                }
-            }
-            if keypressed == 32 { // space key
-                rotate_block(&block)
-            }
-            // if keypressed != 0 {
-            //     printf("Keypressed: %d\n", keypressed)
-            // }
         }
 
         if elapsed_time > 0.5 {
