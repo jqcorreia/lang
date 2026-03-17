@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:path/filepath"
 import "core:strings"
 
 Parser :: struct {
@@ -66,11 +67,23 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 			append(&stmts, import_stmt)
 
 			import_node := import_stmt.data.(Ast_Import)
-			path := import_node.path
-			if !strings.ends_with(path, ".z") {
-				path = fmt.tprintf("%s.z", path)
+			raw_path := import_node.path
+
+			// Resolve import path:
+			//   "std:c"       → <exe_dir>/std/c.z  (compiler-relative, ":" as collection separator)
+			//   "vendor/raylib" → <source_dir>/vendor/raylib.z (source-relative)
+			resolved_path: string
+			if colon_idx := strings.index(raw_path, ":"); colon_idx >= 0 {
+				collection := raw_path[:colon_idx]
+				rest := raw_path[colon_idx + 1:]
+				resolved_path = filepath.join({compiler.exe_dir, collection, rest})
+			} else {
+				resolved_path = filepath.join({compiler.current_filepath, raw_path})
 			}
-			contents := os.read_entire_file(path) or_else panic("No file found")
+			if !strings.ends_with(resolved_path, ".z") {
+				resolved_path = fmt.tprintf("%s.z", resolved_path)
+			}
+			contents := os.read_entire_file(resolved_path) or_else panic(fmt.tprintf("Import not found: %s", resolved_path))
 			import_tokens := lex(string(contents))
 			import_parser := Parser {
 				tokens = import_tokens,

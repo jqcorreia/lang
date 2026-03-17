@@ -1,4 +1,4 @@
-import "std/c"
+import "std:c"
 
 // Main function must be defined, otherwise it errs
 fn main() -> i32 {

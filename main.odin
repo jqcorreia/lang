@@ -3,13 +3,14 @@ package main
 import "core:flags"
 import "core:fmt"
 import "core:os"
+import "core:path/filepath"
 import "core:strings"
 import "core:sys/posix"
 import "core:time"
 
 Options :: struct {
 	command: string `args:"pos=0,required"`,
-	file:    os.Handle `args:"pos=1,file=r"`,
+	file:    string `args:"pos=1"`,
 }
 
 main :: proc() {
@@ -23,6 +24,7 @@ main :: proc() {
 	}
 
 	compiler_init()
+	compiler.current_filepath = filepath.dir(opt.file)
 
 	start_time := time.now()
 

@@ -6,7 +6,8 @@ import "core:os"
 import "core:path/filepath"
 
 Compiler :: struct {
-	current_filepath:     string, // Unused for now
+	current_filepath:     string, // Directory of the source file being compiled
+	exe_dir:              string, // Directory of the compiler executable
 	line_starts:          [dynamic]int,
 	scopes:               queue.Queue(Scope),
 	global_scope:         Scope,
@@ -29,6 +30,7 @@ Loop :: struct {
 compiler := Compiler{}
 
 compiler_init :: proc() {
+	compiler.exe_dir = filepath.dir(string(os.args[0]))
 	setup_native_types(&compiler) // Initialize the native type pointers
 }
 
@@ -43,8 +45,7 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 	compiler_reset()
 
 	// Auto-include the runtime, resolved relative to the executable
-	exe_dir := filepath.dir(string(os.args[0]))
-	runtime_path := filepath.join({exe_dir, "runtime", "start.z"})
+	runtime_path := filepath.join({compiler.exe_dir, "runtime", "start.z"})
 	runtime_source := os.read_entire_file(runtime_path) or_else panic(fmt.tprintf("Runtime not found at %s", runtime_path))
 	runtime_tokens := lex(string(runtime_source))
 	runtime_parser := Parser{tokens = runtime_tokens}

@@ -1,4 +1,4 @@
-import "std/c"
+import "std:c"
 
 fn print_first(arr: [5]i32) {
     printf("First element: %d\n", arr[0])

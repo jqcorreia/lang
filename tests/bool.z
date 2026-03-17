@@ -1,4 +1,4 @@
-import "std/c"
+import "std:c"
 
 fn test(a: i32) -> bool {
     if a > 10 {
