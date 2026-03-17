@@ -1,7 +1,9 @@
 package main
 
 import "core:container/queue"
+import "core:fmt"
 import "core:os"
+import "core:path/filepath"
 
 Compiler :: struct {
 	current_filepath:     string, // Unused for now
@@ -40,8 +42,10 @@ compiler_reset :: proc() {
 compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 	compiler_reset()
 
-	// Auto-include the runtime
-	runtime_source := os.read_entire_file("runtime/start.z") or_else panic("Runtime not found")
+	// Auto-include the runtime, resolved relative to the executable
+	exe_dir := filepath.dir(string(os.args[0]))
+	runtime_path := filepath.join({exe_dir, "runtime", "start.z"})
+	runtime_source := os.read_entire_file(runtime_path) or_else panic(fmt.tprintf("Runtime not found at %s", runtime_path))
 	runtime_tokens := lex(string(runtime_source))
 	runtime_parser := Parser{tokens = runtime_tokens}
 	runtime_stmts := parse_program(&runtime_parser)
