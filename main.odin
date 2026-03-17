@@ -47,9 +47,9 @@ main :: proc() {
 	}
 
 	if ODIN_DEBUG {
-		fmt.println("--- Compilation done in", time.diff(start_time, time.now()), "---")
 	}
 
+	fmt.println("--- Compilation done in", time.diff(start_time, time.now()), "---")
 	linker_libs := strings.builder_make()
 
 	for lib in compiler.external_linker_libs {

@@ -5,11 +5,15 @@ fn number() -> i32 {
 }
 
 fn main() {
-    for a in 0..number() {
+    for a in 0..=10 {
         printf("a: %d\n", a)
     }
 
     for b in 10..=0 {
         printf("b: %d\n", b)
+    }
+
+    for c in 0..number() {
+        printf("c: %d\n", c)
     }
 }
