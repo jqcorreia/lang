@@ -8,6 +8,9 @@ import "core:strconv"
 import "core:strings"
 
 // LSP message reading/writing over stdin/stdout
+// NOTE: all this code is claude generated for the sake of a POC. 
+// When properly understood, annotated and modified to the correct standards
+// remove this comment
 
 lsp_read_message :: proc() -> (content: string, ok: bool) {
 	reader := io.to_reader(os.stream_from_handle(os.stdin))
@@ -173,6 +176,7 @@ LSP_INITIALIZE_RESULT :: `{
 		"version": "0.1.0"
 	}
 }`
+
 
 // Main LSP loop
 
