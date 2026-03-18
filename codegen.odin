@@ -1,4 +1,4 @@
-package main
+-ackage main
 
 import "core:container/queue"
 import "core:fmt"
@@ -636,6 +636,10 @@ emit_call :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> V
 		append(&args, val)
 	}
 
+	// Lazily emit external function declarations on first use
+	if sym not_in gen.values {
+		emit_function_decl(gen, &decl, scope, span)
+	}
 	sym_type := gen.types[sym]
 	sym_value := gen.values[sym]
 
@@ -867,6 +871,8 @@ generate :: proc(stmts: []^Ast_Node) {
 	}
 	emit_function_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
 		if fnode, ok := node.data.(Ast_Function); ok {
+			// Skip external functions, they are emitted lazily on first call
+			if fnode.external { return }
 			gen := cast(^Generator)userdata
 			emit_function_decl(gen, &fnode, node.scope, node.span)
 		}
@@ -885,6 +891,7 @@ generate :: proc(stmts: []^Ast_Node) {
 	when ODIN_DEBUG {
 		DumpModule(module)
 	}
+
 	InitializeX86Target()
 	InitializeX86TargetInfo()
 	InitializeX86TargetMC()
@@ -906,7 +913,7 @@ generate :: proc(stmts: []^Ast_Node) {
 		triple,
 		"generic",
 		"",
-		.CodeGenLevelDefault,
+		.CodeGenLevelNone,
 		.RelocPIC,
 		.CodeModelDefault,
 	)
