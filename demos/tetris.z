@@ -30,7 +30,7 @@ fn clear_grid(grid: &Grid) {
     }
 }
 
-fn new_random_block(grid: &Grid) -> Block {
+fn new_random_block(grid: Grid) -> Block {
     x := grid.w / 2
     y := 0
 
@@ -85,7 +85,7 @@ fn new_random_block(grid: &Grid) -> Block {
     return blocks[idx]
 }
 
-fn can_move(grid: &Grid, nx: i32, ny: i32, block: Block) -> bool {
+fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
     max_x : i32= 0
     max_y : i32= 0
     min_x : i32 = 9999
@@ -118,12 +118,12 @@ fn can_move(grid: &Grid, nx: i32, ny: i32, block: Block) -> bool {
     return in_h_bounds && in_v_bounds && free
 }
 
-fn grid_cell(grid: &Grid, x: i32, y: i32) -> Cell {
+fn grid_cell(grid: Grid, x: i32, y: i32) -> Cell {
     return grid.data[y][x]
 }
 
 
-fn overlap(grid: &Grid, block: Block) -> bool {
+fn overlap(grid: Grid, block: Block) -> bool {
     for y in 0..block.h {
         for x in 0..block.w {
             cell := grid_cell(grid, block.x + x, block.y + y)
@@ -214,8 +214,8 @@ fn main() {
         h = 20,
     }
 
-    block := new_random_block(&grid)
-    next_block := new_random_block(&grid)
+    block := new_random_block(grid)
+    next_block := new_random_block(grid)
 
     elapsed_time: f32 = 0.0
 
@@ -235,17 +235,17 @@ fn main() {
             // keypressed := GetKeyPressed()
             // Key mapping
             if IsKeyPressedRepeat(263) || IsKeyPressed(263) {
-                if can_move(&grid, block.x - 1, block.y, block) {
+                if can_move(grid, block.x - 1, block.y, block) {
                     block.x = block.x - 1
                 }
             }
             if IsKeyPressedRepeat(262) || IsKeyPressed(262) {
-                if can_move(&grid, block.x + 1, block.y, block) {
+                if can_move(grid, block.x + 1, block.y, block) {
                     block.x = block.x + 1
                 }
             }
             if IsKeyPressedRepeat(264) || IsKeyPressed(264) {
-                if can_move(&grid, block.x, block.y + 1, block) {
+                if can_move(grid, block.x, block.y + 1, block) {
                     block.y = block.y + 1
                 }
             }
@@ -258,11 +258,11 @@ fn main() {
                 // Tick
                 elapsed_time = 0.0
 
-                if !can_move(&grid, block.x, block.y + 1, block) {
+                if !can_move(grid, block.x, block.y + 1, block) {
                     stamp(&grid, block)
                     remove_full_rows(&grid)
                     block = next_block
-                    next_block = new_random_block(&grid)
+                    next_block = new_random_block(grid)
                 } else {
                     block.y = block.y + 1
                 }

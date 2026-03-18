@@ -1,4 +1,4 @@
--ackage main
+package main
 
 import "core:container/queue"
 import "core:fmt"
@@ -17,35 +17,58 @@ Generator :: struct {
 // Returns the integer type used for ABI-passing small structs on x86-64 System V.
 // A struct whose fields are all integer/float primitives totalling <= 8 bytes is passed
 // as a single i32 (<= 4 bytes) or i64 (<= 8 bytes) instead of being expanded field-by-field.
-get_abi_int_type_for_struct :: proc(gen: ^Generator, type: ^Type) -> (TypeRef, bool) {
-	if type == nil || type.kind != .Struct {
-		return nil, false
-	}
-	total_bytes: u32 = 0
-	for field in type.fields {
-		#partial switch field.type.kind {
-		case .Int8, .Uint8:
-			total_bytes += 1
-		case .Int16, .Uint16:
-			total_bytes += 2
-		case .Int32, .Uint32:
-			total_bytes += 4
-		case .Int64, .Uint64:
-			total_bytes += 8
-		case .Float32:
-			total_bytes += 4
-		case .Float64:
-			total_bytes += 8
-		case:
-			return nil, false
+// Returns the byte size of any type, or 0 if it can't be computed
+get_type_byte_size :: proc(type: ^Type) -> u32 {
+	if type == nil { return 0 }
+	#partial switch type.kind {
+	case .Int8, .Uint8, .Bool:
+		return 1
+	case .Int16, .Uint16:
+		return 2
+	case .Int32, .Uint32:
+		return 4
+	case .Int64, .Uint64:
+		return 8
+	case .Float32:
+		return 4
+	case .Float64:
+		return 8
+	case .Pointer, .CString:
+		return 8
+	case .Struct:
+		total: u32 = 0
+		for field in type.fields {
+			field_size := get_type_byte_size(field.type)
+			if field_size == 0 { return 0 }
+			total += field_size
 		}
+		return total
+	case .Array:
+		if type.elem_type == nil { return 0 }
+		elem_size := get_type_byte_size(type.elem_type)
+		if elem_size == 0 { return 0 }
+		return elem_size * u32(type.size)
 	}
+	return 0
+}
+
+// Small structs (<= 8 bytes) are coerced to integers for register passing (C ABI)
+get_abi_int_type_for_struct :: proc(gen: ^Generator, type: ^Type) -> (TypeRef, bool) {
+	if type == nil || type.kind != .Struct { return nil, false }
+	total_bytes := get_type_byte_size(type)
+	if total_bytes == 0 { return nil, false }
 	if total_bytes <= 4 {
 		return Int32TypeInContext(gen.ctx), true
 	} else if total_bytes <= 8 {
 		return Int64TypeInContext(gen.ctx), true
 	}
 	return nil, false
+}
+
+// Large structs (> 16 bytes) are passed by pointer with caller-side copy
+is_large_struct :: proc(type: ^Type) -> bool {
+	if type == nil || type.kind != .Struct { return false }
+	return get_type_byte_size(type) > 16
 }
 
 get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
@@ -507,10 +530,14 @@ emit_function_decl :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 				variadic = true
 			} else {
 				param_type := get_llvm_type(gen, param.symbol.type)
+				// ABI lowering: small structs -> integer, large structs -> pointer
 				if s.external {
 					if int_type, ok := get_abi_int_type_for_struct(gen, param.symbol.type); ok {
 						param_type = int_type
 					}
+				}
+				if is_large_struct(param.symbol.type) {
+					param_type = PointerTypeInContext(gen.ctx, 0)
 				}
 				append(&param_types, param_type)
 			}
@@ -518,7 +545,6 @@ emit_function_decl :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 		fn_type = FunctionType(ret_type_ref, &param_types[0], u32(len(param_types)), i32(variadic))
 	} else {
 		fn_type = FunctionType(ret_type_ref, nil, 0, false)
-
 	}
 
 	sym := s.symbol
@@ -571,10 +597,15 @@ emit_function_body :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 		param_sym := ast_param.symbol
 		param := GetParam(fn, u32(i))
 
-		param_type := get_llvm_type(gen, param_sym.type)
-		alloca := BuildAlloca(gen.builder, param_type, strings.clone_to_cstring(ast_param.name))
-		BuildStore(gen.builder, param, alloca)
-		gen.values[param_sym] = alloca
+		// Large structs are passed by pointer — the param IS the pointer to the caller's copy
+		if is_large_struct(param_sym.type) {
+			gen.values[param_sym] = param
+		} else {
+			param_type := get_llvm_type(gen, param_sym.type)
+			alloca := BuildAlloca(gen.builder, param_type, strings.clone_to_cstring(ast_param.name))
+			BuildStore(gen.builder, param, alloca)
+			gen.values[param_sym] = alloca
+		}
 	}
 
 	emit_block(gen, s.body)
@@ -627,6 +658,16 @@ emit_call :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> V
 				append(&args, BuildLoad2(gen.builder, int_type, addr, "abi_coerce"))
 				continue
 			}
+		}
+		// Large structs: memcpy to stack and pass pointer (preserves by-value semantics)
+		if is_large_struct(a.type) {
+			src := emit_address(gen, a, scope, span)
+			llvm_type := get_llvm_type(gen, a.type)
+			copy := build_entry_alloca(gen, llvm_type, "byval_copy")
+			size := ConstInt(Int64TypeInContext(gen.ctx), u64(get_type_byte_size(a.type)), false)
+			BuildMemCpy(gen.builder, copy, 8, src, 8, size)
+			append(&args, copy)
+			continue
 		}
 		val := emit_value(gen, a, scope, span)
 		// C variadic ABI: float args must be promoted to double
