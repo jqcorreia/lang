@@ -12,53 +12,8 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: linux-amd64
-          - os: macos-latest
-            target: macos-arm64
-          - os: macos-13
-            target: macos-amd64
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Odin
-        uses: laytan/setup-odin@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install LLVM (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-21 main"
-          sudo apt-get update
-          sudo apt-get install -y llvm-21-dev
-
-      - name: Install LLVM (macOS)
-        if: runner.os == 'macOS'
-        run: brew install llvm@21
-
-      - name: Build
-        run: odin build . -out:zero -o:speed
-
-      - name: Package binary release
-        run: |
-          mkdir -p zero-${{ matrix.target }}
-          cp zero zero-${{ matrix.target }}/
-          cp -r runtime std vendor zero-${{ matrix.target }}/
-          tar czf zero-${{ matrix.target }}.tar.gz zero-${{ matrix.target }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: zero-${{ matrix.target }}
-          path: zero-${{ matrix.target }}.tar.gz
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
 
   release:
     needs: build

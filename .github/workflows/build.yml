@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 jobs:
   build:
@@ -43,8 +44,15 @@ jobs:
       - name: Build
         run: odin build . -out:zero -o:speed
 
+      - name: Package
+        run: |
+          mkdir -p zero-${{ matrix.target }}
+          cp zero zero-${{ matrix.target }}/
+          cp -r runtime std vendor zero-${{ matrix.target }}/
+          tar czf zero-${{ matrix.target }}.tar.gz zero-${{ matrix.target }}
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: zero-${{ matrix.target }}
-          path: zero
+          path: zero-${{ matrix.target }}.tar.gz
