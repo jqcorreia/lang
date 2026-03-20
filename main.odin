@@ -28,7 +28,7 @@ main :: proc() {
 
 	start_time := time.now()
 
-	source := os.read_entire_file(opt.file) or_else panic("No file found")
+	source := os.read_entire_file(opt.file, context.allocator) or_else panic("No file found")
 
 	ok: bool
 	if opt.command == "check" {

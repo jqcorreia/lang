@@ -45,8 +45,8 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 	compiler_reset()
 
 	// Auto-include the runtime, resolved relative to the executable
-	runtime_path := filepath.join({compiler.exe_dir, "runtime", "start.z"})
-	runtime_source := os.read_entire_file(runtime_path) or_else panic(fmt.tprintf("Runtime not found at %s", runtime_path))
+	runtime_path, _ := filepath.join({compiler.exe_dir, "runtime", "start.z"}, context.allocator)
+	runtime_source := os.read_entire_file(runtime_path, context.allocator) or_else panic(fmt.tprintf("Runtime not found at %s", runtime_path))
 	runtime_tokens := lex(string(runtime_source))
 	runtime_parser := Parser{tokens = runtime_tokens}
 	runtime_stmts := parse_program(&runtime_parser)

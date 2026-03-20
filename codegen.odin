@@ -139,8 +139,8 @@ emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, s
 
 		for elem, i in e.elements {
 			indices: []ValueRef = {
-				ConstInt(Int32TypeInContext(gen.ctx), 0, false),
-				ConstInt(Int32TypeInContext(gen.ctx), u64(i), false),
+				ConstInt(Int32TypeInContext(gen.ctx), 0, 0),
+				ConstInt(Int32TypeInContext(gen.ctx), u64(i), 0),
 			}
 			elem_ptr := BuildGEP2(gen.builder, array_llvm_type, dest, raw_data(indices), 2, "")
 			if elem.type.kind == .Array {
@@ -235,7 +235,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 
 	case Expr_Index:
 		index_val := emit_value(gen, e.index, scope, span)
-		indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, false), index_val}
+		indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index_val}
 
 		array_ptr: ValueRef
 		llvm_type: TypeRef
@@ -274,7 +274,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		if type == nil {
 			type = int64
 		}
-		return ConstInt(type, u64(e.value), false)
+		return ConstInt(type, u64(e.value), 0)
 
 	case Expr_Float_Literal:
 		type := get_llvm_type(gen, expr.type)
@@ -284,7 +284,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		return ConstReal(type, f64(e.value))
 	case Expr_Bool_Literal:
 		type := get_llvm_type(gen, expr.type)
-		return ConstInt(type, e.value ? 1 : 0, false)
+		return ConstInt(type, e.value ? 1 : 0, 0)
 	case Expr_String_Literal:
 		return BuildGlobalStringPtr(gen.builder, strings.clone_to_cstring(e.value), "")
 	case Expr_Array_Literal:
@@ -311,7 +311,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		// Insert integer cast if expression type differs from storage type (e.g. untyped range var coerced to i32)
 		sym_is_int := sym.type.numeric_integer || sym.type.kind == .Untyped_Int
 		if expr.type != sym.type && expr.type.numeric_integer && sym_is_int {
-			return BuildIntCast2(gen.builder, val, get_llvm_type(gen, expr.type), true, "icast")
+			return BuildIntCast2(gen.builder, val, get_llvm_type(gen, expr.type), 1, "icast")
 		}
 		return val
 	case Expr_Unary:
@@ -324,7 +324,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			if e.expr.type.numeric_float {
 				return BuildFNeg(gen.builder, operand, "fneg")
 			}
-			zero := ConstInt(get_llvm_type(gen, e.expr.type), 0, false)
+			zero := ConstInt(get_llvm_type(gen, e.expr.type), 0, 0)
 			return BuildSub(gen.builder, zero, operand, "subzero")
 		case .Ampersand:
 			ptr := emit_address(gen, e.expr, scope, span)
@@ -425,12 +425,12 @@ make_global_string_ptr :: proc(gen: ^Generator, s: string) -> ValueRef {
 	char_type := Int8TypeInContext(gen.ctx)
 	str_data_type := ArrayType(char_type, u32(len(s) + 1))
 	str_global := AddGlobal(gen.module, str_data_type, ".str")
-	SetInitializer(str_global, ConstStringInContext(gen.ctx, cstr, u32(len(s)), false))
-	SetGlobalConstant(str_global, true)
+	SetInitializer(str_global, ConstStringInContext(gen.ctx, cstr, u32(len(s)), 0))
+	SetGlobalConstant(str_global, 1)
 	SetLinkage(str_global, .PrivateLinkage)
 	indices := []ValueRef {
-		ConstInt(Int32TypeInContext(gen.ctx), 0, false),
-		ConstInt(Int32TypeInContext(gen.ctx), 0, false),
+		ConstInt(Int32TypeInContext(gen.ctx), 0, 0),
+		ConstInt(Int32TypeInContext(gen.ctx), 0, 0),
 	}
 	return ConstInBoundsGEP2(str_data_type, str_global, raw_data(indices), 2)
 }
@@ -439,7 +439,7 @@ make_const_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueRe
 	llvm_type := get_llvm_type(gen, expr.type)
 	#partial switch e in expr.data {
 	case Expr_Int_Literal:
-		return ConstInt(llvm_type, u64(e.value), false)
+		return ConstInt(llvm_type, u64(e.value), 0)
 	case Expr_Float_Literal:
 		return ConstReal(llvm_type, e.value)
 	case Expr_String_Literal:
@@ -510,7 +510,7 @@ emit_memcpy :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Span
 
 	// align := ABIAlignmentOfType(data_layout, compiler_type)
 	// size := ABISizeOfType(data_layout, compiler_type)
-	// i64_size := ConstInt(Int64Type(), size, false)
+	// i64_size := ConstInt(Int64Type(), size, 0)
 	// addr := emit_address(gen, s.expr, scope, span)
 	// BuildMemCpy(gen.builder, ptr, align, addr, align, i64_size)
 }
@@ -544,7 +544,7 @@ emit_function_decl :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 		}
 		fn_type = FunctionType(ret_type_ref, &param_types[0], u32(len(param_types)), i32(variadic))
 	} else {
-		fn_type = FunctionType(ret_type_ref, nil, 0, false)
+		fn_type = FunctionType(ret_type_ref, nil, 0, 0)
 	}
 
 	sym := s.symbol
@@ -579,7 +579,7 @@ emit_struct_body :: proc(gen: ^Generator, s: ^Ast_Struct_Decl, scope: ^Scope, sp
 		append(&field_types, get_llvm_type(gen, field.type))
 	}
 
-	StructSetBody(llvm_type, raw_data(field_types), u32(len(field_types)), false)
+	StructSetBody(llvm_type, raw_data(field_types), u32(len(field_types)), 0)
 	AddGlobal(gen.module, llvm_type, "dummy_struct_use")
 }
 
@@ -664,7 +664,7 @@ emit_call :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> V
 			src := emit_address(gen, a, scope, span)
 			llvm_type := get_llvm_type(gen, a.type)
 			copy := build_entry_alloca(gen, llvm_type, "byval_copy")
-			size := ConstInt(Int64TypeInContext(gen.ctx), u64(get_type_byte_size(a.type)), false)
+			size := ConstInt(Int64TypeInContext(gen.ctx), u64(get_type_byte_size(a.type)), 0)
 			BuildMemCpy(gen.builder, copy, 8, src, 8, size)
 			append(&args, copy)
 			continue
@@ -713,7 +713,7 @@ emit_if :: proc(gen: ^Generator, s: ^Ast_If, scope: ^Scope, span: Span) {
 	if GetTypeKind(cond_val_type) == .IntegerTypeKind && GetIntTypeWidth(cond_val_type) == 1 {
 		cond_bool = cond_val
 	} else {
-		zero := ConstInt(Int32Type(), 0, false)
+		zero := ConstInt(Int32Type(), 0, 0)
 		cond_bool = BuildICmp(gen.builder, .IntNE, cond_val, zero, "ifcond")
 	}
 
@@ -824,8 +824,8 @@ emit_for_loop :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
 	// If not terminated yet, advance iterator and branch to condition block again
 	if GetBasicBlockTerminator(GetInsertBlock(gen.builder)) == nil {
 		cur := BuildLoad2(gen.builder, iter_type, iter_ptr, "iter")
-		inc := BuildAdd(gen.builder, cur, ConstInt(iter_type, 1, false), "inc")
-		dec := BuildSub(gen.builder, cur, ConstInt(iter_type, 1, false), "dec")
+		inc := BuildAdd(gen.builder, cur, ConstInt(iter_type, 1, 0), "inc")
+		dec := BuildSub(gen.builder, cur, ConstInt(iter_type, 1, 0), "dec")
 		next := BuildSelect(gen.builder, is_forward, inc, dec, "next")
 		BuildStore(gen.builder, next, iter_ptr)
 		BuildBr(gen.builder, cond_bb)

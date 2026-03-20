@@ -76,14 +76,23 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 			if colon_idx := strings.index(raw_path, ":"); colon_idx >= 0 {
 				collection := raw_path[:colon_idx]
 				rest := raw_path[colon_idx + 1:]
-				resolved_path = filepath.join({compiler.exe_dir, collection, rest})
+				resolved_path, _ = filepath.join(
+					{compiler.exe_dir, collection, rest},
+					context.allocator,
+				)
 			} else {
-				resolved_path = filepath.join({compiler.current_filepath, raw_path})
+				resolved_path, _ = filepath.join(
+					{compiler.current_filepath, raw_path},
+					context.allocator,
+				)
 			}
 			if !strings.ends_with(resolved_path, ".z") {
 				resolved_path = fmt.tprintf("%s.z", resolved_path)
 			}
-			contents := os.read_entire_file(resolved_path) or_else panic(fmt.tprintf("Import not found: %s", resolved_path))
+			contents :=
+				os.read_entire_file(resolved_path, context.allocator) or_else panic(
+					fmt.tprintf("Import not found: %s", resolved_path),
+				)
 			import_tokens := lex(string(contents))
 			import_parser := Parser {
 				tokens = import_tokens,
@@ -712,9 +721,9 @@ parse_external_block :: proc(p: ^Parser, lib_name: string) -> ^Ast_Block {
 	// Deduplicate linker libs
 	found := false
 	for lib in compiler.external_linker_libs {
-		if lib == lib_name { found = true; break }
+		if lib == lib_name {found = true; break}
 	}
-	if !found { append(&compiler.external_linker_libs, lib_name) }
+	if !found {append(&compiler.external_linker_libs, lib_name)}
 
 	res: [dynamic]^Ast_Node
 

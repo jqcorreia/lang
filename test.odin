@@ -12,12 +12,12 @@ run_tests :: proc(t: ^testing.T) {
 	compiler_init()
 
 	handle, _ := os.open(TEST_FOLDER)
-	fis, _ := os.read_dir(handle, -1)
+	fis, _ := os.read_dir(handle, -1, context.allocator)
 	os.close(handle)
 
 	for fi in fis {
-		source, ok := os.read_entire_file(fi.fullpath)
-		if !ok {
+		source := os.read_entire_file(fi.fullpath, context.allocator) or_else nil
+		if source == nil {
 			fmt.printf("[%s] could not read file\n", fi.name)
 			testing.fail(t)
 			continue
