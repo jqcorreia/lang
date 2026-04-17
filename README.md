@@ -71,3 +71,6 @@ Run the tests by simply calling `odin test .`
 - `linux` at least until we properly know what we are doing
 - `cc` as the C compiler that does the linking in the end
 - `raylib` in order to run the raylib example in `tests/raylib.z`
+
+# License
+MIT — see [LICENSE](LICENSE).
