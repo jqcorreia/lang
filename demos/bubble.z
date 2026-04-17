@@ -1,0 +1,22 @@
+import "std:c"
+
+import "vendor:raylib"
+
+W : i32 = 400
+H : i32 = 800
+background_color := Color{ r= 100, b= 100, g= 0, a= 255 }
+
+fn main() {
+
+    InitWindow(W, H, "Bubble")
+
+    for {
+        if IsKeyPressed(256) { // escape key
+            break
+        }
+        BeginDrawing()
+        ClearBackground(background_color)
+        EndDrawing()
+    }
+    CloseWindow()
+}
