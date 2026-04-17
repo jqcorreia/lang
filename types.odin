@@ -9,6 +9,7 @@ Type :: struct {
 	numeric_integer: bool,
 	numeric_float:   bool,
 	fields:          [dynamic]Struct_Field,
+	enum_variants:   [dynamic]Enum_Variant,
 	size:            u64,
 	elem_type:       ^Type,
 	pointee_type:    ^Type, // Maybe not needed, could use elem_type, for now use a different field for clarity
@@ -20,6 +21,10 @@ Struct_Field :: struct {
 	index: int,
 }
 
+Enum_Variant :: struct {
+	name:  string,
+	value: i64,
+}
 
 Compiled_Type :: union {
 	TypeRef,
@@ -46,6 +51,7 @@ Type_Kind :: enum {
 	Float64,
 	CString,
 	Struct,
+	Enum,
 	Array,
 	Pointer,
 }
@@ -170,7 +176,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 
 resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^Type {
 	switch te in type_expr {
-	case string:
+	case Type_Expr_Name:
 		sym, ok := resolve_symbol(scope, te)
 		if !ok {
 			error_span(span, "Undefined type '%s'", te)

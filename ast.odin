@@ -20,6 +20,7 @@ Ast_Data :: union {
 	Ast_Continue,
 	Ast_Var_Decl,
 	Ast_Struct_Decl,
+	Ast_Enum_Decl,
 	Ast_Import,
 }
 
@@ -79,10 +80,10 @@ Ast_Enum_Decl :: struct {
 	name:      string,
 	type_expr: ^Type_Expr,
 	symbol:    ^Symbol,
-	variants:  [dynamic]Enum_Variant,
+	variants:  [dynamic]Ast_Enum_Variant,
 }
 
-Enum_Variant :: struct {
+Ast_Enum_Variant :: struct {
 	name:  string,
 	value: i64,
 }

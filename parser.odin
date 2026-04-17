@@ -136,6 +136,9 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	case t.kind == .Struct_Keyword:
 		advance(p)
 		data^ = parse_struct_decl(p)^
+	case t.kind == .Enum_Keyword:
+		advance(p)
+		data^ = parse_enum_decl(p)^
 	case t.kind == .For_Keyword:
 		advance(p)
 		data^ = parse_for_loop(p)^
@@ -336,6 +339,34 @@ parse_struct_decl :: proc(p: ^Parser) -> ^Ast_Struct_Decl {
 	return decl
 }
 
+parse_enum_decl :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
+	decl := new(Ast_Enum_Decl)
+	name_token := expect(p, .Identifier)
+
+	enum_name := name_token.value.(string)
+	decl.name = enum_name
+
+	expect(p, .LBrace)
+
+	for current(p).kind != .RBrace {
+		// Ignore empty lines
+		if current(p).kind == .NewLine {
+			advance(p)
+			continue
+		}
+		variant_name := expect(p, .Identifier).value.(string)
+		// expect(p, .Colon)
+		// type_expr := parse_type_expr(p)
+		append(&decl.variants, Ast_Enum_Variant{name = variant_name})
+	}
+	advance(p)
+
+	if current(p).kind == .NewLine {
+		advance(p)
+	}
+
+	return decl
+}
 expr_int_literal :: proc(value: i64) -> ^Expr {
 	ret := new(Expr)
 	ret.data = Expr_Int_Literal {
