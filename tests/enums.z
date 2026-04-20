@@ -1,15 +1,29 @@
 import "std:c"
 
-enum Direction {
-    Up
-    Down
-    Left
-    Right
+enum Direction { Up Down Left Right }
+
+fn opposite(d: Direction) -> Direction {
+    if d == Direction.Up {
+        return Direction.Down
+    }
+    return Direction.Up
 }
 
 fn main() {
+    a: Direction = Direction.Up
+    b: Direction
+    b = Direction.Right
+
+    if a == Direction.Up {
+        printf("a is Up\n")
+    }
+    if a != b {
+        printf("a != b\n")
+    }
+
+    c := opposite(a)
+    printf("opposite=%d\n", c)
+
     d: Direction
-
-    printf("Enum value: %d\n", Direction.Up)
+    printf("zero-init=%d\n", d)
 }
-

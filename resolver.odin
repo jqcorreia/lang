@@ -233,10 +233,16 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 				}
 			}
 		}
+		// In this case just set and return the base type
+		// The enum_variants loop is there to check if the variant exists
+		// and only then set the type and return it, otherwise it ends on error branch
 		if type.kind == .Enum {
-			sym, _ := resolve_symbol(scope, "u64")
-			expr.type = sym.type
-			return sym.type
+			for &f in type.enum_variants {
+				if f.name == e.member {
+					expr.type = type
+					return expr.type
+				}
+			}
 		}
 
 		expr.type = &error_type

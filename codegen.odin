@@ -261,25 +261,6 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 			return ConstInt(Int64TypeInContext(gen.ctx), u64(field_index), 0)
 		}
 
-	case Expr_Index:
-		index_val := emit_value(gen, e.index, scope, span)
-		indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index_val}
-
-		array_ptr: ValueRef
-		llvm_type: TypeRef
-
-		if e.array.type.kind == .Pointer {
-			array_ptr = emit_value(gen, e.array, scope, span)
-			llvm_type = get_llvm_type(gen, e.array.type.pointee_type)
-		} else {
-			array_ptr = emit_address(gen, e.array, scope, span)
-			llvm_type = get_llvm_type(gen, e.array.type)
-		}
-
-		ptr := BuildGEP2(gen.builder, llvm_type, array_ptr, raw_data(indices), 2, "")
-
-		return ptr
-
 	case Expr_Unary:
 		if e.op == .Star {
 			return emit_value(gen, e.expr, scope, span)
@@ -324,6 +305,13 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		type := resolve_type_expr(&e.type_expr, scope, span)
 		return BuildLoad2(gen.builder, get_llvm_type(gen, type), addr, "")
 	case Expr_Member:
+		if e.base.type.kind == .Enum {
+			for f in e.base.type.enum_variants {
+				if f.name == e.member {
+					return ConstInt(Int64TypeInContext(gen.ctx), u64(f.value), 0)
+				}
+			}
+		}
 		ptr := emit_address(gen, expr, scope, span)
 		return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), ptr, "")
 	case Expr_Index:

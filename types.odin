@@ -145,8 +145,11 @@ type_coercion :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	}
 
 	// Check for exact enum type since 2 different enums and not coersable
-	if from.kind == .Enum && to.kind == .Enum && from == to {
-		return from
+	if from.kind == .Enum && to.kind == .Enum {
+		if from == to {
+			return from
+		}
+		return nil
 	}
 
 	if from.kind == to.kind {

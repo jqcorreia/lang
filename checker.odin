@@ -160,22 +160,24 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 
 	case Expr_Member:
 		if expr.type.kind == .Error {
-			struct_name := e.base.data.(Expr_Variable).value
-			struct_sym, ok := resolve_symbol(scope, struct_name)
+			name := e.base.data.(Expr_Variable).value
+			sym, ok := resolve_symbol(scope, name)
 			if !ok {
-				error_span(span, "Undefined variable '%s'", struct_name)
+				error_span(span, "Undefined variable '%s'", name)
 			} else {
-				base_type := struct_sym.type
+				base_type := sym.type
 				is_struct := base_type.kind == .Struct
-				is_enum := base_type.kind == .Enum
 				is_ptr_to_struct :=
 					base_type.kind == .Pointer &&
 					base_type.pointee_type != nil &&
 					base_type.pointee_type.kind == .Struct
-				if !is_struct && !is_ptr_to_struct {
-					error_span(span, "'%s' is not a struct", struct_name)
+				is_enum := base_type.kind == .Enum
+				if !is_struct && !is_ptr_to_struct && !is_enum {
+					error_span(span, "'%s' is not a struct nor enum", name)
+				} else if is_enum {
+					error_span(span, "Enum '%s' has no variant '%s'", name, e.member)
 				} else {
-					error_span(span, "Struct '%s' has no field '%s'", struct_name, e.member)
+					error_span(span, "Struct '%s' has no field '%s'", name, e.member)
 				}
 			}
 		}
