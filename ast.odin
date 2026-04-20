@@ -223,6 +223,7 @@ Member_Kind :: enum {
 	Field,
 	Method,
 	Swizzle,
+	Variant,
 }
 
 // Generic AST traverse function
@@ -271,6 +272,8 @@ traverse_ast :: proc(
 			traverse_ast(child, func, userdata)
 		}
 	case Ast_Import:
+		func(ast, userdata)
+	case Ast_Enum_Decl:
 		func(ast, userdata)
 	case:
 		unimplemented(fmt.tprint("Unimplement traverse statement", ast))

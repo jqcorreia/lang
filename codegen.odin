@@ -19,7 +19,7 @@ Generator :: struct {
 // as a single i32 (<= 4 bytes) or i64 (<= 8 bytes) instead of being expanded field-by-field.
 // Returns the byte size of any type, or 0 if it can't be computed
 get_type_byte_size :: proc(type: ^Type) -> u32 {
-	if type == nil { return 0 }
+	if type == nil {return 0}
 	#partial switch type.kind {
 	case .Int8, .Uint8, .Bool:
 		return 1
@@ -35,18 +35,20 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 		return 8
 	case .Pointer, .CString:
 		return 8
+	case .Enum:
+		return 8
 	case .Struct:
 		total: u32 = 0
 		for field in type.fields {
 			field_size := get_type_byte_size(field.type)
-			if field_size == 0 { return 0 }
+			if field_size == 0 {return 0}
 			total += field_size
 		}
 		return total
 	case .Array:
-		if type.elem_type == nil { return 0 }
+		if type.elem_type == nil {return 0}
 		elem_size := get_type_byte_size(type.elem_type)
-		if elem_size == 0 { return 0 }
+		if elem_size == 0 {return 0}
 		return elem_size * u32(type.size)
 	}
 	return 0
@@ -54,9 +56,9 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 
 // Small structs (<= 8 bytes) are coerced to integers for register passing (C ABI)
 get_abi_int_type_for_struct :: proc(gen: ^Generator, type: ^Type) -> (TypeRef, bool) {
-	if type == nil || type.kind != .Struct { return nil, false }
+	if type == nil || type.kind != .Struct {return nil, false}
 	total_bytes := get_type_byte_size(type)
-	if total_bytes == 0 { return nil, false }
+	if total_bytes == 0 {return nil, false}
 	if total_bytes <= 4 {
 		return Int32TypeInContext(gen.ctx), true
 	} else if total_bytes <= 8 {
@@ -67,7 +69,7 @@ get_abi_int_type_for_struct :: proc(gen: ^Generator, type: ^Type) -> (TypeRef, b
 
 // Large structs (> 16 bytes) are passed by pointer with caller-side copy
 is_large_struct :: proc(type: ^Type) -> bool {
-	if type == nil || type.kind != .Struct { return false }
+	if type == nil || type.kind != .Struct {return false}
 	return get_type_byte_size(type) > 16
 }
 
@@ -81,6 +83,10 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	}
 	// Untyped integers default to i64 at codegen
 	if type.kind == .Untyped_Int {
+		return Int64TypeInContext(gen.ctx)
+	}
+	// @Note: for now enums are i64
+	if type.kind == .Enum {
 		return Int64TypeInContext(gen.ctx)
 	}
 	return gen.primitive_types[type]
@@ -118,6 +124,8 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	case Ast_Block:
 	// Do nothing
 	case Ast_Import:
+	// Do nothing
+	case Ast_Enum_Decl:
 	// Do nothing
 	case Ast_Return:
 		emit_return(gen, &data, node.scope, node.span)
@@ -214,6 +222,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		base_ptr: ValueRef
 		llvm_type: TypeRef
 
+		// Calculate base base_ptr
 		if e.base.type.kind == .Pointer {
 			base_type = e.base.type.pointee_type
 			base_ptr = emit_value(gen, e.base, scope, span)
@@ -224,14 +233,33 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 			llvm_type = get_llvm_type(gen, e.base.type)
 		}
 
-		field_index := 0
-		for f in base_type.fields {
-			if f.name == e.member {
-				field_index = f.index
-				break
+		if base_type.kind == .Struct {
+			// @Note: this is always traversing the field list searching for the correct index
+			// Maybe have this memoized in some way
+			field_index := 0
+			for f in base_type.fields {
+				if f.name == e.member {
+					field_index = f.index
+					break
+				}
 			}
+
+			return BuildStructGEP2(gen.builder, llvm_type, base_ptr, u32(field_index), "")
 		}
-		return BuildStructGEP2(gen.builder, llvm_type, base_ptr, u32(field_index), "")
+
+		if base_type.kind == .Enum {
+			// @Note: this is always traversing the field list searching for the correct index
+			// Maybe have this memoized in some way
+			field_index := 0
+			for f in base_type.enum_variants {
+				if f.name == e.member {
+					break
+				}
+				field_index += 1
+			}
+
+			return ConstInt(Int64TypeInContext(gen.ctx), u64(field_index), 0)
+		}
 
 	case Expr_Index:
 		index_val := emit_value(gen, e.index, scope, span)
@@ -602,7 +630,11 @@ emit_function_body :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 			gen.values[param_sym] = param
 		} else {
 			param_type := get_llvm_type(gen, param_sym.type)
-			alloca := BuildAlloca(gen.builder, param_type, strings.clone_to_cstring(ast_param.name))
+			alloca := BuildAlloca(
+				gen.builder,
+				param_type,
+				strings.clone_to_cstring(ast_param.name),
+			)
 			BuildStore(gen.builder, param, alloca)
 			gen.values[param_sym] = alloca
 		}
@@ -913,7 +945,7 @@ generate :: proc(stmts: []^Ast_Node) {
 	emit_function_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
 		if fnode, ok := node.data.(Ast_Function); ok {
 			// Skip external functions, they are emitted lazily on first call
-			if fnode.external { return }
+			if fnode.external {return}
 			gen := cast(^Generator)userdata
 			emit_function_decl(gen, &fnode, node.scope, node.span)
 		}

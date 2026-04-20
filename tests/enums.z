@@ -1,3 +1,5 @@
+import "std:c"
+
 enum Direction {
     Up
     Down
@@ -6,5 +8,8 @@ enum Direction {
 }
 
 fn main() {
+    d: Direction
 
+    printf("Enum value: %d\n", Direction.Up)
 }
+

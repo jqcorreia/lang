@@ -33,6 +33,8 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 		check_function(c, &data, node.scope, node.span)
 	case Ast_Struct_Decl:
 		check_struct_decl(c, &data, node.scope, node.span)
+	case Ast_Enum_Decl:
+		check_enum_decl(c, &data, node.scope, node.span)
 	case Ast_Return:
 		check_return(c, &data, node.scope, node.span)
 	case Ast_If:
@@ -165,6 +167,7 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 			} else {
 				base_type := struct_sym.type
 				is_struct := base_type.kind == .Struct
+				is_enum := base_type.kind == .Enum
 				is_ptr_to_struct :=
 					base_type.kind == .Pointer &&
 					base_type.pointee_type != nil &&
@@ -296,6 +299,21 @@ check_struct_decl :: proc(c: ^Checker, s: ^Ast_Struct_Decl, scope: ^Scope, span:
 	for field in s.symbol.type.fields {
 		if field.type == nil || field.type.kind == .Error {
 			error_span(span, "Unresolved type for field '%s' in '%s'", field.name, s.name)
+		}
+	}
+}
+
+check_enum_decl :: proc(c: ^Checker, s: ^Ast_Enum_Decl, scope: ^Scope, span: Span) {
+	if len(s.variants) == 0 {
+		error_span(span, "Enum '%s' has no variants", s.name)
+		return
+	}
+	for v, i in s.variants {
+		for j in 0 ..< i {
+			if s.variants[j].name == v.name {
+				error_span(span, "Duplicate variant '%s' in enum '%s'", v.name, s.name)
+				break
+			}
 		}
 	}
 }

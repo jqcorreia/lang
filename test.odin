@@ -6,7 +6,7 @@ import "core:os"
 import "core:testing"
 
 TEST_FOLDER :: "tests"
-SKIP_TESTS := [?]string{"enums.z"}
+SKIP_TESTS := [?]string{}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {

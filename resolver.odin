@@ -77,6 +77,16 @@ resolve_types :: proc(node: ^Ast_Node) {
 			)
 		}
 
+	case Ast_Enum_Decl:
+	// This shouldn't be needed
+	// The type of the symbol created by this node is already set during scope binding
+	// type_sym, ok := resolve_symbol(node.scope, data.name)
+	// if !ok {
+	// 	return
+	// }
+
+	// data.symbol.type = type_sym.type
+
 	case Ast_Function:
 		for &param in data.params {
 			param.symbol.type = resolve_type_expr(&param.type_expr, node.scope, node.span)
@@ -209,17 +219,26 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			type = type.pointee_type
 		}
 
-		if type == nil || type.kind != .Struct {
+		if type == nil || (type.kind != .Struct && type.kind != .Enum) {
 			expr.type = &error_type
 			return &error_type
 		}
-		for &f in type.fields {
-			if f.name == e.member {
-				// e.base.type = type
-				expr.type = f.type
-				return f.type
+
+		if type.kind == .Struct {
+			for &f in type.fields {
+				if f.name == e.member {
+					// e.base.type = type
+					expr.type = f.type
+					return f.type
+				}
 			}
 		}
+		if type.kind == .Enum {
+			sym, _ := resolve_symbol(scope, "u64")
+			expr.type = sym.type
+			return sym.type
+		}
+
 		expr.type = &error_type
 		return &error_type
 
