@@ -261,6 +261,25 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 			return ConstInt(Int64TypeInContext(gen.ctx), u64(field_index), 0)
 		}
 
+	case Expr_Index:
+		index_val := emit_value(gen, e.index, scope, span)
+		indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index_val}
+
+		array_ptr: ValueRef
+		llvm_type: TypeRef
+
+		if e.array.type.kind == .Pointer {
+			array_ptr = emit_value(gen, e.array, scope, span)
+			llvm_type = get_llvm_type(gen, e.array.type.pointee_type)
+		} else {
+			array_ptr = emit_address(gen, e.array, scope, span)
+			llvm_type = get_llvm_type(gen, e.array.type)
+		}
+
+		ptr := BuildGEP2(gen.builder, llvm_type, array_ptr, raw_data(indices), 2, "")
+
+		return ptr
+
 	case Expr_Unary:
 		if e.op == .Star {
 			return emit_value(gen, e.expr, scope, span)
@@ -912,7 +931,7 @@ make_zero_value :: proc(gen: ^Generator, type: ^Type) -> ValueRef {
 	return ConstNull(get_llvm_type(gen, type))
 }
 
-generate :: proc(stmts: []^Ast_Node) {
+generate :: proc(stmts: []^Ast_Node) -> bool {
 	ctx := ContextCreate()
 	module := ModuleCreateWithNameInContext("calc", ctx)
 	builder := CreateBuilderInContext(ctx)
@@ -965,7 +984,7 @@ generate :: proc(stmts: []^Ast_Node) {
 	error: cstring
 	if GetTargetFromTriple(triple, &target, &error) > 0 {
 		fmt.println(triple, string(error))
-		return
+		return false
 	}
 	SetTarget(module, triple)
 
@@ -982,8 +1001,11 @@ generate :: proc(stmts: []^Ast_Node) {
 	SetModuleDataLayout(module, CreateTargetDataLayout(tm))
 	if VerifyModule(module, .AbortProcessAction, &error) > 0 {
 		fmt.println(error)
+		return false
 	}
 	if TargetMachineEmitToFile(tm, module, "calc.o", .ObjectFile, &error) > 0 {
 		fmt.println(error)
+		return false
 	}
+	return true
 }

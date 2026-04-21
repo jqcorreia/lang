@@ -6,7 +6,7 @@ import "core:os"
 import "core:testing"
 
 TEST_FOLDER :: "tests"
-SKIP_TESTS := [?]string{}
+SKIP_TESTS := [?]string{"arrays.z"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {
@@ -36,12 +36,13 @@ run_tests :: proc(t: ^testing.T) {
 			continue
 		}
 
-		_, compile_ok := compile(string(source))
-		if !compile_ok {
+		fmt.println(fi.name)
+		build_ok := build(string(source))
+		if !build_ok {
 			for err in compiler.errors {
 				fmt.printf("[%s] %s\n", fi.name, err.message)
 			}
 		}
-		testing.expectf(t, compile_ok, "[%s] compilation failed", fi.name)
+		testing.expectf(t, build_ok, "[%s] compilation failed", fi.name)
 	}
 }

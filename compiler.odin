@@ -46,9 +46,14 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 
 	// Auto-include the runtime, resolved relative to the executable
 	runtime_path, _ := filepath.join({compiler.exe_dir, "runtime", "start.z"}, context.allocator)
-	runtime_source := os.read_entire_file(runtime_path, context.allocator) or_else panic(fmt.tprintf("Runtime not found at %s", runtime_path))
+	runtime_source :=
+		os.read_entire_file(runtime_path, context.allocator) or_else panic(
+			fmt.tprintf("Runtime not found at %s", runtime_path),
+		)
 	runtime_tokens := lex(string(runtime_source))
-	runtime_parser := Parser{tokens = runtime_tokens}
+	runtime_parser := Parser {
+		tokens = runtime_tokens,
+	}
 	runtime_stmts := parse_program(&runtime_parser)
 
 	// Reset line_starts so they reflect user source only (for error reporting)
@@ -88,7 +93,7 @@ build :: proc(source: string) -> (ok: bool) {
 	if !ok {
 		return
 	}
-	generate(stmts)
+	ok = generate(stmts)
 	return
 }
 
@@ -99,18 +104,23 @@ build :: proc(source: string) -> (ok: bool) {
 // 4. Functions
 stmt_priority :: proc(node: ^Ast_Node) -> int {
 	#partial switch &data in node.data {
-	case Ast_Import:      return 0
-	case Ast_Block:       return 1
-	case Ast_Struct_Decl: return 2
-	case Ast_Var_Decl:    return 3
-	case Ast_Function:    return 4
+	case Ast_Import:
+		return 0
+	case Ast_Block:
+		return 1
+	case Ast_Struct_Decl:
+		return 2
+	case Ast_Var_Decl:
+		return 3
+	case Ast_Function:
+		return 4
 	}
 	return 5
 }
 
 order_statements :: proc(stmts: []^Ast_Node) -> []^Ast_Node {
 	ordered: [dynamic]^Ast_Node
-	for priority in 0..=5 {
+	for priority in 0 ..= 5 {
 		for s in stmts {
 			if stmt_priority(s) == priority {
 				append(&ordered, s)
