@@ -2,8 +2,38 @@ package main
 
 import "core:container/queue"
 import "core:fmt"
+import "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
+
+// The contract you want is:
+
+//   - context.temp_allocator → genuinely transient stuff (tprintf, debug formatting, throwaway intermediates). Anyone is allowed to free_all
+//   it; that's its job.
+//   - context.allocator → set to a separate arena that lives for one compilation. Only your build pipeline knows about it. No one else can or
+//   should free_all it.
+
+//   In Odin, the cleanest way is core:mem/virtual Arena on the Compiler struct:
+
+//   import "core:mem/virtual"
+
+//   Compiler :: struct {
+//       // ... existing ...
+//       arena: virtual.Arena,
+//   }
+
+//   compiler_init :: proc() {
+//       err := virtual.arena_init_growing(&compiler.arena)
+//       assert(err == .None)
+//       setup_native_types(&compiler)
+//       // ...
+//   }
+
+//   build :: proc(path: string) -> bool {
+//       free_all(virtual.arena_allocator(&compiler.arena))
+//       context.allocator = virtual.arena_allocator(&compiler.arena)
+//       // ...
+//   }
 
 Compiler :: struct {
 	current_filepath:     string, // Directory of the source file being compiled
@@ -15,6 +45,7 @@ Compiler :: struct {
 	types:                map[string]^Type,
 	errors:               [dynamic]Compiler_Error,
 	external_linker_libs: [dynamic]string,
+	arena:                virtual.Arena,
 }
 
 Compiler_Error :: struct {
@@ -31,8 +62,9 @@ compiler := Compiler{}
 
 compiler_init :: proc() {
 	compiler.exe_dir = filepath.dir(string(os.args[0]))
+	err := virtual.arena_init_growing(&compiler.arena)
+	assert(err == .None)
 	setup_native_types(&compiler) // Initialize the native type pointers
-
 }
 
 compiler_reset :: proc() {
@@ -89,6 +121,9 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 }
 
 build :: proc(source: string) -> (ok: bool) {
+	free_all(virtual.arena_allocator(&compiler.arena))
+	context.allocator = virtual.arena_allocator(&compiler.arena)
+
 	stmts: []^Ast_Node
 	stmts, ok = compile(source)
 	if !ok {
@@ -158,7 +193,7 @@ setup_native_types :: proc(compiler: ^Compiler) {
 
 	u64_t := new(Type)
 	u64_t.kind = .Uint64
-	compiler.types["i64"] = u64_t
+	compiler.types["u64"] = u64_t
 
 	bool_t := new(Type)
 	bool_t.kind = .Bool

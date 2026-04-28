@@ -1,6 +1,5 @@
 package main
 
-
 import "core:fmt"
 import "core:os"
 import "core:testing"
@@ -13,22 +12,20 @@ run_tests :: proc(t: ^testing.T) {
 	compiler_init()
 
 	handle, _ := os.open(TEST_FOLDER)
-	fis, _ := os.read_dir(handle, -1, context.allocator)
+	fis, _ := os.read_dir(handle, -1, context.temp_allocator)
 	os.close(handle)
 
+	// Cleanup primitive types and generic compiler info that does not
+	// end up in an arena.
 	defer {
-		for fi in fis {
-			delete(fi.fullpath)
-		}
-		delete(fis)
 		delete(compiler.current_filepath)
 		delete(compiler.exe_dir)
 
 		for _, t in compiler.types do free(t)
+		delete(compiler.types)
 	}
 
 	for fi in fis {
-		context.allocator = context.temp_allocator
 		skip := false
 		for name in SKIP_TESTS {
 			if fi.name == name {
@@ -41,7 +38,7 @@ run_tests :: proc(t: ^testing.T) {
 			continue
 		}
 
-		source := os.read_entire_file(fi.fullpath, context.allocator) or_else nil
+		source := os.read_entire_file(fi.fullpath, context.temp_allocator) or_else nil
 		if source == nil {
 			fmt.printf("[%s] could not read file\n", fi.name)
 			testing.fail(t)
@@ -56,6 +53,6 @@ run_tests :: proc(t: ^testing.T) {
 			}
 		}
 		testing.expectf(t, build_ok, "[%s] compilation failed", fi.name)
-		free_all(context.temp_allocator)
 	}
+	free_all(context.temp_allocator)
 }
