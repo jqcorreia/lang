@@ -752,7 +752,7 @@ parse_external_block :: proc(p: ^Parser, lib_name: string) -> ^Ast_Block {
 	// Deduplicate linker libs
 	found := false
 	for lib in compiler.external_linker_libs {
-		if lib == lib_name {found = true; break}
+		if lib == lib_name {found = true;break}
 	}
 	if !found {append(&compiler.external_linker_libs, lib_name)}
 

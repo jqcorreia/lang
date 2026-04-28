@@ -25,7 +25,7 @@ fn main() {
     mutate(&a) // This will modify the original array
     printf("After mutation, first element: %d\n", a[0]) //
 
-    c: [4]i32 = [1,2,3,4]
-    d: [4]i32 = [2,0,0,0]
-    e := c + d
+    // c: [4]i32 = [1,2,3,4]
+    // d: [4]i32 = [2,0,0,0]
+    // e := c + d
 }

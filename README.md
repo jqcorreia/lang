@@ -46,16 +46,17 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Transparent struct field access dereference
 - [x] Reversable ranges
 - [x] Boolean literals
-- [ ] Enums
+- [x] Enums (basic u64 incremental ones)
+- [x] Have the notion of addressable types 
 - [ ] Tagged Unions
 - [ ] Make sure that the available types are synched with the primitive types in codegen
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Make `external` blocks its own AST node kind, in order to have linking rules and prefixes
 - [ ] Make sure that lexer is UTF-8 compliant
-- [ ] Have the notion of addressable types (?)
 - [ ] Add check for cyclic import
 - [ ] Runtime bounds checking for array access
 - [ ] API and code cleanups after a first working pass
+- [ ] Array programming (element-wise operations)
 
 # Try it
 ```

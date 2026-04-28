@@ -1,0 +1,18 @@
+import "std:c"
+
+struct Foo {
+    x: u64
+    y: u64
+}
+
+fn display(self: &Foo) -> str {
+    return "from display()"
+}
+
+
+fn main() {
+    f := Foo { x = 100, y = 200 }
+    printf("Hello Methods\n")
+
+    printf("Hello %s\n", f.display())
+}

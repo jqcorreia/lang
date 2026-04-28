@@ -6,7 +6,7 @@ import "core:os"
 import "core:testing"
 
 TEST_FOLDER :: "tests"
-SKIP_TESTS := [?]string{"arrays.z"}
+SKIP_TESTS := [?]string{"methods.z", "bench_large.z"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {

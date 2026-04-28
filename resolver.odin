@@ -367,21 +367,18 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		}
 		variadic_found := false
 		for arg, i in e.args {
-			if variadic_found {
-				arg.type = resolve_expr_type(arg, scope, span)
+			arg.type = resolve_expr_type(arg, scope, span)
+
+			if variadic_found || i >= len(decl.params) {
 				continue
 			}
-			if i >= len(decl.params) {
-				arg.type = resolve_expr_type(arg, scope, span)
-				continue
-			}
+
 			param := &decl.params[i]
 			if param.variadic_marker {
 				variadic_found = true
-				arg.type = resolve_expr_type(arg, scope, span)
 				continue
 			}
-			arg_type := resolve_expr_type(arg, scope, span)
+
 			decl_type := param.symbol.type
 			if decl_type == nil {
 				// Not resolved yet, do it here
@@ -390,14 +387,10 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 				decl_type = param_type
 			}
 			if decl_type != nil {
-				coerced_type := type_coercion(arg_type, decl_type, scope)
+				coerced_type := type_coercion(arg.type, decl_type, scope)
 				if coerced_type != nil {
 					set_expr_type(arg, coerced_type, scope)
-				} else {
-					arg.type = arg_type // keep actual type, checker will report
 				}
-			} else {
-				arg.type = arg_type
 			}
 		}
 		expr.type = e.callee.type
