@@ -32,6 +32,7 @@ compiler := Compiler{}
 compiler_init :: proc() {
 	compiler.exe_dir = filepath.dir(string(os.args[0]))
 	setup_native_types(&compiler) // Initialize the native type pointers
+
 }
 
 compiler_reset :: proc() {

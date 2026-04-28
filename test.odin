@@ -16,7 +16,19 @@ run_tests :: proc(t: ^testing.T) {
 	fis, _ := os.read_dir(handle, -1, context.allocator)
 	os.close(handle)
 
+	defer {
+		for fi in fis {
+			delete(fi.fullpath)
+		}
+		delete(fis)
+		delete(compiler.current_filepath)
+		delete(compiler.exe_dir)
+
+		for _, t in compiler.types do free(t)
+	}
+
 	for fi in fis {
+		context.allocator = context.temp_allocator
 		skip := false
 		for name in SKIP_TESTS {
 			if fi.name == name {
@@ -44,5 +56,6 @@ run_tests :: proc(t: ^testing.T) {
 			}
 		}
 		testing.expectf(t, build_ok, "[%s] compilation failed", fi.name)
+		free_all(context.temp_allocator)
 	}
 }
