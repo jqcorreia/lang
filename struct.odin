@@ -34,7 +34,7 @@ struct_bind :: proc(node: ^Ast_Node, data: ^Ast_Struct_Decl, cur_scope: ^Scope) 
 	}
 }
 
-struct_resolve :: proc(node: ^Ast_Node) {
+struct_decl_resolve :: proc(node: ^Ast_Node) {
 	data := node.data.(Ast_Struct_Decl)
 	type_sym, ok := resolve_symbol(node.scope, data.name)
 	if !ok {
@@ -46,6 +46,59 @@ struct_resolve :: proc(node: ^Ast_Node) {
 		type_sym.type.fields[idx].type = resolve_type_expr(&field.type_expr, node.scope, node.span)
 	}
 }
+
+struct_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
+	e := expr.data.(Expr_Struct_Literal)
+	type := resolve_type_expr(&e.type_expr, scope, span)
+	if type == &error_type {
+		expr.type = &error_type
+		return &error_type
+	}
+
+	expr.type = type
+	for arg_name, arg in e.args {
+		for field in type.fields {
+			if field.name == arg_name {
+				arg_type := resolve_expr_type(arg, scope, span)
+				coerced_type := type_coercion(arg_type, field.type, scope)
+				if coerced_type != nil {
+					set_expr_type(arg, coerced_type, scope)
+				} else {
+					arg.type = arg_type
+				}
+			}
+		}
+	}
+	return type
+}
+
+struct_member_resolve :: proc(
+	expr: ^Expr,
+	struct_type: ^Type,
+	scope: ^Scope,
+	span: Span,
+) -> ^Type {
+	e := expr.data.(Expr_Member)
+
+	for &field in struct_type.fields {
+		if e.member == field.name {
+			expr.type = field.type
+			return expr.type
+		}
+	}
+
+	error_span(span, "Struct '%s' has no field '%s'", struct_type_name(struct_type), e.member)
+	expr.type = &error_type
+	return &error_type
+}
+
+struct_type_name :: proc(t: ^Type) -> string {
+	for name, type in compiler.types {
+		if type == t do return name
+	}
+	return "<anonymous>"
+}
+
 struct_decl_check :: proc(c: ^Checker, s: ^Ast_Struct_Decl, scope: ^Scope, span: Span) {
 	for field in s.symbol.type.fields {
 		if field.type == nil || field.type.kind == .Error {
@@ -74,30 +127,18 @@ struct_emit_body :: proc(gen: ^Generator, s: ^Ast_Struct_Decl, scope: ^Scope, sp
 	AddGlobal(gen.module, llvm_type, "dummy_struct_use")
 }
 
-struct_emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, span: Span) {
+struct_emit_into :: proc(
+	gen: ^Generator,
+	expr: ^Expr,
+	dest: ValueRef,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
 	e := expr.data.(Expr_Struct_Literal)
-	type := resolve_type_expr(&e.type_expr, scope, span)
+	type := expr.type
 	struct_llvm_type := get_llvm_type(gen, type)
 
-	for field in type.fields {
-		field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, dest, u32(field.index), "")
-		arg := e.args[field.name]
-		if arg == nil {
-			// In case of non defined field, zero initialize the literal
-			BuildStore(gen.builder, make_zero_value(gen, field.type), field_ptr)
-		} else if field.type.kind == .Struct || field.type.kind == .Array {
-			emit_into(gen, arg, field_ptr, scope, span)
-		} else {
-			BuildStore(gen.builder, emit_value(gen, arg, scope, span), field_ptr)
-		}
-	}
-}
-
-struct_emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
-	e := expr.data.(Expr_Struct_Literal)
-	type := resolve_type_expr(&e.type_expr, scope, span)
-	struct_llvm_type := get_llvm_type(gen, type)
-	ptr := build_entry_alloca(gen, struct_llvm_type, "")
+	ptr := dest == nil ? build_entry_alloca(gen, struct_llvm_type, "") : dest
 
 	for field in type.fields {
 		field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, ptr, u32(field.index), "")
@@ -111,7 +152,12 @@ struct_emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: S
 			BuildStore(gen.builder, emit_value(gen, arg, scope, span), field_ptr)
 		}
 	}
+
 	return ptr
+}
+
+struct_emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
+	return struct_emit_into(gen, expr, nil, scope, span)
 }
 
 struct_emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {

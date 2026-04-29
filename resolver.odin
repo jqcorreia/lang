@@ -63,7 +63,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 		}
 
 	case Ast_Struct_Decl:
-		struct_resolve(node)
+		struct_decl_resolve(node)
 
 	case Ast_Enum_Decl:
 	// This shouldn't be needed
@@ -154,27 +154,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		return sym.type
 
 	case Expr_Struct_Literal:
-		type := resolve_type_expr(&e.type_expr, scope, span)
-		if type == &error_type {
-			expr.type = &error_type
-			return &error_type
-		}
-
-		expr.type = type
-		for arg_name, arg in e.args {
-			for field in type.fields {
-				if field.name == arg_name {
-					arg_type := resolve_expr_type(arg, scope, span)
-					coerced_type := type_coercion(arg_type, field.type, scope)
-					if coerced_type != nil {
-						set_expr_type(arg, coerced_type, scope)
-					} else {
-						arg.type = arg_type
-					}
-				}
-			}
-		}
-		return type
+		return struct_literal_resolve(expr, scope, span)
 
 	case Expr_Array_Literal:
 		elem_type: ^Type
@@ -192,7 +172,12 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 
 	case Expr_Variable:
 		sym, ok := resolve_symbol(scope, e.value)
-		if !ok || sym.type == nil {
+		if !ok {
+			error_span(span, "Undefined variable '%s'", e.value)
+			expr.type = &error_type
+			return &error_type
+		}
+		if sym.type == nil {
 			expr.type = &error_type
 			return &error_type
 		}
@@ -200,39 +185,35 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		return sym.type
 
 	case Expr_Member:
-		type := resolve_expr_type(e.base, scope, span)
-
-		// Support pointer to struct
-		if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Struct {
-			type = type.pointee_type
-		}
-
-		if type == nil || (type.kind != .Struct && type.kind != .Enum) {
+		base_type := resolve_expr_type(e.base, scope, span)
+		if base_type.kind == .Error {
+			// Already reported by the inner resolution; don't cascade.
 			expr.type = &error_type
 			return &error_type
 		}
 
-		if type.kind == .Struct {
-			for &f in type.fields {
-				if f.name == e.member {
-					// e.base.type = type
-					expr.type = f.type
-					return f.type
-				}
-			}
+		type := base_type
+		if type.kind == .Pointer && type.pointee_type != nil {
+			type = type.pointee_type
 		}
-		// In this case just set and return the base type
-		// The enum_variants loop is there to check if the variant exists
-		// and only then set the type and return it, otherwise it ends on error branch
+
+		if type.kind == .Struct {
+			return struct_member_resolve(expr, type, scope, span)
+		}
+
+		// Enum error reporting still lives in the checker until enum.odin pilot.
 		if type.kind == .Enum {
 			for &f in type.enum_variants {
 				if f.name == e.member {
 					expr.type = type
-					return expr.type
+					return type
 				}
 			}
+			expr.type = &error_type
+			return &error_type
 		}
 
+		error_span(span, "Cannot access member '%s' on non-aggregate type", e.member)
 		expr.type = &error_type
 		return &error_type
 

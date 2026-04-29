@@ -92,11 +92,6 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 			}
 		}
 
-	case Expr_Variable:
-		if expr.type.kind == .Error {
-			error_span(span, "Undefined symbol '%s'", e.value)
-		}
-
 	case Expr_Unary:
 		check_expr(c, e.expr, scope, span)
 		if e.expr.type.kind == .Error {
@@ -159,25 +154,15 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 		check_call(c, e, expr, scope, span)
 
 	case Expr_Member:
+		// Struct + "not an aggregate" + undefined-variable errors now report from
+		// resolver (Expr_Member / Expr_Variable). Enum-side reporting stays here
+		// until the enum.odin pilot moves it; the cast is guarded so nested
+		// member access (e.base is itself an Expr_Member) does not crash.
 		if expr.type.kind == .Error {
-			name := e.base.data.(Expr_Variable).value
-			sym, ok := resolve_symbol(scope, name)
-			if !ok {
-				error_span(span, "Undefined variable '%s'", name)
-			} else {
-				base_type := sym.type
-				is_struct := base_type.kind == .Struct
-				is_ptr_to_struct :=
-					base_type.kind == .Pointer &&
-					base_type.pointee_type != nil &&
-					base_type.pointee_type.kind == .Struct
-				is_enum := base_type.kind == .Enum
-				if !is_struct && !is_ptr_to_struct && !is_enum {
-					error_span(span, "'%s' is not a struct nor enum", name)
-				} else if is_enum {
-					error_span(span, "Enum '%s' has no variant '%s'", name, e.member)
-				} else {
-					error_span(span, "Struct '%s' has no field '%s'", name, e.member)
+			if base, ok := e.base.data.(Expr_Variable); ok {
+				sym, sym_ok := resolve_symbol(scope, base.value)
+				if sym_ok && sym.type != nil && sym.type.kind == .Enum {
+					error_span(span, "Enum '%s' has no variant '%s'", base.value, e.member)
 				}
 			}
 		}
