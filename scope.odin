@@ -59,23 +59,7 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 			error_span(node.span, "Re-declaration of variable '%s'", data.name)
 		}
 	case Ast_Struct_Decl:
-		existing, ok := resolve_symbol(cur_scope, data.name)
-		if !ok {
-			type := new(Type)
-			type.kind = .Struct
-			type.fields = {}
-			sym := make_symbol(.Type)
-			sym.name = data.name
-			sym.type = type
-			cur_scope.symbols[data.name] = sym
-			data.symbol = sym
-			for &field, idx in data.fields {
-				append(&sym.type.fields, Struct_Field{name = field.name, index = idx})
-			}
-		} else {
-			error_span(node.span, "Re-declaration of struct '%s'", data.name)
-			data.symbol = existing
-		}
+		struct_bind(node, &data, cur_scope)
 	case Ast_Enum_Decl:
 		existing, ok := resolve_symbol(cur_scope, data.name)
 		if !ok {

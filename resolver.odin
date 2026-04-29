@@ -63,19 +63,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 		}
 
 	case Ast_Struct_Decl:
-		type_sym, ok := resolve_symbol(node.scope, data.name)
-		if !ok {
-			return
-		}
-
-		data.symbol.type = type_sym.type
-		for &field, idx in data.fields {
-			type_sym.type.fields[idx].type = resolve_type_expr(
-				&field.type_expr,
-				node.scope,
-				node.span,
-			)
-		}
+		struct_resolve(node)
 
 	case Ast_Enum_Decl:
 	// This shouldn't be needed

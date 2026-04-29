@@ -32,7 +32,7 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	case Ast_Function:
 		check_function(c, &data, node.scope, node.span)
 	case Ast_Struct_Decl:
-		check_struct_decl(c, &data, node.scope, node.span)
+		struct_decl_check(c, &data, node.scope, node.span)
 	case Ast_Enum_Decl:
 		check_enum_decl(c, &data, node.scope, node.span)
 	case Ast_Return:
@@ -294,14 +294,6 @@ check_function :: proc(c: ^Checker, s: ^Ast_Function, scope: ^Scope, span: Span)
 		c.current_function = s.symbol
 		check_block(c, s.body, span)
 		c.current_function = old_function
-	}
-}
-
-check_struct_decl :: proc(c: ^Checker, s: ^Ast_Struct_Decl, scope: ^Scope, span: Span) {
-	for field in s.symbol.type.fields {
-		if field.type == nil || field.type.kind == .Error {
-			error_span(span, "Unresolved type for field '%s' in '%s'", field.name, s.name)
-		}
 	}
 }
 

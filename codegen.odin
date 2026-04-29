@@ -14,64 +14,6 @@ Generator :: struct {
 	empty_str_ptr:   ValueRef,
 }
 
-// Returns the integer type used for ABI-passing small structs on x86-64 System V.
-// A struct whose fields are all integer/float primitives totalling <= 8 bytes is passed
-// as a single i32 (<= 4 bytes) or i64 (<= 8 bytes) instead of being expanded field-by-field.
-// Returns the byte size of any type, or 0 if it can't be computed
-get_type_byte_size :: proc(type: ^Type) -> u32 {
-	if type == nil {return 0}
-	#partial switch type.kind {
-	case .Int8, .Uint8, .Bool:
-		return 1
-	case .Int16, .Uint16:
-		return 2
-	case .Int32, .Uint32:
-		return 4
-	case .Int64, .Uint64:
-		return 8
-	case .Float32:
-		return 4
-	case .Float64:
-		return 8
-	case .Pointer, .CString:
-		return 8
-	case .Enum:
-		return 8
-	case .Struct:
-		total: u32 = 0
-		for field in type.fields {
-			field_size := get_type_byte_size(field.type)
-			if field_size == 0 {return 0}
-			total += field_size
-		}
-		return total
-	case .Array:
-		if type.elem_type == nil {return 0}
-		elem_size := get_type_byte_size(type.elem_type)
-		if elem_size == 0 {return 0}
-		return elem_size * u32(type.size)
-	}
-	return 0
-}
-
-// Small structs (<= 8 bytes) are coerced to integers for register passing (C ABI)
-get_abi_int_type_for_struct :: proc(gen: ^Generator, type: ^Type) -> (TypeRef, bool) {
-	if type == nil || type.kind != .Struct {return nil, false}
-	total_bytes := get_type_byte_size(type)
-	if total_bytes == 0 {return nil, false}
-	if total_bytes <= 4 {
-		return Int32TypeInContext(gen.ctx), true
-	} else if total_bytes <= 8 {
-		return Int64TypeInContext(gen.ctx), true
-	}
-	return nil, false
-}
-
-// Large structs (> 16 bytes) are passed by pointer with caller-side copy
-is_large_struct :: proc(type: ^Type) -> bool {
-	if type == nil || type.kind != .Struct {return false}
-	return get_type_byte_size(type) > 16
-}
 
 get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	if type.kind == .Array {
@@ -116,7 +58,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	case Ast_Var_Decl:
 		emit_var_decl(gen, &data, node.scope, node.span)
 	case Ast_Struct_Decl:
-		emit_struct_body(gen, &data, node.scope, node.span)
+		struct_emit_body(gen, &data, node.scope, node.span)
 	case Ast_Function:
 		if !data.external {
 			emit_function_body(gen, &data, node.scope, node.span)
@@ -140,6 +82,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	}
 }
 
+
 emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, span: Span) {
 	#partial switch &e in expr.data {
 	case Expr_Array_Literal:
@@ -159,21 +102,7 @@ emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, s
 			}
 		}
 	case Expr_Struct_Literal:
-		type := resolve_type_expr(&e.type_expr, scope, span)
-		struct_llvm_type := get_llvm_type(gen, type)
-
-		for field in type.fields {
-			field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, dest, u32(field.index), "")
-			arg := e.args[field.name]
-			if arg == nil {
-				// In case of non defined field, zero initialize the literal
-				BuildStore(gen.builder, make_zero_value(gen, field.type), field_ptr)
-			} else if field.type.kind == .Struct || field.type.kind == .Array {
-				emit_into(gen, arg, field_ptr, scope, span)
-			} else {
-				BuildStore(gen.builder, emit_value(gen, arg, scope, span), field_ptr)
-			}
-		}
+		struct_emit_into(gen, expr, dest, scope, span)
 	case:
 		// General fallback: emit value and store into dest
 		val := emit_value(gen, expr, scope, span)
@@ -190,23 +119,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		return ptr
 
 	case Expr_Struct_Literal:
-		type := resolve_type_expr(&e.type_expr, scope, span)
-		struct_llvm_type := get_llvm_type(gen, type)
-		ptr := build_entry_alloca(gen, struct_llvm_type, "")
-
-		for field in type.fields {
-			field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, ptr, u32(field.index), "")
-			arg := e.args[field.name]
-			if arg == nil {
-				// In case of non defined field, zero initialize the literal
-				BuildStore(gen.builder, make_zero_value(gen, field.type), field_ptr)
-			} else if field.type.kind == .Struct || field.type.kind == .Array {
-				emit_into(gen, arg, field_ptr, scope, span)
-			} else {
-				BuildStore(gen.builder, emit_value(gen, arg, scope, span), field_ptr)
-			}
-		}
-		return ptr
+		return struct_emit_address(gen, expr, scope, span)
 
 	case Expr_Variable:
 		sym, ok := resolve_symbol(scope, e.value)
@@ -320,9 +233,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), addr, "")
 
 	case Expr_Struct_Literal:
-		addr := emit_address(gen, expr, scope, span)
-		type := resolve_type_expr(&e.type_expr, scope, span)
-		return BuildLoad2(gen.builder, get_llvm_type(gen, type), addr, "")
+		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:
 		if e.base.type.kind == .Enum {
 			for f in e.base.type.enum_variants {
@@ -598,25 +509,6 @@ emit_function_decl :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 	gen.types[sym] = fn_type
 }
 
-emit_struct_decl :: proc(gen: ^Generator, s: ^Ast_Struct_Decl, scope: ^Scope, span: Span) {
-	llvm_type := StructCreateNamed(gen.ctx, strings.clone_to_cstring(s.name))
-	sym := s.symbol
-	gen.primitive_types[sym.type] = llvm_type
-}
-
-emit_struct_body :: proc(gen: ^Generator, s: ^Ast_Struct_Decl, scope: ^Scope, span: Span) {
-	sym := s.symbol
-	llvm_type := gen.primitive_types[sym.type]
-
-	field_types: [dynamic]TypeRef
-
-	for field in sym.type.fields {
-		append(&field_types, get_llvm_type(gen, field.type))
-	}
-
-	StructSetBody(llvm_type, raw_data(field_types), u32(len(field_types)), 0)
-	AddGlobal(gen.module, llvm_type, "dummy_struct_use")
-}
 
 emit_function_body :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
 	sym := s.symbol
@@ -946,7 +838,7 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 	emit_struct_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
 		if snode, ok := node.data.(Ast_Struct_Decl); ok {
 			gen := cast(^Generator)userdata
-			emit_struct_decl(gen, &snode, node.scope, node.span)
+			struct_emit_decl(gen, &snode, node.scope, node.span)
 		}
 	}
 	emit_function_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {

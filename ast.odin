@@ -88,18 +88,6 @@ Ast_Enum_Variant :: struct {
 	value: i64,
 }
 
-Ast_Struct_Decl :: struct {
-	name:   string,
-	fields: [dynamic]Ast_Struct_Field,
-	symbol: ^Symbol,
-}
-
-Ast_Struct_Field :: struct {
-	name:      string,
-	type_expr: Type_Expr,
-	symbol:    ^Symbol,
-}
-
 Ast_Block :: struct {
 	statements:            []^Ast_Node,
 	terminated:            bool,
