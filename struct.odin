@@ -167,6 +167,49 @@ struct_emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Spa
 	return BuildLoad2(gen.builder, get_llvm_type(gen, type), addr, "")
 }
 
+struct_emit_const :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueRef {
+	llvm_type := get_llvm_type(gen, expr.type)
+	e := expr.data.(Expr_Struct_Literal)
+	field_vals: [dynamic]ValueRef
+	for field in expr.type.fields {
+		if arg, ok := e.args[field.name]; ok {
+			append(&field_vals, make_const_value(gen, arg, scope))
+		} else {
+			append(&field_vals, ConstNull(get_llvm_type(gen, field.type)))
+		}
+	}
+	return ConstNamedStruct(llvm_type, raw_data(field_vals), u32(len(field_vals)))
+}
+
+struct_member_emit_address :: proc(
+	gen: ^Generator,
+	expr: ^Expr_Member,
+	base_type: ^Type,
+	base_ptr: ValueRef,
+) -> ValueRef {
+	llvm_type := get_llvm_type(gen, base_type)
+	// @Note: this is always traversing the field list searching for the correct index
+	// Maybe have this memoized in some way
+	field_index := 0
+	for f in base_type.fields {
+		if f.name == expr.member {
+			field_index = f.index
+			break
+		}
+	}
+	return BuildStructGEP2(gen.builder, llvm_type, base_ptr, u32(field_index), "")
+}
+
+struct_member_emit_value :: proc(
+	gen: ^Generator,
+	expr: ^Expr,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
+	ptr := emit_address(gen, expr, scope, span)
+	return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), ptr, "")
+}
+
 // Returns the integer type used for ABI-passing small structs on x86-64 System V.
 // A struct whose fields are all integer/float primitives totalling <= 8 bytes is passed
 // as a single i32 (<= 4 bytes) or i64 (<= 8 bytes) instead of being expanded field-by-field.

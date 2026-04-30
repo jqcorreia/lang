@@ -139,25 +139,15 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		if e.base.type.kind == .Pointer {
 			base_type = e.base.type.pointee_type
 			base_ptr = emit_value(gen, e.base, scope, span)
-			llvm_type = get_llvm_type(gen, e.base.type.pointee_type)
 		} else {
 			base_type = e.base.type
 			base_ptr = emit_address(gen, e.base, scope, span)
-			llvm_type = get_llvm_type(gen, e.base.type)
 		}
 
-		if base_type.kind == .Struct {
-			// @Note: this is always traversing the field list searching for the correct index
-			// Maybe have this memoized in some way
-			field_index := 0
-			for f in base_type.fields {
-				if f.name == e.member {
-					field_index = f.index
-					break
-				}
-			}
+		llvm_type = get_llvm_type(gen, base_type)
 
-			return BuildStructGEP2(gen.builder, llvm_type, base_ptr, u32(field_index), "")
+		if base_type.kind == .Struct {
+			return struct_member_emit_address(gen, &e, base_type, base_ptr)
 		}
 
 		if base_type.kind == .Enum {
@@ -235,6 +225,8 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Struct_Literal:
 		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:
+		if e.base.type.kind == .Struct {
+		}
 		if e.base.type.kind == .Enum {
 			for f in e.base.type.enum_variants {
 				if f.name == e.member {
@@ -242,8 +234,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 				}
 			}
 		}
-		ptr := emit_address(gen, expr, scope, span)
-		return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), ptr, "")
+		return struct_member_emit_value(gen, expr, scope, span)
 	case Expr_Index:
 		ptr := emit_address(gen, expr, scope, span)
 		llvm_type := get_llvm_type(gen, expr.type)
