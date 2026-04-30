@@ -14,7 +14,8 @@ Ast_Struct_Field :: struct {
 	symbol:    ^Symbol,
 }
 
-struct_bind :: proc(node: ^Ast_Node, data: ^Ast_Struct_Decl, cur_scope: ^Scope) {
+struct_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
+	data := &node.data.(Ast_Struct_Decl)
 	existing, ok := resolve_symbol(cur_scope, data.name)
 	if !ok {
 		type := new(Type)
@@ -35,7 +36,7 @@ struct_bind :: proc(node: ^Ast_Node, data: ^Ast_Struct_Decl, cur_scope: ^Scope) 
 }
 
 struct_decl_resolve :: proc(node: ^Ast_Node) {
-	data := node.data.(Ast_Struct_Decl)
+	data := &node.data.(Ast_Struct_Decl)
 	type_sym, ok := resolve_symbol(node.scope, data.name)
 	if !ok {
 		return

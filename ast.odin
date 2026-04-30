@@ -76,18 +76,6 @@ Ast_Function :: struct {
 	external:      bool,
 }
 
-Ast_Enum_Decl :: struct {
-	name:      string,
-	type_expr: ^Type_Expr,
-	symbol:    ^Symbol,
-	variants:  [dynamic]Ast_Enum_Variant,
-}
-
-Ast_Enum_Variant :: struct {
-	name:  string,
-	value: i64,
-}
-
 Ast_Block :: struct {
 	statements:            []^Ast_Node,
 	terminated:            bool,

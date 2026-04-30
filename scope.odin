@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Symbol :: struct {
 	name:  string,
 	kind:  Symbol_Kind,
@@ -59,25 +57,9 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 			error_span(node.span, "Re-declaration of variable '%s'", data.name)
 		}
 	case Ast_Struct_Decl:
-		struct_bind(node, &data, cur_scope)
+		struct_bind(node, cur_scope)
 	case Ast_Enum_Decl:
-		existing, ok := resolve_symbol(cur_scope, data.name)
-		if !ok {
-			type := new(Type)
-			type.kind = .Enum
-			type.fields = {}
-			sym := make_symbol(.Type)
-			sym.name = data.name
-			sym.type = type
-			cur_scope.symbols[data.name] = sym
-			data.symbol = sym
-			for &field, idx in data.variants {
-				append(&sym.type.enum_variants, Enum_Variant{name = field.name, value = i64(idx)})
-			}
-		} else {
-			error_span(node.span, "Re-declaration of enum '%s'", data.name)
-			data.symbol = existing
-		}
+		enum_bind(node, cur_scope)
 	case Ast_Function:
 		new_scope := make_scope(.Function, parent = cur_scope)
 		symbol := new(Symbol)
