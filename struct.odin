@@ -88,16 +88,11 @@ struct_member_resolve :: proc(
 		}
 	}
 
-	error_span(span, "Struct '%s' has no field '%s'", struct_type_name(struct_type), e.member)
+	name, _ := get_type_name(scope, struct_type)
+	error_span(span, "Struct '%s' has no field '%s'", name, e.member)
 	expr.type = &error_type
-	return &error_type
-}
 
-struct_type_name :: proc(t: ^Type) -> string {
-	for name, type in compiler.types {
-		if type == t do return name
-	}
-	return "<anonymous>"
+	return &error_type
 }
 
 struct_decl_check :: proc(c: ^Checker, s: ^Ast_Struct_Decl, scope: ^Scope, span: Span) {

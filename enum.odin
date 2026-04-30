@@ -32,3 +32,26 @@ enum_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 		data.symbol = existing
 	}
 }
+
+enum_resolve :: proc(node: ^Ast_Node) {
+	// This shouldn't be needed
+	// The type of the symbol created by this node is already set during scope binding
+}
+
+enum_member_resolve :: proc(expr: ^Expr, type: ^Type, scope: ^Scope, span: Span) -> ^Type {
+	e := expr.data.(Expr_Member)
+
+
+	for &f in type.enum_variants {
+		if f.name == e.member {
+			expr.type = type
+			return type
+		}
+	}
+
+	name, _ := get_type_name(scope, type)
+	error_span(span, "Enum '%s' has no variant '%s'", name, e.member)
+
+	expr.type = &error_type
+	return &error_type
+}

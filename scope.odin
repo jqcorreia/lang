@@ -133,6 +133,22 @@ resolve_symbol :: proc(current_scope: ^Scope, name: string) -> (^Symbol, bool) {
 	return nil, false
 }
 
+get_type_symbol :: proc(current_scope: ^Scope, type: ^Type) -> (^Symbol, bool) {
+	s := current_scope
+	for s != nil {
+		for _, sym in s.symbols {
+			if sym.kind == .Type && sym.type == type do return sym, true
+		}
+		s = s.parent
+	}
+	return nil, false
+}
+get_type_name :: proc(current_scope: ^Scope, type: ^Type) -> (string, bool) {
+	sym, ok := get_type_symbol(current_scope, type)
+	name := ok ? sym.name : "<anonymous>"
+	return name, false
+}
+
 get_scope_function :: proc(scope: ^Scope) -> ^Symbol {
 	for cur := scope; cur.parent != nil; cur = cur.parent {
 		if cur.function != nil {

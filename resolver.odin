@@ -66,14 +66,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 		struct_decl_resolve(node)
 
 	case Ast_Enum_Decl:
-	// This shouldn't be needed
-	// The type of the symbol created by this node is already set during scope binding
-	// type_sym, ok := resolve_symbol(node.scope, data.name)
-	// if !ok {
-	// 	return
-	// }
-
-	// data.symbol.type = type_sym.type
+		enum_resolve(node)
 
 	case Ast_Function:
 		for &param in data.params {
@@ -201,16 +194,8 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			return struct_member_resolve(expr, type, scope, span)
 		}
 
-		// Enum error reporting still lives in the checker until enum.odin pilot.
 		if type.kind == .Enum {
-			for &f in type.enum_variants {
-				if f.name == e.member {
-					expr.type = type
-					return type
-				}
-			}
-			expr.type = &error_type
-			return &error_type
+			return enum_member_resolve(expr, type, scope, span)
 		}
 
 		error_span(span, "Cannot access member '%s' on non-aggregate type", e.member)
