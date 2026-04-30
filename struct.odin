@@ -161,9 +161,8 @@ struct_emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: S
 }
 
 struct_emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
-	e := expr.data.(Expr_Struct_Literal)
 	addr := struct_emit_address(gen, expr, scope, span)
-	type := resolve_type_expr(&e.type_expr, scope, span)
+	type := expr.type
 	return BuildLoad2(gen.builder, get_llvm_type(gen, type), addr, "")
 }
 

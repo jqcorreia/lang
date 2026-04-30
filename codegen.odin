@@ -386,15 +386,7 @@ make_const_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueRe
 	case Expr_String_Literal:
 		return make_global_string_ptr(gen, e.value)
 	case Expr_Struct_Literal:
-		field_vals: [dynamic]ValueRef
-		for field in expr.type.fields {
-			if arg, ok := e.args[field.name]; ok {
-				append(&field_vals, make_const_value(gen, arg, scope))
-			} else {
-				append(&field_vals, ConstNull(get_llvm_type(gen, field.type)))
-			}
-		}
-		return ConstNamedStruct(llvm_type, raw_data(field_vals), u32(len(field_vals)))
+		return struct_emit_const(gen, expr, scope)
 	case Expr_Array_Literal:
 		elem_type := get_llvm_type(gen, expr.type.elem_type)
 		elem_vals: [dynamic]ValueRef
