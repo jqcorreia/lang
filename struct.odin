@@ -184,10 +184,23 @@ struct_emit_const :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueR
 struct_member_emit_address :: proc(
 	gen: ^Generator,
 	expr: ^Expr_Member,
-	base_type: ^Type,
-	base_ptr: ValueRef,
+	scope: ^Scope,
+	span: Span,
 ) -> ValueRef {
+	base_type: ^Type
+	base_ptr: ValueRef
+
+	// Calculate base base_ptr
+	if expr.base.type.kind == .Pointer {
+		base_type = expr.base.type.pointee_type
+		base_ptr = emit_value(gen, expr.base, scope, span)
+	} else {
+		base_type = expr.base.type
+		base_ptr = emit_address(gen, expr.base, scope, span)
+	}
+
 	llvm_type := get_llvm_type(gen, base_type)
+
 	// @Note: this is always traversing the field list searching for the correct index
 	// Maybe have this memoized in some way
 	field_index := 0

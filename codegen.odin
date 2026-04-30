@@ -133,7 +133,6 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 	case Expr_Member:
 		base_type: ^Type
 		base_ptr: ValueRef
-		llvm_type: TypeRef
 
 		// Calculate base base_ptr
 		if e.base.type.kind == .Pointer {
@@ -144,10 +143,8 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 			base_ptr = emit_address(gen, e.base, scope, span)
 		}
 
-		llvm_type = get_llvm_type(gen, base_type)
-
 		if base_type.kind == .Struct {
-			return struct_member_emit_address(gen, &e, base_type, base_ptr)
+			return struct_member_emit_address(gen, &e, scope, span)
 		}
 
 		if base_type.kind == .Enum {
@@ -225,16 +222,23 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Struct_Literal:
 		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:
-		if e.base.type.kind == .Struct {
+		base_type: ^Type
+		if e.base.type.kind == .Pointer {
+			base_type = e.base.type.pointee_type
+		} else {
+			base_type = e.base.type
 		}
-		if e.base.type.kind == .Enum {
+
+		if base_type.kind == .Struct {
+			return struct_member_emit_value(gen, expr, scope, span)
+		}
+		if base_type.kind == .Enum {
 			for f in e.base.type.enum_variants {
 				if f.name == e.member {
 					return ConstInt(Int64TypeInContext(gen.ctx), u64(f.value), 0)
 				}
 			}
 		}
-		return struct_member_emit_value(gen, expr, scope, span)
 	case Expr_Index:
 		ptr := emit_address(gen, expr, scope, span)
 		llvm_type := get_llvm_type(gen, expr.type)
