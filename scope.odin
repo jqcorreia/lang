@@ -143,6 +143,7 @@ get_type_symbol :: proc(current_scope: ^Scope, type: ^Type) -> (^Symbol, bool) {
 	}
 	return nil, false
 }
+
 get_type_name :: proc(current_scope: ^Scope, type: ^Type) -> (string, bool) {
 	sym, ok := get_type_symbol(current_scope, type)
 	name := ok ? sym.name : "<anonymous>"

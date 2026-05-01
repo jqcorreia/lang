@@ -38,6 +38,21 @@ enum_resolve :: proc(node: ^Ast_Node) {
 	// The type of the symbol created by this node is already set during scope binding
 }
 
+enum_decl_check :: proc(c: ^Checker, s: ^Ast_Enum_Decl, scope: ^Scope, span: Span) {
+	if len(s.variants) == 0 {
+		error_span(span, "Enum '%s' has no variants", s.name)
+		return
+	}
+	for v, i in s.variants {
+		for j in 0 ..< i {
+			if s.variants[j].name == v.name {
+				error_span(span, "Duplicate variant '%s' in enum '%s'", v.name, s.name)
+				break
+			}
+		}
+	}
+}
+
 enum_member_resolve :: proc(expr: ^Expr, type: ^Type, scope: ^Scope, span: Span) -> ^Type {
 	e := expr.data.(Expr_Member)
 
@@ -54,4 +69,14 @@ enum_member_resolve :: proc(expr: ^Expr, type: ^Type, scope: ^Scope, span: Span)
 
 	expr.type = &error_type
 	return &error_type
+}
+
+enum_member_emit_value :: proc(gen: ^Generator, expr: ^Expr) -> ValueRef {
+	e := expr.data.(Expr_Member)
+	for f in e.base.type.enum_variants {
+		if f.name == e.member {
+			return ConstInt(Int64TypeInContext(gen.ctx), u64(f.value), 0)
+		}
+	}
+	unreachable()
 }

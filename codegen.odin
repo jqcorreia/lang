@@ -131,34 +131,11 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		return var
 
 	case Expr_Member:
-		base_type: ^Type
-		base_ptr: ValueRef
-
-		// Calculate base base_ptr
-		if e.base.type.kind == .Pointer {
-			base_type = e.base.type.pointee_type
-			base_ptr = emit_value(gen, e.base, scope, span)
-		} else {
-			base_type = e.base.type
-			base_ptr = emit_address(gen, e.base, scope, span)
-		}
+		// Get the base type
+		base_type: ^Type = e.base.type.kind == .Pointer ? e.base.type.pointee_type : e.base.type
 
 		if base_type.kind == .Struct {
 			return struct_member_emit_address(gen, &e, scope, span)
-		}
-
-		if base_type.kind == .Enum {
-			// @Note: this is always traversing the field list searching for the correct index
-			// Maybe have this memoized in some way
-			field_index := 0
-			for f in base_type.enum_variants {
-				if f.name == e.member {
-					break
-				}
-				field_index += 1
-			}
-
-			return ConstInt(Int64TypeInContext(gen.ctx), u64(field_index), 0)
 		}
 
 	case Expr_Index:
@@ -233,11 +210,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			return struct_member_emit_value(gen, expr, scope, span)
 		}
 		if base_type.kind == .Enum {
-			for f in e.base.type.enum_variants {
-				if f.name == e.member {
-					return ConstInt(Int64TypeInContext(gen.ctx), u64(f.value), 0)
-				}
-			}
+			return enum_member_emit_value(gen, expr)
 		}
 	case Expr_Index:
 		ptr := emit_address(gen, expr, scope, span)

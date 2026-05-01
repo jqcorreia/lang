@@ -34,7 +34,7 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	case Ast_Struct_Decl:
 		struct_decl_check(c, &data, node.scope, node.span)
 	case Ast_Enum_Decl:
-		check_enum_decl(c, &data, node.scope, node.span)
+		enum_decl_check(c, &data, node.scope, node.span)
 	case Ast_Return:
 		check_return(c, &data, node.scope, node.span)
 	case Ast_If:
@@ -59,7 +59,7 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 
 check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 	#partial switch e in expr.data {
-	case Expr_Int_Literal, Expr_Float_Literal, Expr_String_Literal:
+	case Expr_Int_Literal, Expr_Float_Literal, Expr_String_Literal, Expr_Member:
 	// Nothing to check
 
 	case Expr_Array_Literal:
@@ -152,20 +152,6 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 
 	case Expr_Call:
 		check_call(c, e, expr, scope, span)
-
-	case Expr_Member:
-		// Struct + "not an aggregate" + undefined-variable errors now report from
-		// resolver (Expr_Member / Expr_Variable). Enum-side reporting stays here
-		// until the enum.odin pilot moves it; the cast is guarded so nested
-		// member access (e.base is itself an Expr_Member) does not crash.
-		if expr.type.kind == .Error {
-			if base, ok := e.base.data.(Expr_Variable); ok {
-				sym, sym_ok := resolve_symbol(scope, base.value)
-				if sym_ok && sym.type != nil && sym.type.kind == .Enum {
-					error_span(span, "Enum '%s' has no variant '%s'", base.value, e.member)
-				}
-			}
-		}
 
 	case Expr_Struct_Literal:
 		if expr.type.kind == .Error {
@@ -282,20 +268,6 @@ check_function :: proc(c: ^Checker, s: ^Ast_Function, scope: ^Scope, span: Span)
 	}
 }
 
-check_enum_decl :: proc(c: ^Checker, s: ^Ast_Enum_Decl, scope: ^Scope, span: Span) {
-	if len(s.variants) == 0 {
-		error_span(span, "Enum '%s' has no variants", s.name)
-		return
-	}
-	for v, i in s.variants {
-		for j in 0 ..< i {
-			if s.variants[j].name == v.name {
-				error_span(span, "Duplicate variant '%s' in enum '%s'", v.name, s.name)
-				break
-			}
-		}
-	}
-}
 
 check_return :: proc(c: ^Checker, s: ^Ast_Return, scope: ^Scope, span: Span) {
 	if c.current_function == nil {
