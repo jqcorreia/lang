@@ -70,8 +70,8 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 			raw_path := import_node.path
 
 			// Resolve import path:
-			//   "std:c"       → <exe_dir>/std/c.z  (compiler-relative, ":" as collection separator)
-			//   "vendor/raylib" → <source_dir>/vendor/raylib.z (source-relative)
+			//   "std:c"         -> <exe_dir>/std/c.z  (compiler-relative, ":" as collection separator)
+			//   "vendor/raylib" -> <source_dir>/vendor/raylib.z (source-relative)
 			resolved_path: string
 			if colon_idx := strings.index(raw_path, ":"); colon_idx >= 0 {
 				collection := raw_path[:colon_idx]
@@ -752,7 +752,7 @@ parse_external_block :: proc(p: ^Parser, lib_name: string) -> ^Ast_Block {
 	// Deduplicate linker libs
 	found := false
 	for lib in compiler.external_linker_libs {
-		if lib == lib_name {found = true;break}
+		if lib == lib_name {found = true; break}
 	}
 	if !found {append(&compiler.external_linker_libs, lib_name)}
 

@@ -51,6 +51,8 @@ build_entry_alloca :: proc(gen: ^Generator, type: TypeRef, name: cstring) -> Val
 
 emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	#partial switch &data in node.data {
+	case Ast_Block, Ast_Import, Ast_Enum_Decl:
+	// Do nothing
 	case Ast_Expr:
 		emit_value(gen, data.expr, node.scope, node.span)
 	case Ast_Var_Assign:
@@ -63,12 +65,6 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 		if !data.external {
 			emit_function_body(gen, &data, node.scope, node.span)
 		}
-	case Ast_Block:
-	// Do nothing
-	case Ast_Import:
-	// Do nothing
-	case Ast_Enum_Decl:
-	// Do nothing
 	case Ast_Return:
 		emit_return(gen, &data, node.scope, node.span)
 	case Ast_If:
