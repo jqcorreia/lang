@@ -27,6 +27,10 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	if type.kind == .Untyped_Int {
 		return Int64TypeInContext(gen.ctx)
 	}
+	// Untyped floats default to double at codegen
+	if type.kind == .Untyped_Float {
+		return DoubleTypeInContext(gen.ctx)
+	}
 	// @Note: for now enums are i64
 	if type.kind == .Enum {
 		return Int64TypeInContext(gen.ctx)
@@ -175,7 +179,13 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		if type == nil {
 			type = int64
 		}
-		return ConstInt(type, u64(e.value), 0)
+		// Deal with the case that is a untyped int literal coerced into a float
+		// Check type_coercion() for the case of untyped_int -> numeric_float
+		if type != nil && expr.type.numeric_float {
+			return ConstReal(type, f64(e.value))
+		} else {
+			return ConstInt(type, u64(e.value), 0)
+		}
 
 	case Expr_Float_Literal:
 		type := get_llvm_type(gen, expr.type)

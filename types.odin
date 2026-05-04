@@ -109,6 +109,11 @@ type_coercion :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return from
 	}
 
+	// Allow untyped int to be converted to a float
+	if from.kind == .Untyped_Int && to.numeric_float {
+		return to
+	}
+
 	if to.kind == .Untyped_Int && from.kind == .Untyped_Int {
 		sym, _ := resolve_symbol(scope, "i64")
 		return sym.type

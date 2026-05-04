@@ -1,0 +1,26 @@
+import "std:c"
+
+external "m" {
+    fn sqrt(v: f64) -> f64
+}
+
+struct Vec {
+    x: f64
+    y: f64
+}
+
+fn vec3_add(v1: Vec, v2: Vec) -> Vec {
+    return Vec { 
+        x = v1.x + v2.x, 
+        y = v1.y + v2.y 
+    }
+}
+
+fn main() {
+    v1: Vec = Vec { x = 100, y = 100 }
+    v2: Vec = Vec { x = 60, y = 70 }
+
+    v := vec3_add(v1, v2)
+    printf("%f\n", v.x)
+    printf("%f\n", sqrt(100.0))
+}
