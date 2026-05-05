@@ -29,5 +29,5 @@ fn main() {
 
     v := vec_add(v1, v2)
     printf("%f\n", v.x)
-    printf("%f\n", vec_dist(v1, v2))
+    printf("%f\n", v1.vec_dist(v2))
 }

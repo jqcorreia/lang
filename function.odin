@@ -14,6 +14,7 @@ Ast_Function :: struct {
 Expr_Call :: struct {
 	callee: ^Expr,
 	args:   []^Expr,
+	method: bool, // true if desugared from receiver.method(args) — enables auto-ref/deref on arg 0
 }
 
 function_decl_parse :: proc(p: ^Parser, external: bool = false) -> ^Ast_Function {
@@ -175,7 +176,8 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		e.callee.type = sym.type
 	}
 	variadic_found := false
-	for arg, i in e.args {
+	for i in 0 ..< len(e.args) {
+		arg := e.args[i]
 		arg.type = resolve_expr_type(arg, scope, span)
 
 		if variadic_found || i >= len(decl.params) {
@@ -195,6 +197,34 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			param.symbol.type = param_type
 			decl_type = param_type
 		}
+
+		// Auto-ref / auto-deref the receiver of a method-style call
+		if e.method && i == 0 && decl_type != nil && arg.type != nil {
+			if decl_type.kind == .Pointer &&
+			   arg.type.kind != .Pointer &&
+			   decl_type.pointee_type == arg.type {
+				wrapped := new(Expr)
+				wrapped.data = Expr_Unary {
+					op   = .Ampersand,
+					expr = arg,
+				}
+				wrapped.type = decl_type
+				e.args[i] = wrapped
+				arg = wrapped
+			} else if arg.type.kind == .Pointer &&
+			   decl_type.kind != .Pointer &&
+			   arg.type.pointee_type == decl_type {
+				wrapped := new(Expr)
+				wrapped.data = Expr_Unary {
+					op   = .Star,
+					expr = arg,
+				}
+				wrapped.type = decl_type
+				e.args[i] = wrapped
+				arg = wrapped
+			}
+		}
+
 		if decl_type != nil {
 			coerced_type := type_coercion(arg.type, decl_type, scope)
 			if coerced_type != nil {

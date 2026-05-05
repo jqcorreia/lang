@@ -425,11 +425,12 @@ expr_ident :: proc(value: string) -> ^Expr {
 	return ret
 }
 
-expr_call :: proc(callee: ^Expr, args: []^Expr) -> ^Expr {
+expr_call :: proc(callee: ^Expr, args: []^Expr, method: bool = false) -> ^Expr {
 	ret := new(Expr)
 	ret.data = Expr_Call {
 		callee = callee,
 		args   = args,
+		method = method,
 	}
 	return ret
 }
@@ -572,7 +573,16 @@ parse_expression :: proc(
 			left = expr_call(left, args)
 		case .Period:
 			field_name := expect(p, .Identifier).value.(string)
-			left = expr_member(left, field_name)
+			if current(p).kind == .LParen {
+				advance(p) // consume '(' — parse_call_args expects it already eaten
+				rest := parse_call_args(p)
+				all := make([]^Expr, len(rest) + 1)
+				all[0] = left
+				for a, i in rest do all[i + 1] = a
+				left = expr_call(expr_ident(field_name), all, method = true)
+			} else {
+				left = expr_member(left, field_name)
+			}
 		case .DotDot, .DotDotEq:
 			right := parse_expression(p, lbp + 1, allow_struct_literal)
 			range := new(Expr)

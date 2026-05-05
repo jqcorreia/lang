@@ -5,7 +5,7 @@ struct Foo {
     y: u64
 }
 
-fn display(self: &Foo) -> str {
+fn display(self: &Foo) -> cstr {
     return "from display()"
 }
 

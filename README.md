@@ -48,6 +48,7 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Boolean literals
 - [x] Enums (basic u64 incremental ones)
 - [x] Have the notion of addressable types 
+- [x] UFCS (Uniform Function Call Syntax), introducing 'methods'
 - [ ] Tagged Unions
 - [ ] Make sure that the available types are synched with the primitive types in codegen
 - [ ] Proper string with bound check and not null-terminated
