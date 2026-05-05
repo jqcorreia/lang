@@ -61,25 +61,7 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	case Ast_Enum_Decl:
 		enum_bind(node, cur_scope)
 	case Ast_Function:
-		new_scope := make_scope(.Function, parent = cur_scope)
-		symbol := new(Symbol)
-		symbol.name = data.name
-		symbol.kind = .Function
-		symbol.decl = node
-		symbol.scope = cur_scope
-		new_scope.function = symbol
-		cur_scope.symbols[data.name] = symbol
-		for &param in data.params {
-			sym := make_symbol(.Param)
-			sym.decl = node
-			sym.name = param.name
-			new_scope.symbols[param.name] = sym
-			param.symbol = sym
-		}
-		data.symbol = symbol
-		if !data.external {
-			get_block_symbols(data.body, new_scope)
-		}
+		function_bind(node, cur_scope)
 	case Ast_If:
 		new_scope_then := make_scope(.Block, parent = cur_scope)
 		get_block_symbols(data.then_block, new_scope_then)

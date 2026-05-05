@@ -125,14 +125,14 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	case t.kind == .External_Keyword:
 		advance(p)
 		lib_name := expect(p, .QuotedString)
-		data^ = parse_external_block(p, lib_name.value.(string))^
+		data^ = function_external_block_parse(p, lib_name.value.(string))^
 	case t.kind == .Identifier:
 		data^ = parse_identifier(p)
 	case t.kind == .Star:
 		data^ = parse_deref(p)
 	case t.kind == .Func_Keyword:
 		advance(p)
-		data^ = parse_function_decl(p, external = false)^
+		data^ = function_decl_parse(p, external = false)^
 	case t.kind == .Struct_Keyword:
 		advance(p)
 		data^ = parse_struct_decl(p)^
@@ -618,70 +618,6 @@ parse_call_args :: proc(p: ^Parser) -> []^Expr {
 	return args[:]
 }
 
-parse_function_decl :: proc(p: ^Parser, external: bool = false) -> ^Ast_Function {
-	func_name := expect(p, .Identifier).value.(string)
-	params := parse_function_decl_params(p)
-	ret_type := parse_function_ret_type(p)
-
-	body: ^Ast_Block
-	if !external {
-		body = parse_block(p)
-	}
-
-	func := new(Ast_Function)
-
-	func.name = func_name
-	func.params = params
-	func.body = body
-	func.ret_type_expr = ret_type
-	func.external = external
-
-	return func
-}
-
-parse_function_decl_params :: proc(p: ^Parser) -> []Param {
-	params: [dynamic]Param
-	done := false
-	expect(p, .LParen)
-	for !done {
-		#partial switch current(p).kind {
-		case .Identifier:
-			param_name := current(p).lexeme
-			advance(p)
-			expect(p, .Colon)
-			type_expr := parse_type_expr(p)
-			append(&params, Param{name = param_name, type_expr = type_expr})
-
-		case .Ellipsis:
-			append(&params, Param{variadic_marker = true})
-			advance(p)
-		case .Comma:
-			if peek(p).kind == .RParen {
-				unexpected_token(peek(p))
-			}
-			advance(p)
-		case .RParen:
-			advance(p)
-			done = true
-		case:
-			unexpected_token(current(p))
-		}
-	}
-
-	return params[:]
-}
-
-parse_function_ret_type :: proc(p: ^Parser) -> Type_Expr {
-	if current(p).kind == .RightArrow {
-		advance(p)
-
-		type_token := parse_type_expr(p)
-
-		return type_token
-	}
-
-	return ""
-}
 
 parse_struct_literal :: proc(p: ^Parser, struct_name: string) -> ^Expr {
 	result := new(Expr)
@@ -744,46 +680,6 @@ parse_block :: proc(p: ^Parser) -> ^Ast_Block {
 
 	sb := new(Ast_Block)
 	sb.statements = res[:]
-
-	return sb
-}
-
-parse_external_block :: proc(p: ^Parser, lib_name: string) -> ^Ast_Block {
-	// Deduplicate linker libs
-	found := false
-	for lib in compiler.external_linker_libs {
-		if lib == lib_name {found = true
-			break
-		}
-	}
-	if !found {append(&compiler.external_linker_libs, lib_name)}
-
-	res: [dynamic]^Ast_Node
-
-	expect(p, .LBrace)
-
-	for current(p).kind != .RBrace {
-		// Ignore empty lines
-		if current(p).kind == .NewLine {
-			advance(p)
-			continue
-		}
-
-		expect(p, .Func_Keyword)
-		data := parse_function_decl(p, external = true)
-		stmt := new(Ast_Node)
-		stmt.data = data^
-		append(&res, stmt)
-	}
-	advance(p)
-
-	if current(p).kind == .NewLine {
-		advance(p)
-	}
-
-	sb := new(Ast_Block)
-	sb.statements = res[:]
-	sb.is_external_functions = true
 
 	return sb
 }

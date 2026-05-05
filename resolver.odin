@@ -69,14 +69,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 		enum_resolve(node)
 
 	case Ast_Function:
-		for &param in data.params {
-			param.symbol.type = resolve_type_expr(&param.type_expr, node.scope, node.span)
-		}
-		data.symbol.type = resolve_type_expr(&data.ret_type_expr, node.scope, node.span)
-
-		if !data.external {
-			resolve_block_types(data.body)
-		}
+		function_resolve(node)
 
 	case Ast_Expr:
 		data.expr.type = resolve_expr_type(data.expr, node.scope, node.span)
@@ -176,6 +169,9 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		}
 		expr.type = sym.type
 		return sym.type
+
+	case Expr_Call:
+		return function_call_resolve(expr, scope, span)
 
 	case Expr_Member:
 		base_type := resolve_expr_type(e.base, scope, span)
@@ -303,52 +299,6 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		expr.type = coerced_type
 		return coerced_type
 
-	case Expr_Call:
-		func_name := e.callee.data.(Expr_Variable).value
-		sym, ok := resolve_symbol(scope, func_name)
-		if !ok {
-			expr.type = &error_type
-			return &error_type
-		}
-		decl := sym.decl.data.(Ast_Function)
-		if sym.type == nil {
-			// Not resolved yet, do it here
-			type := resolve_type_expr(&decl.ret_type_expr, scope, span)
-			e.callee.type = type
-			sym.type = type
-		} else {
-			e.callee.type = sym.type
-		}
-		variadic_found := false
-		for arg, i in e.args {
-			arg.type = resolve_expr_type(arg, scope, span)
-
-			if variadic_found || i >= len(decl.params) {
-				continue
-			}
-
-			param := &decl.params[i]
-			if param.variadic_marker {
-				variadic_found = true
-				continue
-			}
-
-			decl_type := param.symbol.type
-			if decl_type == nil {
-				// Not resolved yet, do it here
-				param_type := resolve_type_expr(&param.type_expr, scope, span)
-				param.symbol.type = param_type
-				decl_type = param_type
-			}
-			if decl_type != nil {
-				coerced_type := type_coercion(arg.type, decl_type, scope)
-				if coerced_type != nil {
-					set_expr_type(arg, coerced_type, scope)
-				}
-			}
-		}
-		expr.type = e.callee.type
-		return e.callee.type
 	}
 	unimplemented("You should not be here at all")
 }

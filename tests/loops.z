@@ -13,7 +13,7 @@ fn main() {
         printf("b: %d\n", b)
     }
 
-    for c in 0..number() {
+    for c in 1..number() {
         printf("c: %d\n", c)
     }
 }

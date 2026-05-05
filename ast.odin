@@ -67,15 +67,6 @@ Param :: struct {
 	variadic_marker: bool,
 }
 
-Ast_Function :: struct {
-	name:          string,
-	params:        []Param,
-	body:          ^Ast_Block,
-	ret_type_expr: Type_Expr,
-	symbol:        ^Symbol,
-	external:      bool,
-}
-
 Ast_Block :: struct {
 	statements:            []^Ast_Node,
 	terminated:            bool,
@@ -163,10 +154,6 @@ Expr_Variable :: struct {
 	value: string,
 }
 
-Expr_Call :: struct {
-	callee: ^Expr,
-	args:   []^Expr,
-}
 
 Expr_Struct_Literal :: struct {
 	type_expr: Type_Expr,
