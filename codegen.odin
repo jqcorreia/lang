@@ -67,7 +67,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 		struct_emit_body(gen, &data, node.scope, node.span)
 	case Ast_Function:
 		if !data.external {
-			emit_function_body(gen, &data, node.scope, node.span)
+			function_body_emit(gen, &data, node.scope, node.span)
 		}
 	case Ast_Return:
 		emit_return(gen, &data, node.scope, node.span)
@@ -223,7 +223,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		llvm_type := get_llvm_type(gen, expr.type)
 		return BuildLoad2(gen.builder, llvm_type, ptr, "")
 	case Expr_Call:
-		return emit_call(gen, e, scope, span)
+		return function_call_emit(gen, e, scope, span)
 	case Expr_Variable:
 		ptr := emit_address(gen, expr, scope, span)
 		sym, _ := resolve_symbol(scope, e.value)
@@ -427,164 +427,12 @@ emit_memcpy :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Span
 	// BuildMemCpy(gen.builder, ptr, align, addr, align, i64_size)
 }
 
-emit_function_decl :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
-	param_types: [dynamic]TypeRef
-
-	fn_type: TypeRef
-
-	//NOTE(quadrado): This must change so a function can return more than primitive types
-	ret_type_ref := get_llvm_type(gen, s.symbol.type)
-
-	if len(s.params) > 0 {
-		variadic := false
-		for param in s.params {
-			if param.variadic_marker {
-				variadic = true
-			} else {
-				param_type := get_llvm_type(gen, param.symbol.type)
-				// ABI lowering: small structs -> integer, large structs -> pointer
-				if s.external {
-					if int_type, ok := get_abi_int_type_for_struct(gen, param.symbol.type); ok {
-						param_type = int_type
-					}
-				}
-				if is_large_struct(param.symbol.type) {
-					param_type = PointerTypeInContext(gen.ctx, 0)
-				}
-				append(&param_types, param_type)
-			}
-		}
-		fn_type = FunctionType(ret_type_ref, &param_types[0], u32(len(param_types)), i32(variadic))
-	} else {
-		fn_type = FunctionType(ret_type_ref, nil, 0, 0)
-	}
-
-	sym := s.symbol
-	// The runtime defines _zero_main() which becomes "main" in LLVM IR — the
-	// entry point that libc's crt calls. The user's main() is renamed to
-	// _user_main so _zero_main can call it.
-	fn_name := s.name
-	if s.name == "main" && !s.external {
-		fn_name = "_user_main"
-	} else if s.name == "_zero_main" {
-		fn_name = "main"
-	}
-	fn := AddFunction(gen.module, strings.clone_to_cstring(fn_name), fn_type)
-
-	gen.values[sym] = fn
-	gen.types[sym] = fn_type
-}
-
-
-emit_function_body :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
-	sym := s.symbol
-	fn := gen.values[sym]
-
-	SetLinkage(fn, .ExternalLinkage)
-	entry := AppendBasicBlockInContext(gen.ctx, fn, "")
-
-	old_pos := GetInsertBlock(gen.builder)
-	PositionBuilderAtEnd(gen.builder, entry)
-
-	for ast_param, i in s.params {
-		param_sym := ast_param.symbol
-		param := GetParam(fn, u32(i))
-
-		// Large structs are passed by pointer — the param IS the pointer to the caller's copy
-		if is_large_struct(param_sym.type) {
-			gen.values[param_sym] = param
-		} else {
-			param_type := get_llvm_type(gen, param_sym.type)
-			alloca := BuildAlloca(
-				gen.builder,
-				param_type,
-				strings.clone_to_cstring(ast_param.name),
-			)
-			BuildStore(gen.builder, param, alloca)
-			gen.values[param_sym] = alloca
-		}
-	}
-
-	emit_block(gen, s.body)
-
-	/*
-	If function return type is Void and not terminated yet (a explicit return, 
-    which is a valid expression), terminate with a RetVoid
-    NOTE(quadrado): Using the "terminated" field in the Ast is not good but GetBasicBlockTerminator 
-    always returns a value and not nil as expected of a non-terminated block.
-    */
-	if s.symbol.type.kind == .Void && !s.body.terminated {
-		BuildRetVoid(gen.builder)
-	}
-
-	PositionBuilderAtEnd(gen.builder, old_pos)
-	// DumpValue(fn)
-}
-
 emit_return :: proc(gen: ^Generator, s: ^Ast_Return, scope: ^Scope, span: Span) {
 	data := s
 	if data.expr != nil {
 		BuildRet(gen.builder, emit_value(gen, data.expr, scope, span))
 	} else {
 		BuildRetVoid(gen.builder)
-	}
-}
-
-
-emit_call :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
-	fn_name := e.callee.data.(Expr_Variable).value
-
-	sym, ok := resolve_symbol(scope, fn_name)
-	if !ok {
-		fatal_span(span, "Unresolved function %s in function call", fn_name)
-	}
-
-	decl := sym.decl.data.(Ast_Function)
-	args: [dynamic]ValueRef
-	variadic_found := false
-	for a, i in e.args {
-		is_variadic := variadic_found || i >= len(decl.params)
-		if !is_variadic && decl.params[i].variadic_marker {
-			variadic_found = true
-			is_variadic = true
-		}
-		// ABI coercion for external functions: small structs passed as integers
-		if decl.external && !is_variadic && a.type != nil {
-			if int_type, t_ok := get_abi_int_type_for_struct(gen, a.type); t_ok {
-				addr := emit_address(gen, a, scope, span)
-				append(&args, BuildLoad2(gen.builder, int_type, addr, "abi_coerce"))
-				continue
-			}
-		}
-		// Large structs: memcpy to stack and pass pointer (preserves by-value semantics)
-		if is_large_struct(a.type) {
-			src := emit_address(gen, a, scope, span)
-			llvm_type := get_llvm_type(gen, a.type)
-			copy := build_entry_alloca(gen, llvm_type, "byval_copy")
-			size := ConstInt(Int64TypeInContext(gen.ctx), u64(get_type_byte_size(a.type)), 0)
-			BuildMemCpy(gen.builder, copy, 8, src, 8, size)
-			append(&args, copy)
-			continue
-		}
-		val := emit_value(gen, a, scope, span)
-		// C variadic ABI: float args must be promoted to double
-		if is_variadic && a.type != nil && a.type.numeric_float && a.type.kind != .Float64 {
-			val = BuildFPExt(gen.builder, val, DoubleTypeInContext(gen.ctx), "fpext")
-		}
-		append(&args, val)
-	}
-
-	// Lazily emit external function declarations on first use
-	if sym not_in gen.values {
-		emit_function_decl(gen, &decl, scope, span)
-	}
-	sym_type := gen.types[sym]
-	sym_value := gen.values[sym]
-
-	if len(args) == 0 {
-		return BuildCall2(gen.builder, sym_type, sym_value, nil, 0, "")
-	} else {
-		return BuildCall2(gen.builder, sym_type, sym_value, &args[0], u32(len(args)), "")
 	}
 }
 
@@ -812,7 +660,7 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 			// Skip external functions, they are emitted lazily on first call
 			if fnode.external {return}
 			gen := cast(^Generator)userdata
-			emit_function_decl(gen, &fnode, node.scope, node.span)
+			function_decl_emit(gen, &fnode, node.scope, node.span)
 		}
 	}
 

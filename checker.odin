@@ -30,7 +30,7 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	case Ast_Var_Assign:
 		check_assignment(c, &data, node.scope, node.span)
 	case Ast_Function:
-		check_function(c, &data, node.scope, node.span)
+		function_check(c, &data, node.scope, node.span)
 	case Ast_Struct_Decl:
 		struct_decl_check(c, &data, node.scope, node.span)
 	case Ast_Enum_Decl:
@@ -151,7 +151,7 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 		}
 
 	case Expr_Call:
-		check_call(c, e, expr, scope, span)
+		function_call_check(c, e, expr, scope, span)
 
 	case Expr_Struct_Literal:
 		if expr.type.kind == .Error {
@@ -160,54 +160,6 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 	}
 }
 
-check_call :: proc(c: ^Checker, e: Expr_Call, call_expr: ^Expr, scope: ^Scope, span: Span) {
-	func_name := e.callee.data.(Expr_Variable).value
-	sym, ok := resolve_symbol(scope, func_name)
-	if !ok {
-		error_span(span, "Undefined function '%s'", func_name)
-		return
-	}
-	decl := sym.decl.data.(Ast_Function)
-	variadic_found := false
-	required_params := 0
-	for param in decl.params {
-		if !param.variadic_marker {
-			required_params += 1
-		}
-	}
-	if len(e.args) < required_params {
-		error_span(span, "Too few arguments for '%s'", func_name)
-	}
-	for arg, i in e.args {
-		check_expr(c, arg, scope, span)
-		if variadic_found || arg.type.kind == .Error {
-			continue
-		}
-		if i >= len(decl.params) {
-			error_span(span, "Too many arguments for '%s'", func_name)
-			continue
-		}
-		param := decl.params[i]
-		if param.variadic_marker {
-			variadic_found = true
-			continue
-		}
-		decl_type := param.symbol.type
-		if decl_type == nil || decl_type.kind == .Error {
-			continue
-		}
-		if type_coercion(arg.type, decl_type, scope) == nil {
-			error_span(
-				span,
-				"Argument %d of '%s': expected '%s', got '%s'",
-				i + 1,
-				func_name,
-				decl_type.kind,
-				arg.type.kind,
-			)
-		}
-	}
-}
 
 check_var_decl :: proc(c: ^Checker, s: ^Ast_Var_Decl, scope: ^Scope, span: Span) {
 	if s.symbol.type == nil || s.symbol.type.kind == .Error {
@@ -242,29 +194,6 @@ check_assignment :: proc(c: ^Checker, s: ^Ast_Var_Assign, scope: ^Scope, span: S
 	}
 	if type_coercion(s.expr.type, s.lhs.type, scope) == nil {
 		error_span(span, "Cannot assign '%s' to '%s'", s.expr.type.kind, s.lhs.type.kind)
-	}
-}
-
-check_function :: proc(c: ^Checker, s: ^Ast_Function, scope: ^Scope, span: Span) {
-	for param in s.params {
-		if !param.variadic_marker &&
-		   (param.symbol.type == nil || param.symbol.type.kind == .Error) {
-			error_span(
-				span,
-				"Unresolved type '%s' for parameter '%s'",
-				param.type_expr,
-				param.name,
-			)
-		}
-	}
-	if s.symbol.type == nil || s.symbol.type.kind == .Error {
-		error_span(span, "Unresolved return type '%s' for '%s'", s.ret_type_expr, s.name)
-	}
-	if !s.external {
-		old_function := c.current_function
-		c.current_function = s.symbol
-		check_block(c, s.body, span)
-		c.current_function = old_function
 	}
 }
 
