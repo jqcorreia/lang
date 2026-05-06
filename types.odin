@@ -94,9 +94,12 @@ create_primitive_types :: proc(scope: ^Scope) {
 	create_type(.CString, "cstr", scope)
 }
 
-type_coercion :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
+// coerce: directional. Can a `from` value be used where a `to` is expected?
+// Asymmetric — e.g. Untyped_Int → f64 is fine, f64 → Untyped_Int is not.
+// For symmetric "what type do these meet at" queries, use `unify` instead.
+coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	if from.kind == .Array && to.kind == .Array {
-		if from.size == to.size && type_coercion(from.elem_type, to.elem_type, scope) != nil {
+		if from.size == to.size && coerce(from.elem_type, to.elem_type, scope) != nil {
 			return to
 		}
 	}
@@ -105,31 +108,13 @@ type_coercion :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return to
 	}
 
-	if to.kind == .Untyped_Int && from.numeric_integer {
-		return from
-	}
-
 	// Allow untyped int to be converted to a float
 	if from.kind == .Untyped_Int && to.numeric_float {
 		return to
 	}
 
-	if to.kind == .Untyped_Int && from.kind == .Untyped_Int {
-		sym, _ := resolve_symbol(scope, "i64")
-		return sym.type
-	}
-
 	if from.kind == .Untyped_Float && to.numeric_float {
 		return to
-	}
-
-	if to.kind == .Untyped_Float && from.numeric_float {
-		return from
-	}
-
-	if to.kind == .Untyped_Float && from.kind == .Untyped_Float {
-		sym, _ := resolve_symbol(scope, "f64")
-		return sym.type
 	}
 
 	if from.kind == .Nil && to.kind == .Pointer {
@@ -164,13 +149,31 @@ type_coercion :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	return nil
 }
 
+// unify: symmetric. Find the common type two operands meet at — for binary
+// operators, range endpoints, etc. where neither side is the "destination".
+unify :: proc(a: ^Type, b: ^Type, scope: ^Scope) -> ^Type {
+	// Two untyped literals: collapse to the default concrete type
+	if a.kind == .Untyped_Int && b.kind == .Untyped_Int {
+		sym, _ := resolve_symbol(scope, "i64")
+		return sym.type
+	}
+	if a.kind == .Untyped_Float && b.kind == .Untyped_Float {
+		sym, _ := resolve_symbol(scope, "f64")
+		return sym.type
+	}
+	if r := coerce(a, b, scope); r != nil {
+		return r
+	}
+	return coerce(b, a, scope)
+}
+
 // Set the type on an expression and propagate it inward to untyped sub-expressions.
 // This replaces the need for separate coerce_array_elements / coerce_unary_inner calls.
 set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 	expr.type = type
 	#partial switch &e in expr.data {
 	case Expr_Unary:
-		coerced := type_coercion(e.expr.type, type, scope)
+		coerced := coerce(e.expr.type, type, scope)
 		if coerced != nil {
 			set_expr_type(e.expr, coerced, scope)
 		}
@@ -180,7 +183,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 			if elem.type.kind == .Array {
 				set_expr_type(elem, type.elem_type, scope)
 			} else {
-				coerced := type_coercion(elem.type, type.elem_type, scope)
+				coerced := coerce(elem.type, type.elem_type, scope)
 				if coerced != nil {elem.type = coerced}
 			}
 		}

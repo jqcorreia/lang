@@ -174,7 +174,7 @@ check_var_decl :: proc(c: ^Checker, s: ^Ast_Var_Decl, scope: ^Scope, span: Span)
 		check_expr(c, s.expr, scope, span)
 		if s.expr.type != nil &&
 		   s.expr.type.kind != .Error &&
-		   type_coercion(s.expr.type, s.symbol.type, scope) == nil {
+		   coerce(s.expr.type, s.symbol.type, scope) == nil {
 			error_span(
 				span,
 				"Type mismatch in '%s': expected '%s', got '%s'",
@@ -192,7 +192,7 @@ check_assignment :: proc(c: ^Checker, s: ^Ast_Var_Assign, scope: ^Scope, span: S
 	if s.lhs.type.kind == .Error || s.expr.type.kind == .Error {
 		return
 	}
-	if type_coercion(s.expr.type, s.lhs.type, scope) == nil {
+	if coerce(s.expr.type, s.lhs.type, scope) == nil {
 		error_span(span, "Cannot assign '%s' to '%s'", s.expr.type.kind, s.lhs.type.kind)
 	}
 }
@@ -214,7 +214,7 @@ check_return :: proc(c: ^Checker, s: ^Ast_Return, scope: ^Scope, span: Span) {
 	if fn_type == nil || fn_type.kind == .Error {
 		return
 	}
-	if type_coercion(s.expr.type, fn_type, scope) == nil {
+	if coerce(s.expr.type, fn_type, scope) == nil {
 		error_span(
 			span,
 			"Return type mismatch in '%s': expected '%s', got '%s'",

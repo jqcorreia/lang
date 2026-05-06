@@ -135,7 +135,7 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 		data^ = function_decl_parse(p, external = false)^
 	case t.kind == .Struct_Keyword:
 		advance(p)
-		data^ = parse_struct_decl(p)^
+		data^ = struct_decl_parse(p)^
 	case t.kind == .Enum_Keyword:
 		advance(p)
 		data^ = parse_enum_decl(p)^
@@ -310,35 +310,6 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 	return Type_Expr{}
 }
 
-parse_struct_decl :: proc(p: ^Parser) -> ^Ast_Struct_Decl {
-	decl := new(Ast_Struct_Decl)
-	name_token := expect(p, .Identifier)
-
-	struct_name := name_token.value.(string)
-	decl.name = struct_name
-
-	expect(p, .LBrace)
-
-	for current(p).kind != .RBrace {
-		// Ignore empty lines
-		if current(p).kind == .NewLine {
-			advance(p)
-			continue
-		}
-		field_name := expect(p, .Identifier).value.(string)
-		expect(p, .Colon)
-		type_expr := parse_type_expr(p)
-		append(&decl.fields, Ast_Struct_Field{name = field_name, type_expr = type_expr})
-	}
-	advance(p)
-
-	if current(p).kind == .NewLine {
-		advance(p)
-	}
-
-	return decl
-}
-
 parse_enum_decl :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
 	decl := new(Ast_Enum_Decl)
 	name_token := expect(p, .Identifier)
@@ -472,6 +443,8 @@ precedence :: proc(op: Token_Kind) -> int {
 		return 200
 	case .Period:
 		return 200
+	case .Caret:
+		return 100
 	case .Star, .Slash, .Percent:
 		return 20
 	case .Plus, .Minus:

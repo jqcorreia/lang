@@ -15,7 +15,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 	case Ast_Var_Assign:
 		resolve_expr_type(data.lhs, node.scope, node.span)
 		resolve_expr_type(data.expr, node.scope, node.span)
-		coerced_type := type_coercion(data.expr.type, data.lhs.type, node.scope)
+		coerced_type := coerce(data.expr.type, data.lhs.type, node.scope)
 		if coerced_type != nil {
 			set_expr_type(data.expr, coerced_type, node.scope)
 		}
@@ -49,7 +49,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 
 		// Deal with type coercion
 		if data.expr != nil {
-			coerced_type := type_coercion(initializer_expr_type, resolved_type, node.scope)
+			coerced_type := coerce(initializer_expr_type, resolved_type, node.scope)
 			if coerced_type != nil {
 				data.symbol.type = coerced_type
 				set_expr_type(data.expr, coerced_type, node.scope)
@@ -94,7 +94,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 			expr_type := resolve_expr_type(data.expr, node.scope, node.span)
 			sym := get_scope_function(node.scope)
 			if sym != nil && sym.type != nil && sym.type.kind != .Error {
-				coerced_type := type_coercion(expr_type, sym.type, node.scope)
+				coerced_type := coerce(expr_type, sym.type, node.scope)
 				if coerced_type != nil {
 					set_expr_type(data.expr, coerced_type, node.scope)
 				}
@@ -243,7 +243,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			return expr.type
 		}
 
-		coerced := type_coercion(start_type, end_type, scope)
+		coerced := unify(start_type, end_type, scope)
 		if coerced == nil {
 			expr.type = &error_type
 			return &error_type
@@ -260,7 +260,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Binary:
 		left := resolve_expr_type(e.left, scope, span)
 		right := resolve_expr_type(e.right, scope, span)
-		coerced_type := type_coercion(left, right, scope)
+		coerced_type := unify(left, right, scope)
 		if coerced_type == nil {
 			expr.type = &error_type
 			return &error_type
@@ -298,7 +298,6 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 
 		expr.type = coerced_type
 		return coerced_type
-
 	}
 	unimplemented("You should not be here at all")
 }

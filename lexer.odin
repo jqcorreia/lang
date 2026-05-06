@@ -34,6 +34,7 @@ Token_Kind :: enum {
 	Comma,
 	Colon,
 	Period,
+	Caret,
 	Ellipsis,
 	DotDot,
 	DotDotEq,
@@ -375,6 +376,9 @@ lex :: proc(input: string) -> []Token {
 				append(&tokens, Token{kind = .Colon, lexeme = ":", span = one_char_span(lexer)})
 				lexer.pos += 1
 			}
+		case c == '^':
+			append(&tokens, Token{kind = .Caret, lexeme = "^", span = one_char_span(lexer)})
+			lexer.pos += 1
 		case c == '>':
 			if lex_peek(&lexer) == '=' {
 				append(

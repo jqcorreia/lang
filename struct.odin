@@ -14,6 +14,35 @@ Ast_Struct_Field :: struct {
 	symbol:    ^Symbol,
 }
 
+struct_decl_parse :: proc(p: ^Parser) -> ^Ast_Struct_Decl {
+	decl := new(Ast_Struct_Decl)
+	name_token := expect(p, .Identifier)
+
+	struct_name := name_token.value.(string)
+	decl.name = struct_name
+
+	expect(p, .LBrace)
+
+	for current(p).kind != .RBrace {
+		// Ignore empty lines
+		if current(p).kind == .NewLine {
+			advance(p)
+			continue
+		}
+		field_name := expect(p, .Identifier).value.(string)
+		expect(p, .Colon)
+		type_expr := parse_type_expr(p)
+		append(&decl.fields, Ast_Struct_Field{name = field_name, type_expr = type_expr})
+	}
+	advance(p)
+
+	if current(p).kind == .NewLine {
+		advance(p)
+	}
+
+	return decl
+}
+
 struct_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	data := &node.data.(Ast_Struct_Decl)
 	existing, ok := resolve_symbol(cur_scope, data.name)
@@ -61,7 +90,7 @@ struct_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type 
 		for field in type.fields {
 			if field.name == arg_name {
 				arg_type := resolve_expr_type(arg, scope, span)
-				coerced_type := type_coercion(arg_type, field.type, scope)
+				coerced_type := coerce(arg_type, field.type, scope)
 				if coerced_type != nil {
 					set_expr_type(arg, coerced_type, scope)
 				} else {

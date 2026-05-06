@@ -226,7 +226,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		}
 
 		if decl_type != nil {
-			coerced_type := type_coercion(arg.type, decl_type, scope)
+			coerced_type := coerce(arg.type, decl_type, scope)
 			if coerced_type != nil {
 				set_expr_type(arg, coerced_type, scope)
 			}
@@ -301,7 +301,7 @@ function_call_check :: proc(
 		if decl_type == nil || decl_type.kind == .Error {
 			continue
 		}
-		if type_coercion(arg.type, decl_type, scope) == nil {
+		if coerce(arg.type, decl_type, scope) == nil {
 			error_span(
 				span,
 				"Argument %d of '%s': expected '%s', got '%s'",

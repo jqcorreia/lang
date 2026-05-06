@@ -180,7 +180,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			type = int64
 		}
 		// Deal with the case that is a untyped int literal coerced into a float
-		// Check type_coercion() for the case of untyped_int -> numeric_float
+		// Check coerce() for the case of untyped_int -> numeric_float
 		if type != nil && expr.type.numeric_float {
 			return ConstReal(type, f64(e.value))
 		} else {
