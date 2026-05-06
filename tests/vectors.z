@@ -9,6 +9,7 @@ struct Vec {
     y: f64
 }
 
+
 fn vec_add(v1: Vec, v2: Vec) -> Vec {
     return Vec { 
         x = v1.x + v2.x, 
@@ -17,8 +18,8 @@ fn vec_add(v1: Vec, v2: Vec) -> Vec {
 }
 
 fn vec_dist(v1: Vec, v2: Vec) -> f64 {
-    x := (v2.x - v1.x) * 2
-    y := (v2.y - v1.y) * 2
+    x := (v2.x - v1.x) * (v2.x - v1.x) // ^ 2
+    y := (v2.y - v1.y) * (v2.y - v1.y) // ^ 2
 
     return sqrt(x + y)
 }
@@ -30,4 +31,7 @@ fn main() {
     v := vec_add(v1, v2)
     printf("%f\n", v.x)
     printf("%f\n", v1.vec_dist(v2))
+
+
+    printf("2^4 = %d\n", pow(2, 4))
 }

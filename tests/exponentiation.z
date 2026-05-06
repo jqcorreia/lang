@@ -1,0 +1,6 @@
+import "std:c"
+
+
+fn main() {
+    printf("2 ^ 4 = %d\n", 2 ^ 4)
+}

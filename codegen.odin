@@ -277,6 +277,15 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 				return BuildFDiv(gen.builder, left, right, "fdiv")
 			}
 			return BuildSDiv(gen.builder, left, right, "div")
+		case .Caret:
+			if e.left.type.numeric_integer && e.right.type.numeric_integer {
+				// Call a prelude function
+				sym, _ := resolve_symbol(scope, "pow")
+				sym_type := gen.types[sym]
+				sym_value := gen.values[sym]
+				args := []ValueRef{left, right}
+				return BuildCall2(gen.builder, sym_type, sym_value, &args[0], 2, "")
+			}
 		case .Percent:
 			if expr.type.numeric_float {
 				return BuildFRem(gen.builder, left, right, "fmod")

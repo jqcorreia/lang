@@ -38,3 +38,11 @@ fn _zero_main() {
     main()
     exit(0)
 }
+
+fn pow(b: i64, e: i64) -> i64 {
+    res := b
+    for x in 0..e-1 {
+        res = res * b
+    }
+    return res
+}
