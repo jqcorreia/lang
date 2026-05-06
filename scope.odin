@@ -47,7 +47,7 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 			bind_scopes(s, cur_scope)
 		}
 	case Ast_Var_Decl:
-		_, ok := resolve_symbol(cur_scope, data.name)
+		existing, ok := resolve_symbol(cur_scope, data.name)
 		if !ok {
 			sym := make_symbol(.Variable)
 			sym.name = data.name
@@ -55,6 +55,7 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 			data.symbol = sym
 		} else {
 			error_span(node.span, "Re-declaration of variable '%s'", data.name)
+			data.symbol = existing
 		}
 	case Ast_Struct_Decl:
 		struct_bind(node, cur_scope)

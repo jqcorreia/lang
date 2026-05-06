@@ -2,12 +2,11 @@ import "std:c"
 
 import "vendor:raylib"
 
-W : i32 = 400
+W : i32 = 800
 H : i32 = 800
 background_color := Color{ r= 100, g= 100, b= 0, a= 255 }
 
 fn main() {
-
     InitWindow(W, H, "Bubble")
 
     for {
@@ -18,9 +17,16 @@ fn main() {
         ClearBackground(background_color)
         for y in 0..10 {
             for x in 0..10 {
-                _x : i32 = x * 2
-                _y : i32 = y * 2
-                DrawCircle(_x * 20, _y * 20, 20, Color{ r= 100, g= 0, b= 0, a= 255 }) 
+                cx: i32 = 0
+                cy: i32 = 0
+                if y % 2 == 0 {
+                    cx := x * 20 * 2
+                    cy = y * 20 * 2 - 20
+                } else {
+                    cx = x * 20 * 2 - 20
+                    cy = y * 20 * 2 - 20
+                }
+                DrawCircle(cx, cy, 20, Color{ r= 100, g= 0, b= 0, a= 255 }) 
             }
         }
         EndDrawing()

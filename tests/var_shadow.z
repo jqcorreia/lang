@@ -1,0 +1,6 @@
+fn main() {
+    foo := 1
+    if (foo < 20) {
+        foo := 10
+    }
+}

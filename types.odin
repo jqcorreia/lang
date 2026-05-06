@@ -77,8 +77,8 @@ create_primitive_types :: proc(scope: ^Scope) {
 	create_type(.Void, "", scope)
 	create_type(.Bool, "bool", scope)
 
-	create_type(.Untyped_Int, "untyped_int", scope)
-	create_type(.Untyped_Float, "untyped_float", scope)
+	create_type(.Untyped_Int, "untyped_int", scope, numeric_integer = true)
+	create_type(.Untyped_Float, "untyped_float", scope, numeric_float = true)
 	create_type(.Uint8, "u8", scope, numeric_integer = true)
 	create_type(.Uint16, "u16", scope, numeric_integer = true)
 	create_type(.Uint32, "u32", scope, numeric_integer = true)
@@ -152,15 +152,15 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 // unify: symmetric. Find the common type two operands meet at — for binary
 // operators, range endpoints, etc. where neither side is the "destination".
 unify :: proc(a: ^Type, b: ^Type, scope: ^Scope) -> ^Type {
-	// Two untyped literals: collapse to the default concrete type
-	if a.kind == .Untyped_Int && b.kind == .Untyped_Int {
-		sym, _ := resolve_symbol(scope, "i64")
-		return sym.type
-	}
-	if a.kind == .Untyped_Float && b.kind == .Untyped_Float {
-		sym, _ := resolve_symbol(scope, "f64")
-		return sym.type
-	}
+	// // Two untyped literals: collapse to the default concrete type
+	// if a.kind == .Untyped_Int && b.kind == .Untyped_Int {
+	// 	sym, _ := resolve_symbol(scope, "i64")
+	// 	return sym.type
+	// }
+	// if a.kind == .Untyped_Float && b.kind == .Untyped_Float {
+	// 	sym, _ := resolve_symbol(scope, "f64")
+	// 	return sym.type
+	// }
 	if r := coerce(a, b, scope); r != nil {
 		return r
 	}
@@ -168,7 +168,7 @@ unify :: proc(a: ^Type, b: ^Type, scope: ^Scope) -> ^Type {
 }
 
 // Set the type on an expression and propagate it inward to untyped sub-expressions.
-// This replaces the need for separate coerce_array_elements / coerce_unary_inner calls.
+// This happens because some expressions can be typed but the components be still untyped
 set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 	expr.type = type
 	#partial switch &e in expr.data {
@@ -176,6 +176,13 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 		coerced := coerce(e.expr.type, type, scope)
 		if coerced != nil {
 			set_expr_type(e.expr, coerced, scope)
+		}
+	case Expr_Binary:
+		if l := coerce(e.left.type, type, scope); l != nil {
+			set_expr_type(e.left, l, scope)
+		}
+		if r := coerce(e.left.type, type, scope); r != nil {
+			set_expr_type(e.right, r, scope)
 		}
 	case Expr_Array_Literal:
 		if type.elem_type == nil {return}
