@@ -4,9 +4,34 @@ import "vendor:raylib"
 
 W : i32 = 800
 H : i32 = 800
+
 background_color := Color{ r= 100, g= 100, b= 0, a= 255 }
 
+bubble_color : [8]Color = [ 
+    Color { r = 95,  b = 152, g = 92,  a = 6  }
+    Color { r = 13,  b = 239, g = 98,  a = 39 }
+    Color { r = 83,  b = 70,  g = 44,  a = 96 }
+    Color { r = 52,  b = 58,  g = 87,  a = 42 }
+    Color { r = 182, b = 124, g = 160, a = 123}
+    Color { r = 95,  b = 90,  g = 177, a = 169}
+    Color { r = 89,  b = 2,   g = 60,  a = 241}
+    Color { r = 28,  b = 122, g = 116, a = 149},
+]
+
+struct Map {
+    data: [10][10]i64
+}
+
 fn main() {
+    map := Map{}
+    for y in 0..10 {
+        for x in 0..10 {
+            rand_color := random() % 8
+            map.data[y][x] = rand_color
+        }
+    }
+    
+
     InitWindow(W, H, "Bubble")
 
     for {
@@ -17,16 +42,17 @@ fn main() {
         ClearBackground(background_color)
         for y in 0..10 {
             for x in 0..10 {
+                rand_color := random() % 8
                 cx: i32 = 0
                 cy: i32 = 0
                 if y % 2 == 0 {
-                    cx := x * 20 * 2
+                    cx = x * 20 * 2
                     cy = y * 20 * 2 - 20
                 } else {
                     cx = x * 20 * 2 - 20
                     cy = y * 20 * 2 - 20
                 }
-                DrawCircle(cx, cy, 20, Color{ r= 100, g= 0, b= 0, a= 255 }) 
+                DrawCircle(cx, cy, 20, bubble_color[map.data[y][x]]) 
             }
         }
         EndDrawing()

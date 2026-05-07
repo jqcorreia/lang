@@ -2,7 +2,7 @@
 //
 // Currently we rely on libc's crt (crt1.o) to provide _start, which calls
 // __libc_start_main, which initializes glibc internals and then calls main().
-// We define _zero_main() here which codegen renames to "main" — the entry
+// We define _zero_main() here which codegen renames to "main" - the entry
 // point that libc's crt calls. The user's main() is renamed to _user_main
 // in codegen so there's no conflict.
 //
@@ -26,6 +26,8 @@ external "c" {
     fn exit(code: i32)
     // fn signal(signum: i32, handler: &u8) -> &u8
     // fn write(fd: i32, buf: cstr, count: u64) -> i64
+    fn srandom(seed: i32)
+    fn time(t: &i64) -> i32
 }
 
 // fn segfault_handler(sig: i32) {
@@ -35,14 +37,19 @@ external "c" {
 
 fn _zero_main() {
     // signal(11, &segfault_handler)
+    __zero_init_random_seed()
     main()
     exit(0)
 }
 
-fn pow(b: i64, e: i64) -> i64 {
+fn __zero_pow(b: i64, e: i64) -> i64 {
     res := b
     for x in 0..e-1 {
         res = res * b
     }
     return res
+}
+
+fn __zero_init_random_seed() {
+    srandom(time(nil)) // Until we have time calling function or proper seed-setting logic
 }

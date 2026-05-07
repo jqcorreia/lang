@@ -280,7 +280,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		case .Caret:
 			if e.left.type.numeric_integer && e.right.type.numeric_integer {
 				// Call a prelude function
-				sym, _ := resolve_symbol(scope, "pow")
+				sym, _ := resolve_symbol(scope, "__zero_pow")
 				sym_type := gen.types[sym]
 				sym_value := gen.values[sym]
 				args := []ValueRef{left, right}
