@@ -1,0 +1,19 @@
+import "std:c"
+
+fn main() {
+    a: i32 = 0xFF
+    b: i32 = 0x10
+    c: i32 = 0xDEAD_BEEF
+    d: i32 = 0x0
+    e: i32 = 0xabcdef
+    f: i32 = 0XCAFE
+
+    printf("a: %d\n", a)     // 255
+    printf("b: %d\n", b)     // 16
+    printf("c: %d\n", c)     // -559038737 (signed 32-bit)
+    printf("d: %d\n", d)     // 0
+    printf("e: %d\n", e)     // 11259375
+    printf("f: %d\n", f)     // 51966
+
+    printf("f: %x\n", f)     // 'cafe'
+}

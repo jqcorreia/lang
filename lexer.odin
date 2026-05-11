@@ -89,6 +89,22 @@ is_numeric :: proc(c: byte) -> bool {
 	return c >= '0' && c <= '9'
 }
 
+is_hex_digit :: proc(c: byte) -> bool {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}
+
+hex_digit_value :: proc(c: byte) -> int {
+	switch {
+	case c >= '0' && c <= '9':
+		return int(c - '0')
+	case c >= 'a' && c <= 'f':
+		return int(c - 'a') + 10
+	case c >= 'A' && c <= 'F':
+		return int(c - 'A') + 10
+	}
+	return 0
+}
+
 is_alphanumeric :: proc(c: byte) -> bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
 }
@@ -132,6 +148,39 @@ lex_number :: proc(lexer: ^Lexer, tokens: ^[dynamic]Token) {
 	is_integer: bool = true
 	is_float: bool = false
 	decimal_points: int = 0
+
+	// Hexadecimal literal: 0x... or 0X...
+	if lexer.input[lexer.pos] == '0' &&
+	   lexer.pos + 1 < len(lexer.input) &&
+	   (lexer.input[lexer.pos + 1] == 'x' || lexer.input[lexer.pos + 1] == 'X') {
+		lexer.pos += 2 // Skip the 0x prefix
+		hex_value: int = 0
+		digit_start := lexer.pos
+		for lexer.pos < len(lexer.input) &&
+		    (is_hex_digit(lexer.input[lexer.pos]) || lexer.input[lexer.pos] == '_') {
+			if lexer.input[lexer.pos] != '_' {
+				hex_value = hex_value * 16 + hex_digit_value(lexer.input[lexer.pos])
+			}
+			lexer.pos += 1
+		}
+		end := lexer.pos
+		if end == digit_start {
+			fatal_span(
+				Span{start = start, end = end},
+				"Hexadecimal literal must have at least one digit",
+			)
+		}
+		append(
+			tokens,
+			Token {
+				kind = .Number,
+				lexeme = lexer.input[start:end],
+				value = hex_value,
+				span = Span{start = start, end = end},
+			},
+		)
+		return
+	}
 
 	for lexer.pos < len(lexer.input) &&
 	    (is_numeric(lexer.input[lexer.pos]) ||
