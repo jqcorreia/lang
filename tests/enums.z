@@ -2,6 +2,11 @@ import "std:c"
 
 enum Direction { Up Down Left Right }
 
+enum Keys {
+    A = 100
+    B = 200
+}
+
 fn opposite(d: Direction) -> Direction {
     if d == Direction.Up {
         return Direction.Down
@@ -26,4 +31,7 @@ fn main() {
 
     d: Direction
     printf("zero-init=%d\n", d)
+
+    k: Keys = Keys.B
+    printf("key=%d\n", k)
 }

@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+
 Ast_Enum_Decl :: struct {
 	name:      string,
 	type_expr: ^Type_Expr,
@@ -28,9 +30,16 @@ enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
 			continue
 		}
 		variant_name := expect(p, .Identifier).value.(string)
+		value := 0
+		if current(p).kind == .Equal {
+			advance(p)
+			val_tok := expect(p, .Number)
+			value = val_tok.value.(int)
+		}
 		// expect(p, .Colon)
 		// type_expr := parse_type_expr(p)
-		append(&decl.variants, Ast_Enum_Variant{name = variant_name})
+		fmt.println(variant_name, value)
+		append(&decl.variants, Ast_Enum_Variant{name = variant_name, value = i64(value)})
 	}
 	advance(p)
 
@@ -53,7 +62,8 @@ enum_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 		scope.symbols[data.name] = sym
 		data.symbol = sym
 		for &field, idx in data.variants {
-			append(&sym.type.enum_variants, Enum_Variant{name = field.name, value = i64(idx)})
+			value := field.value == 0 ? i64(idx) : field.value
+			append(&sym.type.enum_variants, Enum_Variant{name = field.name, value = value})
 		}
 	} else {
 		error_span(node.span, "Re-declaration of enum '%s'", data.name)
