@@ -7,6 +7,11 @@ enum Keys {
     B = 200
 }
 
+enum Type {
+    X = 5
+    Y = 0
+}
+
 fn opposite(d: Direction) -> Direction {
     if d == Direction.Up {
         return Direction.Down
@@ -34,4 +39,7 @@ fn main() {
 
     k: Keys = Keys.B
     printf("key=%d\n", k)
+
+    t: Type = Type.Y
+    printf("type=%d\n", t)
 }

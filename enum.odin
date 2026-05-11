@@ -8,8 +8,9 @@ Ast_Enum_Decl :: struct {
 }
 
 Ast_Enum_Variant :: struct {
-	name:  string,
-	value: i64,
+	name:      string,
+	value:     i64,
+	use_index: bool,
 }
 
 enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
@@ -29,14 +30,19 @@ enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
 		}
 		variant_name := expect(p, .Identifier).value.(string)
 		value := 0
+		use_index := true
 		if current(p).kind == .Equal {
 			advance(p)
 			val_tok := expect(p, .Number)
 			value = val_tok.value.(int)
+			use_index = false
 		}
 		// expect(p, .Colon)
 		// type_expr := parse_type_expr(p)
-		append(&decl.variants, Ast_Enum_Variant{name = variant_name, value = i64(value)})
+		append(
+			&decl.variants,
+			Ast_Enum_Variant{name = variant_name, value = i64(value), use_index = use_index},
+		)
 	}
 	advance(p)
 
@@ -59,7 +65,7 @@ enum_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 		scope.symbols[data.name] = sym
 		data.symbol = sym
 		for &field, idx in data.variants {
-			value := field.value == 0 ? i64(idx) : field.value
+			value := field.use_index ? i64(idx) : field.value
 			append(&sym.type.enum_variants, Enum_Variant{name = field.name, value = value})
 		}
 	} else {
