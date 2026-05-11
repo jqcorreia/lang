@@ -130,7 +130,7 @@ abi_classify_param :: proc(gen: ^Generator, t: ^Type) -> ABI_Lowering {
 	abi_classify_range(t, 0, &eb0, 0, 8)
 
 	if size <= 8 {
-		return ABI_Coerce{
+		return ABI_Coerce {
 			scalar_type = abi_eightbyte_to_llvm(gen, eb0, size),
 			struct_type = struct_ty,
 		}
@@ -139,9 +139,9 @@ abi_classify_param :: proc(gen: ^Generator, t: ^Type) -> ABI_Lowering {
 	// 9..16B -> second eightbyte (bytes 8..size).
 	eb1 := Eightbyte_Class.No_Class
 	abi_classify_range(t, 0, &eb1, 8, 16)
-	return ABI_Split{
-		eb0_type    = abi_eightbyte_to_llvm(gen, eb0, 8),
-		eb1_type    = abi_eightbyte_to_llvm(gen, eb1, size - 8),
+	return ABI_Split {
+		eb0_type = abi_eightbyte_to_llvm(gen, eb0, 8),
+		eb1_type = abi_eightbyte_to_llvm(gen, eb1, size - 8),
 		struct_type = struct_ty,
 	}
 }

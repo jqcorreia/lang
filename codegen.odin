@@ -67,7 +67,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 		struct_emit_body(gen, &data, node.scope, node.span)
 	case Ast_Function:
 		if !data.external {
-			function_body_emit(gen, &data, node.scope, node.span)
+			function_body_emit_sysv(gen, &data, node.scope, node.span)
 		}
 	case Ast_Return:
 		emit_return(gen, &data, node.scope, node.span)
@@ -223,7 +223,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		llvm_type := get_llvm_type(gen, expr.type)
 		return BuildLoad2(gen.builder, llvm_type, ptr, "")
 	case Expr_Call:
-		return function_call_emit(gen, e, scope, span)
+		return function_call_emit_sysv(gen, e, scope, span)
 	case Expr_Variable:
 		ptr := emit_address(gen, expr, scope, span)
 		sym, _ := resolve_symbol(scope, e.value)
@@ -669,7 +669,7 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 			// Skip external functions, they are emitted lazily on first call
 			if fnode.external {return}
 			gen := cast(^Generator)userdata
-			function_decl_emit(gen, &fnode, node.scope, node.span)
+			function_decl_emit_sysv(gen, &fnode, node.scope, node.span)
 		}
 	}
 

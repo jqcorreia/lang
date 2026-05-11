@@ -33,5 +33,5 @@ fn main() {
     printf("%f\n", v1.vec_dist(v2))
 
 
-    printf("2^4 = %d\n", pow(2, 4))
+    printf("2^4 = %d\n", __zero_pow(2, 4))
 }

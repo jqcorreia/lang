@@ -463,3 +463,231 @@ function_body_emit :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, spa
 
 	PositionBuilderAtEnd(gen.builder, old_pos)
 }
+
+
+// --- SysV variants (not yet wired in) ---------------------------------------
+//
+// These three procs drive parameter passing entirely from abi_classify_param,
+// applying SysV AMD64 uniformly to internal and external calls. They exist in
+// parallel with function_{decl,call,body}_emit so the old path keeps working
+// while the new one can be wired in piecewise.
+
+function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
+	param_types: [dynamic]TypeRef
+	byval_param_idxs: [dynamic]u32
+	byval_param_tys: [dynamic]TypeRef
+
+	//NOTE(quadrado): This must change so a function can return more than primitive types
+	ret_type_ref := get_llvm_type(gen, s.symbol.type)
+
+	variadic := false
+	for param in s.params {
+		if param.variadic_marker {
+			variadic = true
+			continue
+		}
+		switch l in abi_classify_param(gen, param.symbol.type) {
+		case ABI_Direct:
+			append(&param_types, l.llvm_type)
+		case ABI_Coerce:
+			append(&param_types, l.scalar_type)
+		case ABI_Split:
+			append(&param_types, l.eb0_type)
+			append(&param_types, l.eb1_type)
+		case ABI_Byval:
+			append(&byval_param_idxs, u32(len(param_types)))
+			append(&byval_param_tys, l.struct_type)
+			append(&param_types, PointerTypeInContext(gen.ctx, 0))
+		}
+	}
+
+	fn_type: TypeRef
+	if len(param_types) > 0 {
+		fn_type = FunctionType(
+			ret_type_ref,
+			&param_types[0],
+			u32(len(param_types)),
+			i32(variadic),
+		)
+	} else {
+		fn_type = FunctionType(ret_type_ref, nil, 0, i32(variadic))
+	}
+
+	sym := s.symbol
+	fn_name := s.name
+	if s.name == "main" && !s.external {
+		fn_name = "_user_main"
+	} else if s.name == "_zero_main" {
+		fn_name = "main"
+	}
+	fn := AddFunction(gen.module, strings.clone_to_cstring(fn_name), fn_type)
+
+	// Byval(StructTy) attributes on the declaration — param index is 1-based
+	// (index 0 is the return slot, function-wide attrs use a sentinel).
+	if len(byval_param_idxs) > 0 {
+		byval_kind := GetEnumAttributeKindForName("byval", 5)
+		for param_idx, k in byval_param_idxs {
+			attr := CreateTypeAttribute(gen.ctx, byval_kind, byval_param_tys[k])
+			AddAttributeAtIndex(fn, param_idx + 1, attr)
+		}
+	}
+
+	gen.values[sym] = fn
+	gen.types[sym] = fn_type
+}
+
+
+function_call_emit_sysv :: proc(
+	gen: ^Generator,
+	e: Expr_Call,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
+	fn_name := e.callee.data.(Expr_Variable).value
+
+	sym, ok := resolve_symbol(scope, fn_name)
+	if !ok {
+		fatal_span(span, "Unresolved function %s in function call", fn_name)
+	}
+
+	decl := sym.decl.data.(Ast_Function)
+	args: [dynamic]ValueRef
+	byval_arg_idxs: [dynamic]u32
+	byval_arg_tys: [dynamic]TypeRef
+
+	variadic_found := false
+	for a, i in e.args {
+		is_variadic := variadic_found || i >= len(decl.params)
+		if !is_variadic && decl.params[i].variadic_marker {
+			variadic_found = true
+			is_variadic = true
+		}
+
+		if is_variadic {
+			val := emit_value(gen, a, scope, span)
+			// C variadic ABI: float args must be promoted to double.
+			if a.type != nil && a.type.numeric_float && a.type.kind != .Float64 {
+				val = BuildFPExt(gen.builder, val, DoubleTypeInContext(gen.ctx), "fpext")
+			}
+			append(&args, val)
+			continue
+		}
+
+		// Classify by the declared param type, not arg.type, so caller and
+		// callee agree even when numeric coercion has rewritten the arg type.
+		param_type := decl.params[i].symbol.type
+		switch l in abi_classify_param(gen, param_type) {
+		case ABI_Direct:
+			append(&args, emit_value(gen, a, scope, span))
+		case ABI_Coerce:
+			addr := emit_address(gen, a, scope, span)
+			append(&args, BuildLoad2(gen.builder, l.scalar_type, addr, "abi_coerce"))
+		case ABI_Split:
+			addr := emit_address(gen, a, scope, span)
+			eb0 := BuildLoad2(gen.builder, l.eb0_type, addr, "abi_split0")
+			i8_ty := Int8TypeInContext(gen.ctx)
+			offset8 := ConstInt(Int64TypeInContext(gen.ctx), 8, 0)
+			eb1_addr := BuildGEP2(gen.builder, i8_ty, addr, &offset8, 1, "")
+			eb1 := BuildLoad2(gen.builder, l.eb1_type, eb1_addr, "abi_split1")
+			append(&args, eb0)
+			append(&args, eb1)
+		case ABI_Byval:
+			src := emit_address(gen, a, scope, span)
+			copy := build_entry_alloca(gen, l.struct_type, "byval_copy")
+			size := ConstInt(
+				Int64TypeInContext(gen.ctx),
+				u64(get_type_byte_size(param_type)),
+				0,
+			)
+			BuildMemCpy(gen.builder, copy, 8, src, 8, size)
+			append(&byval_arg_idxs, u32(len(args)))
+			append(&byval_arg_tys, l.struct_type)
+			append(&args, copy)
+		}
+	}
+
+	// Lazily emit external function declarations on first use.
+	if sym not_in gen.values {
+		function_decl_emit_sysv(gen, &decl, scope, span)
+	}
+	sym_type := gen.types[sym]
+	sym_value := gen.values[sym]
+
+	call: ValueRef
+	if len(args) == 0 {
+		call = BuildCall2(gen.builder, sym_type, sym_value, nil, 0, "")
+	} else {
+		call = BuildCall2(gen.builder, sym_type, sym_value, &args[0], u32(len(args)), "")
+	}
+
+	if len(byval_arg_idxs) > 0 {
+		byval_kind := GetEnumAttributeKindForName("byval", 5)
+		for arg_idx, k in byval_arg_idxs {
+			attr := CreateTypeAttribute(gen.ctx, byval_kind, byval_arg_tys[k])
+			AddCallSiteAttribute(call, arg_idx + 1, attr)
+		}
+	}
+
+	return call
+}
+
+
+function_body_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
+	sym := s.symbol
+	fn := gen.values[sym]
+
+	SetLinkage(fn, .ExternalLinkage)
+	entry := AppendBasicBlockInContext(gen.ctx, fn, "")
+
+	old_pos := GetInsertBlock(gen.builder)
+	PositionBuilderAtEnd(gen.builder, entry)
+
+	llvm_idx: u32 = 0
+	for ast_param in s.params {
+		if ast_param.variadic_marker do continue
+		param_sym := ast_param.symbol
+		name := strings.clone_to_cstring(ast_param.name)
+
+		switch l in abi_classify_param(gen, param_sym.type) {
+		case ABI_Direct:
+			p := GetParam(fn, llvm_idx)
+			alloca := BuildAlloca(gen.builder, l.llvm_type, name)
+			BuildStore(gen.builder, p, alloca)
+			gen.values[param_sym] = alloca
+			llvm_idx += 1
+		case ABI_Coerce:
+			// Materialize back into a struct alloca. Storing the scalar at the
+			// struct's base address relies on opaque pointers + the eightbyte
+			// layout produced by abi_classify_param matching the struct field
+			// layout — true today since get_type_byte_size has no padding.
+			p := GetParam(fn, llvm_idx)
+			alloca := BuildAlloca(gen.builder, l.struct_type, name)
+			BuildStore(gen.builder, p, alloca)
+			gen.values[param_sym] = alloca
+			llvm_idx += 1
+		case ABI_Split:
+			p0 := GetParam(fn, llvm_idx)
+			p1 := GetParam(fn, llvm_idx + 1)
+			alloca := BuildAlloca(gen.builder, l.struct_type, name)
+			BuildStore(gen.builder, p0, alloca)
+			i8_ty := Int8TypeInContext(gen.ctx)
+			offset8 := ConstInt(Int64TypeInContext(gen.ctx), 8, 0)
+			eb1_addr := BuildGEP2(gen.builder, i8_ty, alloca, &offset8, 1, "")
+			BuildStore(gen.builder, p1, eb1_addr)
+			gen.values[param_sym] = alloca
+			llvm_idx += 2
+		case ABI_Byval:
+			// The param value IS the pointer to the caller's stack copy.
+			gen.values[param_sym] = GetParam(fn, llvm_idx)
+			llvm_idx += 1
+		}
+	}
+
+	emit_block(gen, s.body)
+
+	if s.symbol.type.kind == .Void && !s.body.terminated {
+		BuildRetVoid(gen.builder)
+	}
+
+	PositionBuilderAtEnd(gen.builder, old_pos)
+}
