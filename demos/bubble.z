@@ -32,7 +32,7 @@ struct Bubble {
 }
 
 struct Map {
-    data: [10][10]Bubble
+    data: [12][12]Bubble
 }
 
 struct Cannon {
@@ -57,7 +57,6 @@ fn main() {
             map.data[y][x] = bubble
         }
     }
-    
 
     SetConfigFlags(32) // MSAA 4X
     InitWindow(W, H, "Bubble")
@@ -72,6 +71,7 @@ fn main() {
         if IsKeyDown(KeyboardKey.RIGHT) { 
             cannon.angle = cannon.angle + 0.2
         }
+
         BeginDrawing()
         ClearBackground(background_color)
         for y in 0..10 {

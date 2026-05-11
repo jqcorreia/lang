@@ -207,6 +207,8 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			type = type.pointee_type
 		}
 		if type.kind != .Array {
+			name, _ := get_type_name(scope, type)
+			error_span(span, "Cannot index non-array type '%s'", name)
 			expr.type = &error_type
 			return &error_type
 		}
