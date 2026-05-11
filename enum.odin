@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Ast_Enum_Decl :: struct {
 	name:      string,
 	type_expr: ^Type_Expr,
@@ -38,7 +36,6 @@ enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
 		}
 		// expect(p, .Colon)
 		// type_expr := parse_type_expr(p)
-		fmt.println(variant_name, value)
 		append(&decl.variants, Ast_Enum_Variant{name = variant_name, value = i64(value)})
 	}
 	advance(p)
