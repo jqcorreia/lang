@@ -24,13 +24,14 @@ struct Map {
 
 struct Cannon {
     rect : Rectangle
-    angle: f64
+    angle: f32
 }
 
 fn main() {
     map := Map{}
     cannon := Cannon{ 
         rect = Rectangle { x = 350, y = 700, width = 100, height = 80 } 
+        angle = 0
     }
 
     for y in 0..10 {
@@ -48,24 +49,27 @@ fn main() {
         if IsKeyPressed(256) { // escape key
             break
         }
+        if IsKeyPressed(256) { // escape key
+            break
+        }
         BeginDrawing()
         ClearBackground(background_color)
-        // for y in 0..10 {
-        //     for x in 0..10 {
-        //         rand_color := random() % 8
-        //         cx: i32 = 0
-        //         cy: i32 = 0
-        //         if y % 2 == 0 {
-        //             cx = x * 20 * 2
-        //             cy = y * 20 * 2 - 20
-        //         } else {
-        //             cx = x * 20 * 2 - 20
-        //             cy = y * 20 * 2 - 20
-        //         }
-        //         DrawCircle(cx, cy, 20, bubble_color[map.data[y][x]]) 
-        //     }
-        // }
-        DrawRectanglePro(Rectangle { x = 10, y = 10, width = 10, height = 10 }, Vector2 { x = 0.0, y = 0.0 }, 45, Color { r = 255, g = 100, b = 100, a = 255 })
+        for y in 0..10 {
+            for x in 0..10 {
+                rand_color := random() % 8
+                cx: i32 = 0
+                cy: i32 = 0
+                if y % 2 == 0 {
+                    cx = x * 20 * 2
+                    cy = y * 20 * 2 - 20
+                } else {
+                    cx = x * 20 * 2 - 20
+                    cy = y * 20 * 2 - 20
+                }
+                DrawCircle(cx, cy, 20, bubble_color[map.data[y][x]]) 
+            }
+        }
+        DrawRectanglePro(cannon.rect, Vector2 { x = 0.0, y = 0.0 }, cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
         EndDrawing()
     }
 

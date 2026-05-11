@@ -12,6 +12,34 @@ Ast_Enum_Variant :: struct {
 	value: i64,
 }
 
+enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
+	decl := new(Ast_Enum_Decl)
+	name_token := expect(p, .Identifier)
+
+	enum_name := name_token.value.(string)
+	decl.name = enum_name
+
+	expect(p, .LBrace)
+
+	for current(p).kind != .RBrace {
+		// Ignore empty lines
+		if current(p).kind == .NewLine {
+			advance(p)
+			continue
+		}
+		variant_name := expect(p, .Identifier).value.(string)
+		// expect(p, .Colon)
+		// type_expr := parse_type_expr(p)
+		append(&decl.variants, Ast_Enum_Variant{name = variant_name})
+	}
+	advance(p)
+
+	if current(p).kind == .NewLine {
+		advance(p)
+	}
+
+	return decl
+}
 enum_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 	data := node.data.(Ast_Enum_Decl)
 	existing, ok := resolve_symbol(scope, data.name)
