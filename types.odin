@@ -142,6 +142,10 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return nil
 	}
 
+	if from.kind == .Enum && to.numeric_integer {
+		return to
+	}
+
 	if from.kind == to.kind {
 		return from
 	}

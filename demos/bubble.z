@@ -49,8 +49,8 @@ fn main() {
         if IsKeyPressed(256) { // escape key
             break
         }
-        if IsKeyPressed(256) { // escape key
-            break
+        if IsKeyPressed(KeyboardKey.LEFT) { 
+            cannon.angle = cannon.angle - 1
         }
         BeginDrawing()
         ClearBackground(background_color)

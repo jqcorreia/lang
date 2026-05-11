@@ -97,7 +97,6 @@ enum_decl_check :: proc(c: ^Checker, s: ^Ast_Enum_Decl, scope: ^Scope, span: Spa
 enum_member_resolve :: proc(expr: ^Expr, type: ^Type, scope: ^Scope, span: Span) -> ^Type {
 	e := expr.data.(Expr_Member)
 
-
 	for &f in type.enum_variants {
 		if f.name == e.member {
 			expr.type = type
@@ -116,7 +115,8 @@ enum_member_emit_value :: proc(gen: ^Generator, expr: ^Expr) -> ValueRef {
 	e := expr.data.(Expr_Member)
 	for f in e.base.type.enum_variants {
 		if f.name == e.member {
-			return ConstInt(Int64TypeInContext(gen.ctx), u64(f.value), 0)
+			type := get_llvm_type(gen, expr.type)
+			return ConstInt(type, u64(f.value), 0)
 		}
 	}
 	unreachable()
