@@ -230,9 +230,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		val := BuildLoad2(gen.builder, get_llvm_type(gen, sym.type), ptr, "")
 		// Insert integer cast if expression type differs from storage type (e.g. untyped range var coerced to i32)
 		sym_is_int :=
-				sym.type.numeric_integer ||
-				sym.type.kind == .Untyped_Int ||
-				sym.type.kind == .Enum
+			sym.type.numeric_integer || sym.type.kind == .Untyped_Int || sym.type.kind == .Enum
 		if expr.type != sym.type && expr.type.numeric_integer && sym_is_int {
 			return BuildIntCast2(gen.builder, val, get_llvm_type(gen, expr.type), 1, "icast")
 		}
@@ -371,7 +369,11 @@ make_const_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueRe
 	llvm_type := get_llvm_type(gen, expr.type)
 	#partial switch e in expr.data {
 	case Expr_Int_Literal:
-		return ConstInt(llvm_type, u64(e.value), 0)
+		if llvm_type != nil && expr.type.numeric_float {
+			return ConstReal(llvm_type, f64(e.value))
+		} else {
+			return ConstInt(llvm_type, u64(e.value), 0)
+		}
 	case Expr_Float_Literal:
 		return ConstReal(llvm_type, e.value)
 	case Expr_String_Literal:

@@ -18,8 +18,21 @@ bubble_color : [8]Color = [
     Color { r = 150, g = 40,  b = 220, a = 255 } // purple
 ]
 
+bubble_radius: i32 = 30
+bubble_radius_f: f32 = 30
+
+enum BubbleType {
+    None
+    Normal
+}
+
+struct Bubble {
+    type: BubbleType
+    color_idx: u32
+}
+
 struct Map {
-    data: [10][10]i64
+    data: [10][10]Bubble
 }
 
 struct Cannon {
@@ -37,7 +50,11 @@ fn main() {
     for y in 0..10 {
         for x in 0..10 {
             rand_color := random() % 8
-            map.data[y][x] = rand_color
+            bubble := Bubble { type = BubbleType.Normal, color_idx = rand_color }
+            if y > 6 && x > 2 && x < 8 {
+                bubble.type = BubbleType.None
+            } 
+            map.data[y][x] = bubble
         }
     }
     
@@ -46,7 +63,7 @@ fn main() {
     InitWindow(W, H, "Bubble")
 
     for {
-        if IsKeyPressed(256) { // escape key
+        if IsKeyPressed(KeyboardKey.ESCAPE) { // escape key
             break
         }
         if IsKeyDown(KeyboardKey.LEFT) { 
@@ -59,17 +76,20 @@ fn main() {
         ClearBackground(background_color)
         for y in 0..10 {
             for x in 0..10 {
-                rand_color := random() % 8
+                bubble := map.data[y][x]
                 cx: i32 = 0
                 cy: i32 = 0
                 if y % 2 == 0 {
-                    cx = x * 20 * 2
-                    cy = y * 20 * 2 - 20
+                    cx = x * bubble_radius * 2
+                    cy = y * bubble_radius * 2 - bubble_radius
                 } else {
-                    cx = x * 20 * 2 - 20
-                    cy = y * 20 * 2 - 20
+                    cx = x * bubble_radius * 2 - bubble_radius
+                    cy = y * bubble_radius * 2 - bubble_radius
                 }
-                DrawCircle(cx, cy, 20, bubble_color[map.data[y][x]]) 
+                if bubble.type == BubbleType.Normal {
+                    bc := bubble_color[map.data[y][x].color_idx]
+                    DrawCircle(cx, cy, bubble_radius_f, bc) 
+                }
             }
         }
         DrawRectanglePro(cannon.rect, Vector2 { x = cannon.rect.width / 2, y = cannon.rect.height }, cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
