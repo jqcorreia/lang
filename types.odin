@@ -232,3 +232,39 @@ resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^
 	}
 	return nil
 }
+
+get_type_byte_size :: proc(type: ^Type) -> u32 {
+	if type == nil {return 0}
+	#partial switch type.kind {
+	case .Int8, .Uint8, .Bool:
+		return 1
+	case .Int16, .Uint16:
+		return 2
+	case .Int32, .Uint32:
+		return 4
+	case .Int64, .Uint64:
+		return 8
+	case .Float32:
+		return 4
+	case .Float64:
+		return 8
+	case .Pointer, .CString:
+		return 8
+	case .Enum:
+		return 8
+	case .Struct:
+		total: u32 = 0
+		for field in type.fields {
+			field_size := get_type_byte_size(field.type)
+			if field_size == 0 {return 0}
+			total += field_size
+		}
+		return total
+	case .Array:
+		if type.elem_type == nil {return 0}
+		elem_size := get_type_byte_size(type.elem_type)
+		if elem_size == 0 {return 0}
+		return elem_size * u32(type.size)
+	}
+	return 0
+}

@@ -51,7 +51,7 @@ Eightbyte_Class :: enum {
 }
 
 // SysV merge rule: anything + Memory = Memory; Integer dominates SSE on conflict;
-// NoClass is the identity element. (Real spec has more cases — X87, ComplexX87,
+// NoClass is the identity element. (Real spec has more cases - X87, ComplexX87,
 // unaligned — that we don't generate today.)
 abi_merge_class :: proc(a, b: Eightbyte_Class) -> Eightbyte_Class {
 	if a == b do return a
@@ -65,6 +65,7 @@ abi_merge_class :: proc(a, b: Eightbyte_Class) -> Eightbyte_Class {
 // Walk fields in [lo_byte, hi_byte) and merge each field's class into cls.
 // Recurses into nested structs/arrays. Pointers and integers are INTEGER class;
 // f32/f64 are SSE; bool/u8/...etc are INTEGER.
+// This proc does the heavy lifting of recursively calculate the eightbyte class and calling merge on leafs
 abi_classify_range :: proc(t: ^Type, base_offset: u32, cls: ^Eightbyte_Class, lo, hi: u32) {
 	if t == nil do return
 
@@ -94,6 +95,7 @@ abi_classify_range :: proc(t: ^Type, base_offset: u32, cls: ^Eightbyte_Class, lo
 	}
 }
 
+// Helper function to create LLVM types based on class and size
 abi_eightbyte_to_llvm :: proc(gen: ^Generator, cls: Eightbyte_Class, byte_size: u32) -> TypeRef {
 	#partial switch cls {
 	case .Integer:
@@ -111,37 +113,34 @@ abi_eightbyte_to_llvm :: proc(gen: ^Generator, cls: Eightbyte_Class, byte_size: 
 
 // THE policy function. Given a parameter type, decide how it's lowered for
 // SysV. Every ABI question about parameters routes through here.
-abi_classify_param :: proc(gen: ^Generator, t: ^Type) -> ABI_Lowering {
-	// Non-aggregates pass through; LLVM handles their register placement.
-	if t.kind != .Struct {
-		return ABI_Direct{llvm_type = get_llvm_type(gen, t)}
+abi_classify_param :: proc(gen: ^Generator, type: ^Type) -> ABI_Lowering {
+	if type.kind != .Struct {
+		return ABI_Direct{llvm_type = get_llvm_type(gen, type)}
 	}
 
-	size := get_type_byte_size(t)
-	struct_ty := get_llvm_type(gen, t)
+	total_size := get_type_byte_size(type)
+	struct_type := gen.primitive_types[type]
 
-	// > 16B  -> MEMORY class -> byval pointer.
-	if size > 16 {
-		return ABI_Byval{struct_type = struct_ty}
+	if total_size > 16 {
+		return ABI_Byval{struct_type = struct_type}
 	}
 
-	// First eightbyte (bytes 0..min(8,size)).
 	eb0 := Eightbyte_Class.No_Class
-	abi_classify_range(t, 0, &eb0, 0, 8)
+	abi_classify_range(type, 0, &eb0, 0, 8)
 
-	if size <= 8 {
+	if total_size <= 8 {
 		return ABI_Coerce {
-			scalar_type = abi_eightbyte_to_llvm(gen, eb0, size),
-			struct_type = struct_ty,
+			struct_type = struct_type,
+			scalar_type = abi_eightbyte_to_llvm(gen, eb0, total_size),
 		}
 	}
 
-	// 9..16B -> second eightbyte (bytes 8..size).
 	eb1 := Eightbyte_Class.No_Class
-	abi_classify_range(t, 0, &eb1, 8, 16)
+	abi_classify_range(type, 0, &eb1, 8, 16)
+
 	return ABI_Split {
-		eb0_type = abi_eightbyte_to_llvm(gen, eb0, 8),
-		eb1_type = abi_eightbyte_to_llvm(gen, eb1, size - 8),
-		struct_type = struct_ty,
+		eb0_type = abi_eightbyte_to_llvm(gen, eb0, total_size),
+		eb1_type = abi_eightbyte_to_llvm(gen, eb1, total_size),
+		struct_type = struct_type,
 	}
 }
