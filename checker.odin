@@ -67,6 +67,9 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 			check_expr(c, elem, scope, span)
 		}
 
+	case Expr_Implicit_Variant:
+		enum_implicit_variant_check(expr, scope, span)
+
 	case Expr_Index:
 		check_expr(c, e.array, scope, span)
 		check_expr(c, e.index, scope, span)

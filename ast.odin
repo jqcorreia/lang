@@ -117,6 +117,7 @@ Expr_Data :: union {
 	Expr_Variable,
 	Expr_Call,
 	Expr_Member,
+	Expr_Implicit_Variant,
 	Expr_Index,
 	Expr_Range,
 }
@@ -176,6 +177,7 @@ Expr_Member :: struct {
 	kind:   Member_Kind,
 	// type field from base would refer to the `member` field type
 }
+
 
 Expr_Index :: struct {
 	array: ^Expr,

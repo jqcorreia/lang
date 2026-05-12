@@ -389,6 +389,14 @@ expr_member :: proc(left: ^Expr, field_name: string) -> ^Expr {
 	return ret
 }
 
+expr_implicit_variant :: proc(name: string) -> ^Expr {
+	ret := new(Expr)
+	ret.data = Expr_Implicit_Variant {
+		name = name,
+	}
+	return ret
+}
+
 expr_index :: proc(left: ^Expr, index: ^Expr) -> ^Expr {
 	ret := new(Expr)
 	ret.data = Expr_Index {
@@ -497,6 +505,11 @@ parse_expression :: proc(
 		left.data = Expr_Array_Literal {
 			elements = elements[:],
 		}
+	case .Period:
+		// Implicit enum variant selector: `.VariantName`. The expected enum
+		// type is supplied later from context (var decl LHS, call arg, etc.).
+		name := expect(p, .Identifier).value.(string)
+		left = expr_implicit_variant(name)
 	case:
 		fatal_token(current(p), "Invalid token in expression")
 	}

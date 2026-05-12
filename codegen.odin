@@ -218,6 +218,8 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		if base_type.kind == .Enum {
 			return enum_member_emit_value(gen, expr)
 		}
+	case Expr_Implicit_Variant:
+		return enum_implicit_variant_emit_value(gen, expr)
 	case Expr_Index:
 		ptr := emit_address(gen, expr, scope, span)
 		llvm_type := get_llvm_type(gen, expr.type)

@@ -142,6 +142,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Struct_Literal:
 		return struct_literal_resolve(expr, scope, span)
 
+
 	case Expr_Array_Literal:
 		elem_type: ^Type
 		for &elem in e.elements {
@@ -155,6 +156,9 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		expr.type = array_type
 
 		return array_type == nil ? &error_type : array_type
+
+	case Expr_Implicit_Variant:
+		return enum_implicit_variant_resolve(expr, scope, span)
 
 	case Expr_Variable:
 		sym, ok := resolve_symbol(scope, e.value)

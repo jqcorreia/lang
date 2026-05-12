@@ -13,6 +13,13 @@ Ast_Enum_Variant :: struct {
 	use_index: bool,
 }
 
+// `.VariantName` - enum variant selector with no explicit enum base.
+// This expr type will untyped_enum_variant until coerced and then the normal
+// flow continues
+Expr_Implicit_Variant :: struct {
+	name: string,
+}
+
 enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
 	decl := new(Ast_Enum_Decl)
 	name_token := expect(p, .Identifier)
@@ -115,6 +122,41 @@ enum_member_emit_value :: proc(gen: ^Generator, expr: ^Expr) -> ValueRef {
 	e := expr.data.(Expr_Member)
 	for f in e.base.type.enum_variants {
 		if f.name == e.member {
+			type := get_llvm_type(gen, expr.type)
+			return ConstInt(type, u64(f.value), 0)
+		}
+	}
+	unreachable()
+}
+
+enum_implicit_variant_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
+	sym, _ := resolve_symbol(scope, "untyped_enum_variant")
+	expr.type = sym.type
+	return sym.type
+}
+
+enum_implicit_variant_check :: proc(expr: ^Expr, scope: ^Scope, span: Span) {
+	e := expr.data.(Expr_Implicit_Variant)
+	if expr.type == nil || expr.type.kind == .Error {
+		return
+	}
+	if expr.type.kind == .Untyped_Enum_Variant {
+		return
+	}
+	for variant in expr.type.enum_variants {
+		if variant.name == e.name {
+			return
+		}
+	}
+	name, _ := get_type_name(scope, expr.type)
+	error_span(span, "Enum '%s' has no variant '%s'", name, e.name)
+}
+
+enum_implicit_variant_emit_value :: proc(gen: ^Generator, expr: ^Expr) -> ValueRef {
+	e := expr.data.(Expr_Implicit_Variant)
+	base := expr.type
+	for f in base.enum_variants {
+		if f.name == e.name {
 			type := get_llvm_type(gen, expr.type)
 			return ConstInt(type, u64(f.value), 0)
 		}

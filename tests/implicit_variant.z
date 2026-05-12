@@ -1,0 +1,24 @@
+import "std:c"
+
+enum Color {
+    Red
+    Green
+    Blue
+}
+
+fn paint(c: Color) {
+    printf("paint=%d\n", c)
+}
+
+fn main() {
+    // Var decl LHS provides the enum type
+    c: Color = .Green
+    printf("c=%d\n", c)
+
+    // Call-site arg provides the enum type
+    paint(.Blue)
+
+    // Assignment LHS provides the enum type
+    c = .Red
+    printf("c=%d\n", c)
+}

@@ -38,6 +38,7 @@ Type_Kind :: enum {
 	Bool,
 	Untyped_Int,
 	Untyped_Float,
+	Untyped_Enum_Variant,
 	Uint8,
 	Uint16,
 	Uint64,
@@ -79,6 +80,7 @@ create_primitive_types :: proc(scope: ^Scope) {
 
 	create_type(.Untyped_Int, "untyped_int", scope, numeric_integer = true)
 	create_type(.Untyped_Float, "untyped_float", scope, numeric_float = true)
+	create_type(.Untyped_Enum_Variant, "untyped_enum_variant", scope)
 	create_type(.Uint8, "u8", scope, numeric_integer = true)
 	create_type(.Uint16, "u16", scope, numeric_integer = true)
 	create_type(.Uint32, "u32", scope, numeric_integer = true)
@@ -143,6 +145,10 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	}
 
 	if from.kind == .Enum && to.numeric_integer {
+		return to
+	}
+
+	if from.kind == .Untyped_Enum_Variant && to.kind == .Enum {
 		return to
 	}
 
