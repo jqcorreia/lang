@@ -142,20 +142,8 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Struct_Literal:
 		return struct_literal_resolve(expr, scope, span)
 
-
 	case Expr_Array_Literal:
-		elem_type: ^Type
-		for &elem in e.elements {
-			elem.type = resolve_expr_type(elem, scope, span)
-			elem_type = elem.type
-		}
-		array_type := new(Type)
-		array_type.kind = .Array
-		array_type.size = u64(len(e.elements))
-		array_type.elem_type = elem_type
-		expr.type = array_type
-
-		return array_type == nil ? &error_type : array_type
+		return array_expr_array_literal_resolve(expr, scope, span)
 
 	case Expr_Implicit_Variant:
 		return enum_implicit_variant_resolve(expr, scope, span)
@@ -203,21 +191,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		return &error_type
 
 	case Expr_Index:
-		type := resolve_expr_type(e.array, scope, span)
-		resolve_expr_type(e.index, scope, span)
-
-		// Support pointer to array
-		if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Array {
-			type = type.pointee_type
-		}
-		if type.kind != .Array {
-			name, _ := get_type_name(scope, type)
-			error_span(span, "Cannot index non-array type '%s'", name)
-			expr.type = &error_type
-			return &error_type
-		}
-		expr.type = type.elem_type
-		return type.elem_type
+		return array_expr_index_resolve(expr, scope, span)
 
 	case Expr_Unary:
 		operand := resolve_expr_type(e.expr, scope, span)

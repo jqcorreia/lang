@@ -86,21 +86,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, span: Span) {
 	#partial switch &e in expr.data {
 	case Expr_Array_Literal:
-		array_llvm_type := get_llvm_type(gen, expr.type)
-
-		for elem, i in e.elements {
-			indices: []ValueRef = {
-				ConstInt(Int32TypeInContext(gen.ctx), 0, 0),
-				ConstInt(Int32TypeInContext(gen.ctx), u64(i), 0),
-			}
-			elem_ptr := BuildGEP2(gen.builder, array_llvm_type, dest, raw_data(indices), 2, "")
-			if elem.type.kind == .Array {
-				emit_into(gen, elem, elem_ptr, scope, span)
-			} else {
-				elem_val := emit_value(gen, elem, scope, span)
-				BuildStore(gen.builder, elem_val, elem_ptr)
-			}
-		}
+		array_literal_emit_into(gen, expr, dest, scope, span)
 	case Expr_Struct_Literal:
 		struct_emit_into(gen, expr, dest, scope, span)
 	case:
@@ -113,11 +99,7 @@ emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, s
 emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
 	#partial switch &e in expr.data {
 	case Expr_Array_Literal:
-		array_llvm_type := get_llvm_type(gen, expr.type)
-		ptr := build_entry_alloca(gen, array_llvm_type, "")
-		emit_into(gen, expr, ptr, scope, span)
-		return ptr
-
+		return array_literal_emit_address(gen, expr, scope, span)
 	case Expr_Struct_Literal:
 		return struct_emit_address(gen, expr, scope, span)
 
@@ -139,23 +121,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		}
 
 	case Expr_Index:
-		index_val := emit_value(gen, e.index, scope, span)
-		indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index_val}
-
-		array_ptr: ValueRef
-		llvm_type: TypeRef
-
-		if e.array.type.kind == .Pointer {
-			array_ptr = emit_value(gen, e.array, scope, span)
-			llvm_type = get_llvm_type(gen, e.array.type.pointee_type)
-		} else {
-			array_ptr = emit_address(gen, e.array, scope, span)
-			llvm_type = get_llvm_type(gen, e.array.type)
-		}
-
-		ptr := BuildGEP2(gen.builder, llvm_type, array_ptr, raw_data(indices), 2, "")
-
-		return ptr
+		return array_expr_index_emit_address(gen, expr, scope, span)
 
 	case Expr_Unary:
 		if e.op == .Star {
@@ -199,9 +165,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_String_Literal:
 		return BuildGlobalStringPtr(gen.builder, strings.clone_to_cstring(e.value), "")
 	case Expr_Array_Literal:
-		addr := emit_address(gen, expr, scope, span)
-		return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), addr, "")
-
+		return array_literal_emit_value(gen, expr, scope, span)
 	case Expr_Struct_Literal:
 		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:
@@ -221,9 +185,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Implicit_Variant:
 		return enum_implicit_variant_emit_value(gen, expr)
 	case Expr_Index:
-		ptr := emit_address(gen, expr, scope, span)
-		llvm_type := get_llvm_type(gen, expr.type)
-		return BuildLoad2(gen.builder, llvm_type, ptr, "")
+		return array_expr_index_emit_value(gen, expr, scope, span)
 	case Expr_Call:
 		return function_call_emit_sysv(gen, e, scope, span)
 	case Expr_Variable:

@@ -2,6 +2,8 @@ package main
 
 import "core:fmt"
 
+Ast_Module :: []^Ast_Node
+
 Ast_Node :: struct {
 	data:  Ast_Data,
 	span:  Span,
@@ -161,10 +163,6 @@ Expr_Struct_Literal :: struct {
 	args:      map[string]^Expr,
 }
 
-Expr_Array_Literal :: struct {
-	elements: []^Expr,
-}
-
 Expr_Range :: struct {
 	start:     ^Expr,
 	end:       ^Expr,
@@ -176,12 +174,6 @@ Expr_Member :: struct {
 	member: string,
 	kind:   Member_Kind,
 	// type field from base would refer to the `member` field type
-}
-
-
-Expr_Index :: struct {
-	array: ^Expr,
-	index: ^Expr,
 }
 
 Member_Kind :: enum {

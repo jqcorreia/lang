@@ -71,29 +71,7 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 		enum_implicit_variant_check(expr, scope, span)
 
 	case Expr_Index:
-		check_expr(c, e.array, scope, span)
-		check_expr(c, e.index, scope, span)
-		if e.array.type.kind == .Error || e.index.type.kind == .Error {
-			return
-		}
-		array_type := e.array.type
-		if array_type.kind == .Pointer && array_type.pointee_type.kind == .Array {
-			array_type = array_type.pointee_type
-		}
-		if array_type.kind != .Array {
-			error_span(span, "'%s' is not an array", e.array.type.kind)
-		} else if !e.index.type.numeric_integer && e.index.type.kind != .Untyped_Int {
-			error_span(span, "Array index must be an integer, got '%s'", e.index.type.kind)
-		} else if lit, ok := e.index.data.(Expr_Int_Literal); ok {
-			if u64(lit.value) >= array_type.size {
-				error_span(
-					span,
-					"Index %d out of bounds for array of size %d",
-					lit.value,
-					array_type.size,
-				)
-			}
-		}
+		array_expr_index_check(c, expr, scope, span)
 
 	case Expr_Unary:
 		check_expr(c, e.expr, scope, span)

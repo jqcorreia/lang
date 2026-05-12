@@ -10,8 +10,6 @@ Parser :: struct {
 	pos:    int,
 }
 
-Ast_Module :: []^Ast_Node
-
 
 current :: proc(p: ^Parser) -> Token {
 	return p.tokens[p.pos]
@@ -397,16 +395,6 @@ expr_implicit_variant :: proc(name: string) -> ^Expr {
 	return ret
 }
 
-expr_index :: proc(left: ^Expr, index: ^Expr) -> ^Expr {
-	ret := new(Expr)
-	ret.data = Expr_Index {
-		array = left,
-		index = index,
-	}
-
-	return ret
-}
-
 expr_bool_literal :: proc(kind: Token_Kind) -> ^Expr {
 	ret := new(Expr)
 	ret.data = Expr_Bool_Literal {
@@ -525,7 +513,7 @@ parse_expression :: proc(
 		case .LBracket:
 			index := parse_expression(p, 0)
 			expect(p, .RBracket)
-			left = expr_index(left, index)
+			left = expr_index_parse(left, index)
 		case .LParen:
 			args := parse_call_args(p)
 			left = expr_call(left, args)
