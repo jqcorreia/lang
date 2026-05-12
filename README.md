@@ -49,6 +49,11 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Enums (basic u64 incremental ones)
 - [x] Have the notion of addressable types 
 - [x] UFCS (Uniform Function Call Syntax), introducing 'methods'
+- [x] Enum with custom values (integers). Type-coerced on use site if need be.
+- [x] Untyped enum variants (odin-style .EnumVariant notation)
+- [x] Hexadecimal numericals support
+- [-] API and code cleanups after a first working pass
+- [ ] Array programming (element-wise operations)
 - [ ] Tagged Unions
 - [ ] Make sure that the available types are synched with the primitive types in codegen
 - [ ] Proper string with bound check and not null-terminated
@@ -56,8 +61,6 @@ Potentially this README can look a lot different in a couple of months if this b
 - [ ] Make sure that lexer is UTF-8 compliant
 - [ ] Add check for cyclic import
 - [ ] Runtime bounds checking for array access
-- [ ] API and code cleanups after a first working pass
-- [ ] Array programming (element-wise operations)
 
 # Try it
 ```
