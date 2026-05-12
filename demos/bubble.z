@@ -50,9 +50,9 @@ fn main() {
     for y in 0..10 {
         for x in 0..10 {
             rand_color := random() % 8
-            bubble := Bubble { type = BubbleType.Normal, color_idx = rand_color }
+            bubble := Bubble { type = .Normal, color_idx = rand_color }
             if y > 6 && x > 2 && x < 8 {
-                bubble.type = BubbleType.None
+                bubble.type = .None
             } 
             map.data[y][x] = bubble
         }
@@ -86,7 +86,7 @@ fn main() {
                     cx = x * bubble_radius * 2 - bubble_radius
                     cy = y * bubble_radius * 2 - bubble_radius
                 }
-                if bubble.type == BubbleType.Normal {
+                if bubble.type == .Normal {
                     bc := bubble_color[map.data[y][x].color_idx]
                     DrawCircle(cx, cy, bubble_radius_f, bc) 
                 }
