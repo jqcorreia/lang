@@ -1,0 +1,32 @@
+import "std:c"
+
+fn main() {
+    // float -> int (signed)
+    f := 10.5
+    i := i64(f)
+    printf("i = %d\n", i)
+
+    // float -> int (unsigned)
+    u := u32(f)
+    printf("u = %u\n", u)
+
+    // int -> float
+    n: i32 = 7
+    g := f64(n)
+    printf("g = %f\n", g)
+
+    // int -> int (narrowing, signed -> unsigned)
+    big: i64 = 300
+    small := u8(big)
+    printf("small = %u\n", small)
+
+    // int -> int (widening, signed)
+    s: i16 = -42
+    w := i64(s)
+    printf("w = %d\n", w)
+
+    // float -> float (narrowing)
+    d: f64 = 3.25
+    h := f32(d)
+    printf("h = %f\n", h)
+}

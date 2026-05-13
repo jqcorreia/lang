@@ -198,6 +198,8 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		return array_expr_index_emit_value(gen, expr, scope, span)
 	case Expr_Call:
 		return function_call_emit_sysv(gen, e, scope, span)
+	case Expr_Cast:
+		return cast_emit_value(gen, expr, scope, span)
 	case Expr_Variable:
 		ptr := emit_address(gen, expr, scope, span)
 		sym, _ := resolve_symbol(scope, e.value)

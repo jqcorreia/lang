@@ -165,6 +165,8 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Call:
 		return function_call_resolve(expr, scope, span)
 
+	case Expr_Cast:
+	// Nothing is needed here since everything is done via the resolve branch of Expr_Call
 	case Expr_Member:
 		base_type := resolve_expr_type(e.base, scope, span)
 		if base_type.kind == .Error {

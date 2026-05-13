@@ -122,6 +122,7 @@ Expr_Data :: union {
 	Expr_Implicit_Variant,
 	Expr_Index,
 	Expr_Range,
+	Expr_Cast,
 }
 
 Expr_Null :: struct {}

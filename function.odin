@@ -166,6 +166,10 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		expr.type = &error_type
 		return &error_type
 	}
+	// If the symbol exists, but is of kind .Type then this a cast
+	if sym.kind == .Type {
+		return cast_resolve(expr, sym, scope, span)
+	}
 	decl := sym.decl.data.(Ast_Function)
 	if sym.type == nil {
 		// Not resolved yet, do it here
