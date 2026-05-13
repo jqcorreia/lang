@@ -5,6 +5,16 @@ struct Foo {
 }
 
 
+fn test() {
+    // Test scoped structs
+    struct Bar {
+        a: u32
+    }
+    b := Bar { a = 100 }
+
+    printf("%d\n", b.a)
+}
+
 fn main() {
     foo := Foo { data = [
         [0, 0, 0, 0],
@@ -14,4 +24,6 @@ fn main() {
     ]}
 
     printf("%d\n", foo.data[1][2])
+    test()
 }
+
