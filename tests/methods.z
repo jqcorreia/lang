@@ -9,10 +9,16 @@ fn display(self: &Foo) -> cstr {
     return "from display()"
 }
 
+fn move(self: &Foo, x: u64, y: u64) {
+    self.x = self.x + x
+    self.y = self.y + y
+}
 
 fn main() {
     f := Foo { x = 100, y = 200 }
     printf("Hello Methods\n")
-
     printf("Hello %s\n", f.display())
+
+    f.move(25, 35)
+    printf("f.x = %d, f.y = %d\n", f.x, f.y)
 }

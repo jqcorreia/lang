@@ -190,18 +190,26 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 		return data
 
 	case peek(p).kind == .Period:
-		// --- Member assignment: foo.bar = expr ---
+		// Here we can have 2 things:
+		// - Member assignment
+		// - Member method/function call
 		lhs := parse_expression(p, 0)
-		expect(p, .Equal)
 
-		data := Ast_Var_Assign {
-			lhs  = lhs,
-			expr = parse_expression(p, 0),
+		if current(p).kind == .Equal {
+			// Assignment case
+			advance(p)
+			data := Ast_Var_Assign {
+				lhs  = lhs,
+				expr = parse_expression(p, 0),
+			}
+			expect(p, .NewLine)
+
+			return data
 		}
-
+		// Method case
 		expect(p, .NewLine)
 
-		return data
+		return Ast_Expr{expr = lhs}
 
 	case peek(p).kind == .LParen:
 		// --- Function Call ---
