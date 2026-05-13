@@ -5,3 +5,11 @@ external "m" {
 }
 
 PI: f64 = 3.14159265359
+
+fn to_rad(degrees: f64) -> f64 {
+    return degrees * (PI / 180)
+}
+
+fn to_deg(rad: f64) -> f64 {
+    return rad * (180 / PI)
+}

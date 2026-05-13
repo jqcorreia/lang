@@ -42,7 +42,8 @@ struct Cannon {
 }
 
 fn shoot(map: &Map, cannon: Cannon) {
-    printf("%f\n", sin(PI / 2))
+    norm_angle := cannon.angle + 90
+    printf("%f\n", sin(to_rad(f64(norm_angle))))
 }
 
 fn main() {
@@ -77,6 +78,10 @@ fn main() {
         }
         if IsKeyDown(KeyboardKey.RIGHT) { 
             cannon.angle = cannon.angle + 0.2
+        }
+
+        if IsKeyPressed(KeyboardKey.SPACE) {
+            shoot(&map, cannon)
         }
 
         BeginDrawing()
