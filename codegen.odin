@@ -362,6 +362,8 @@ make_const_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueRe
 		return make_global_string_ptr(gen, e.value)
 	case Expr_Struct_Literal:
 		return struct_emit_const(gen, expr, scope)
+	case Expr_Implicit_Variant:
+		return enum_implicit_variant_emit_value(gen, expr)
 	case Expr_Array_Literal:
 		elem_type := get_llvm_type(gen, expr.type.elem_type)
 		elem_vals: [dynamic]ValueRef
