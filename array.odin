@@ -201,7 +201,18 @@ array_binary_emit_vector :: proc(
 		return(
 			is_float ? BuildFAdd(gen.builder, lvec, rvec, "vadd") : BuildAdd(gen.builder, lvec, rvec, "vadd") \
 		)
-	// Mirror Minus / Star / Slash / Percent from the scalar branch here.
+	case .Star:
+		return(
+			is_float ? BuildFMul(gen.builder, lvec, rvec, "vadd") : BuildMul(gen.builder, lvec, rvec, "vadd") \
+		)
+	case .Minus:
+		return(
+			is_float ? BuildFSub(gen.builder, lvec, rvec, "vadd") : BuildSub(gen.builder, lvec, rvec, "vadd") \
+		)
+	case .Slash:
+		return(
+			is_float ? BuildFDiv(gen.builder, lvec, rvec, "vadd") : BuildSDiv(gen.builder, lvec, rvec, "vadd") \
+		)
 	case:
 		fatal_span(span, "Unsupported array operator '%v'", e.op)
 	}
