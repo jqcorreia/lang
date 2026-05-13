@@ -89,6 +89,16 @@ emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, s
 		array_literal_emit_into(gen, expr, dest, scope, span)
 	case Expr_Struct_Literal:
 		struct_emit_into(gen, expr, dest, scope, span)
+	case Expr_Binary:
+		if expr.type.kind == .Array {
+			vec := array_binary_emit_vector(gen, &e, expr.type, scope, span)
+			st := BuildStore(gen.builder, vec, dest)
+			SetAlignment(st, 1)
+			return
+		}
+		// Do the general case here also
+		val := emit_value(gen, expr, scope, span)
+		BuildStore(gen.builder, val, dest)
 	case:
 		// General fallback: emit value and store into dest
 		val := emit_value(gen, expr, scope, span)
@@ -219,6 +229,12 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			return BuildLoad2(gen.builder, get_llvm_type(gen, e.expr.type.pointee_type), ptr, "")
 		}
 	case Expr_Binary:
+		if expr.type.kind == .Array {
+			vec := array_binary_emit_vector(gen, &e, expr.type, scope, span)
+			slot := build_entry_alloca(gen, get_llvm_type(gen, expr.type), "arrbin")
+			BuildStore(gen.builder, vec, slot)
+			return slot
+		}
 		left := emit_value(gen, e.left, scope, span)
 		right := emit_value(gen, e.right, scope, span)
 		#partial switch e.op {

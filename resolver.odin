@@ -242,6 +242,13 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		right := resolve_expr_type(e.right, scope, span)
 		coerced_type := unify(left, right, scope)
 		if coerced_type == nil {
+			error_span(
+				span,
+				"Type mismatch: '%s' %s '%s'",
+				e.left.type.kind,
+				e.op,
+				e.right.type.kind,
+			)
 			expr.type = &error_type
 			return &error_type
 		}
@@ -250,7 +257,14 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 
 		is_logical := e.op == .DoublePipe || e.op == .DoubleAmpersand
 		if is_logical {
-			if coerced_type.kind != .Bool {
+			if e.left.type.kind != .Bool || e.right.type.kind != .Bool {
+				error_span(
+					span,
+					"Both operands of '%s' must be bool, got '%s' and '%s'",
+					e.op,
+					e.left.type.kind,
+					e.right.type.kind,
+				)
 				expr.type = &error_type
 				return &error_type
 			}
@@ -268,6 +282,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 
 		if is_comparison {
 			if coerced_type.kind == .Struct || coerced_type.kind == .Array {
+				error_span(span, "Unsupported comparison: '%s' %s '%s'", left, e.op, right)
 				expr.type = &error_type
 				return &error_type
 			}

@@ -100,36 +100,6 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 	case Expr_Binary:
 		check_expr(c, e.left, scope, span)
 		check_expr(c, e.right, scope, span)
-		if e.left.type.kind == .Error || e.right.type.kind == .Error {
-			return
-		}
-		is_logical := e.op == .DoublePipe || e.op == .DoubleAmpersand
-		if is_logical {
-			if e.left.type.kind != .Bool {
-				error_span(
-					span,
-					"Left operand of '%s' must be bool, got '%s'",
-					e.op,
-					e.left.type.kind,
-				)
-			}
-			if e.right.type.kind != .Bool {
-				error_span(
-					span,
-					"Right operand of '%s' must be bool, got '%s'",
-					e.op,
-					e.right.type.kind,
-				)
-			}
-		} else if expr.type.kind == .Error {
-			error_span(
-				span,
-				"Type mismatch: '%s' %s '%s'",
-				e.left.type.kind,
-				e.op,
-				e.right.type.kind,
-			)
-		}
 
 	case Expr_Call:
 		function_call_check(c, e, expr, scope, span)

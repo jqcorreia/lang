@@ -167,3 +167,43 @@ array_expr_index_emit_value :: proc(
 	llvm_type := get_llvm_type(gen, expr.type)
 	return BuildLoad2(gen.builder, llvm_type, ptr, "")
 }
+
+array_binary_emit_vector :: proc(
+	gen: ^Generator,
+	e: ^Expr_Binary,
+	result_type: ^Type,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
+	// Get pointers to the operand arrays.
+	left_addr := emit_address(gen, e.left, scope, span)
+	right_addr := emit_address(gen, e.right, scope, span)
+
+	// Build <N x T> matching the [N x T] storage.
+	elem_llvm := get_llvm_type(gen, result_type.elem_type)
+	vec_type := VectorType(elem_llvm, u32(result_type.size))
+
+	// Load both arrays *as vectors* — opaque pointers make this a
+	//pure reinterpretation; no bitcast instruction needed.
+	lvec := BuildLoad2(gen.builder, vec_type, left_addr, "lvec")
+	rvec := BuildLoad2(gen.builder, vec_type, right_addr, "rvec")
+
+	// @Note: this uses alignment of 1 in order to not care right now for array alignments
+	// Need to revisit this later.
+	SetAlignment(lvec, 1)
+	SetAlignment(rvec, 1)
+
+	// Use same ops as scalar, they dispatch on Type so they
+	// will operate on vectors, no problem
+	is_float := result_type.elem_type.numeric_float
+	#partial switch e.op {
+	case .Plus:
+		return(
+			is_float ? BuildFAdd(gen.builder, lvec, rvec, "vadd") : BuildAdd(gen.builder, lvec, rvec, "vadd") \
+		)
+	// Mirror Minus / Star / Slash / Percent from the scalar branch here.
+	case:
+		fatal_span(span, "Unsupported array operator '%v'", e.op)
+	}
+	return nil
+}

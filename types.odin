@@ -159,7 +159,7 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	return nil
 }
 
-// unify: symmetric. Find the common type two operands meet at — for binary
+// unify: symmetric. Find the common type two operands meet at - for binary
 // operators, range endpoints, etc. where neither side is the "destination".
 unify :: proc(a: ^Type, b: ^Type, scope: ^Scope) -> ^Type {
 	// // Two untyped literals: collapse to the default concrete type
