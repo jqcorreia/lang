@@ -2,6 +2,7 @@ external "m" {
     fn sin(angle: f64) -> f64
     fn cos(angle: f64) -> f64
     fn tan(angle: f64) -> f64
+    fn sqrt(v: f64) -> f64
 }
 
 PI: f64 = 3.14159265359

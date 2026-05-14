@@ -1,8 +1,5 @@
 import "std:c"
-
-external "m" {
-    fn sqrt(v: f64) -> f64
-}
+import "std:math"
 
 struct Vec {
     x: f64

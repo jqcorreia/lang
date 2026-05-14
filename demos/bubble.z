@@ -50,6 +50,13 @@ struct State {
 
 state: State
 
+fn dist(v1: [2]i32, v2: [2]i32) -> f64 {
+    x := (v2[0] - v1[0]) * (v2[0] - v1[0])
+    y := (v2[1] - v1[1]) * (v2[1] - v1[1])
+
+    return sqrt(f64(x + y))
+}
+
 fn shoot(map: &Map, cannon: Cannon) {
     norm_angle := f64(cannon.angle + 90)
 
@@ -103,6 +110,10 @@ fn update() {
                 b := state.map.data[y][x]
                 if b.type == .Normal {
                     b_pos := grid_to_pix(x, y)
+                    a_pos := [i32(state.active.pos[0]), i32(state.active.pos[1])]
+                    if dist(b_pos, a_pos) < f64(bubble_radius) {
+                        state.active.moving = false
+                    }
                 }
 
             }
