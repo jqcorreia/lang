@@ -87,16 +87,58 @@ fn update() {
     if IsKeyDown(KeyboardKey.RIGHT) { 
         state.cannon.angle = state.cannon.angle + 0.2
     }
-
     if IsKeyPressed(KeyboardKey.SPACE) {
         shoot(&state.map, state.cannon)
     }
+
     if state.active.moving {
+        // Wall collision
         if state.active.pos[0] < 0 || state.active.pos[0] > f32(W) {
             state.active.vel[0] = -state.active.vel[0]
         }
+    
+        // Map bubble collision
+        for y in 0..10 {
+            for x in 0..10 {
+                b := state.map.data[y][x]
+                if b.type == .Normal {
+                    b_pos := grid_to_pix(x, y)
+                }
+
+            }
+        }
         state.active.pos = state.active.pos + state.active.vel
     }
+}
+
+fn grid_to_pix(x: i32, y: i32) -> [2]i32 {
+    cx: i32 = 0
+    cy: i32 = 0
+
+    if y % 2 == 0 {
+        cx = x * bubble_radius * 2
+        cy = y * bubble_radius * 2 - bubble_radius
+    } else {
+        cx = x * bubble_radius * 2 - bubble_radius
+        cy = y * bubble_radius * 2 - bubble_radius
+    }
+
+    return [cx, cy]
+}
+
+fn pix_to_grid(cx: i32, cy: i32) -> [2]i32 {
+    x: i32 = 0
+    y: i32 = 0
+
+    if y % 2 == 0 {
+        x = cx / (bubble_radius * 2)
+        y = cy / (bubble_radius * 2) + bubble_radius
+    } else {
+        x = cx / (bubble_radius * 2) + bubble_radius
+        y = cy / (bubble_radius * 2) + bubble_radius
+    }
+
+    return [x, y]
 }
 
 fn render() {
@@ -105,18 +147,10 @@ fn render() {
     for y in 0..10 {
         for x in 0..10 {
             bubble := state.map.data[y][x]
-            cx: i32 = 0
-            cy: i32 = 0
-            if y % 2 == 0 {
-                cx = x * bubble_radius * 2
-                cy = y * bubble_radius * 2 - bubble_radius
-            } else {
-                cx = x * bubble_radius * 2 - bubble_radius
-                cy = y * bubble_radius * 2 - bubble_radius
-            }
+            pix_pos := grid_to_pix(x, y)
             if bubble.type == .Normal {
                 bc := bubble_color[state.map.data[y][x].color_idx]
-                DrawCircle(cx, cy, f32(bubble_radius), bc) 
+                DrawCircle(pix_pos[0], pix_pos[1], f32(bubble_radius), bc) 
             }
         }
     }
