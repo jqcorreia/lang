@@ -20,7 +20,6 @@ bubble_color : [8]Color = [
 ]
 
 bubble_radius: i32 = 30
-bubble_radius_f: f32 = 30
 
 enum BubbleType {
     None
@@ -30,6 +29,9 @@ enum BubbleType {
 struct Bubble {
     type: BubbleType
     color_idx: u32
+    moving: bool
+    pos: [2]f32
+    vel: [2]f32
 }
 
 struct Map {
@@ -41,19 +43,31 @@ struct Cannon {
     angle: f32
 }
 
+active: Bubble 
+
 fn shoot(map: &Map, cannon: Cannon) {
-    norm_angle := cannon.angle + 90
-    printf("%f\n", sin(to_rad(f64(norm_angle))))
+    norm_angle := f64(cannon.angle + 90)
+
+    active.moving = true
+    active.pos = [300, 700]
+    rad_angle := to_rad(norm_angle)
+    active.vel = [cos(rad_angle), sin(rad_angle)]
+
+    printf("Moving pos = %f,%f vel = %f,%f\n", active.pos[0], active.pos[1], active.vel[0], active.vel[1])
+}
+
+fn draw(bubble: Bubble) {
+    bc := bubble_color[bubble.color_idx]
+    DrawCircle(i32(bubble.pos[0]), i32(bubble.pos[1]), f32(bubble_radius), bc) 
 }
 
 fn main() {
+    active = Bubble { type = .Normal, color_idx = 1 }  
     map := Map{}
     cannon := Cannon{ 
         rect = Rectangle { x = 350, y = 800, width = 50, height = 100 } 
         angle = 0
     }
-
-    shoot(&map, cannon)
 
     for y in 0..10 {
         for x in 0..10 {
@@ -70,6 +84,7 @@ fn main() {
     InitWindow(W, H, "Bubble")
 
     for {
+        // printf("Sin: %f, Cos: %f\n", sin(to_rad(f64(cannon.angle))), cos(to_rad(f64(cannon.angle))))
         if IsKeyPressed(KeyboardKey.ESCAPE) { // escape key
             break
         }
@@ -100,11 +115,16 @@ fn main() {
                 }
                 if bubble.type == .Normal {
                     bc := bubble_color[map.data[y][x].color_idx]
-                    DrawCircle(cx, cy, bubble_radius_f, bc) 
+                    DrawCircle(cx, cy, f32(bubble_radius), bc) 
                 }
             }
         }
         DrawRectanglePro(cannon.rect, Vector2 { x = cannon.rect.width / 2, y = cannon.rect.height }, cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
+        if active.moving {
+            // printf("Moving pos = %f,%f vel = %f,%f\n", active.pos[0], active.pos[1], active.vel[0], active.vel[1])
+            // active.pos = active.pos + active.vel
+            draw(active)
+        }
         EndDrawing()
     }
 
