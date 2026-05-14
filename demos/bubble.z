@@ -60,6 +60,9 @@ fn dist(v1: [2]i32, v2: [2]i32) -> f64 {
 }
 
 fn shoot(map: &Map, cannon: Cannon) {
+    if state.active.moving {
+        return
+    }
     norm_angle := f64(cannon.angle + 90)
 
     state.active.moving = true
@@ -73,6 +76,170 @@ fn draw(bubble: Bubble) {
     DrawCircle(i32(bubble.pos[0]), i32(bubble.pos[1]), f32(bubble_radius), bc) 
 }
 
+
+
+fn grid_to_pix(x: i32, y: i32) -> [2]i32 {
+    fr := f32(bubble_radius)
+    cx: i32 = 0
+    cy: i32 = 0
+
+    cy = i32(f32(y) * fr * SQRT3 + fr)
+    if y % 2 == 0 {
+        cx = x * bubble_radius * 2 + bubble_radius
+    } else {
+        cx = x * bubble_radius * 2 + bubble_radius * 2
+    }
+
+    return [cx, cy]
+}
+
+fn pix_to_grid(cx: i32, cy: i32) -> [2]i32 {
+    fr := f32(bubble_radius)
+    x: i32 = 0
+    y: i32 = 0
+
+    fy := (f32(cy) - fr) / (fr * SQRT3)
+    y = i32(fy + 0.5)
+
+    if y % 2 == 0 {
+        fx := (f32(cx) - fr) / (fr * 2.0)
+        x = i32(fx + 0.5)
+    } else {
+        fx := (f32(cx) - fr * 2.0) / (fr * 2.0)
+        x = i32(fx + 0.5)
+    }
+
+    return [x, y]
+}
+
+fn neighbors(x: i32, y: i32) -> [6][2]i32 {
+    if y % 2 == 0 {
+        return [
+            [x - 1, y    ],
+            [x + 1, y    ],
+            [x - 1, y - 1],
+            [x,     y - 1],
+            [x - 1, y + 1],
+            [x,     y + 1]
+        ]
+    } 
+    return [
+        [x - 1, y    ],
+        [x + 1, y    ],
+        [x,     y - 1],
+        [x + 1, y - 1],
+        [x,     y + 1],
+        [x + 1, y + 1]
+    ]
+}
+
+fn match_check(gx: i32, gy: i32) {
+    if state.map.data[gy][gx].type != .Normal {
+        return
+    }
+
+    target_color := state.map.data[gy][gx].color_idx
+    visited: [12][12]bool
+
+    queue: [144][2]i32
+    head: i32 = 0
+    tail: i32 = 0
+
+    matched: [144][2]i32
+    matched_count: i32 = 0
+
+    queue[tail] = [gx, gy]
+    tail = tail + 1
+    visited[gy][gx] = true
+
+    for {
+        if head >= tail { 
+            break 
+        }
+
+        cell := queue[head]
+        head = head + 1
+        cx := cell[0]
+        cy := cell[1]
+
+        matched[matched_count] = [cx, cy]
+        matched_count = matched_count + 1
+
+        nbrs := neighbors(cx, cy)
+        for i in 0..6 {
+            nx := nbrs[i][0]
+            ny := nbrs[i][1]
+            if nx >= 0 && nx < 12 && ny >= 0 && ny < 12 {
+                if visited[ny][nx] == false {
+                    nb := state.map.data[ny][nx]
+                    if nb.type == .Normal && nb.color_idx == target_color {
+                        visited[ny][nx] = true
+                        queue[tail] = [nx, ny]
+                        tail = tail + 1
+                    }
+                }
+            }
+        }
+    }
+
+    if matched_count >= 3 {
+        for i in 0..matched_count{
+            mx := matched[i][0]
+            my := matched[i][1]
+            state.map.data[my][mx].type = .None
+        }
+    }
+}
+
+fn drop_floaters() {
+    reachable: [12][12]bool
+    queue: [144][2]i32
+    head: i32 = 0
+    tail: i32 = 0
+
+    for x in 0..12 {
+        if state.map.data[0][x].type == .Normal {
+            reachable[0][x] = true
+            queue[tail] = [x, 0]
+            tail = tail + 1
+        }
+    }
+
+    for {
+        if head >= tail { 
+            break 
+        }
+        cell := queue[head]
+        head = head + 1
+        cx := cell[0]
+        cy := cell[1]
+
+        nbrs := neighbors(cx, cy)
+        for i in 0..6 {
+            nx := nbrs[i][0]
+            ny := nbrs[i][1]
+            if nx >= 0 && nx < 12 && ny >= 0 && ny < 12 {
+                if reachable[ny][nx] == false {
+                    if state.map.data[ny][nx].type == .Normal {
+                        reachable[ny][nx] = true
+                        queue[tail] = [nx, ny]
+                        tail = tail + 1
+                    }
+                }
+            }
+        }
+    }
+
+    for y in 0..12 {
+        for x in 0..12 {
+            if state.map.data[y][x].type == .Normal {
+                if reachable[y][x] == false {
+                    state.map.data[y][x].type = .None
+                }
+            }
+        }
+    }
+}
 
 fn init() {
     state = State {
@@ -113,7 +280,7 @@ fn update() {
         // Map bubble collision
         for y in 0..10 {
             for x in 0..10 {
-                b := state.map.data[y][x]
+                b := &state.map.data[y][x]
                 if b.type == .Normal {
                     b_pos := grid_to_pix(x, y)
                     a_pos := [i32(state.active.pos[0]), i32(state.active.pos[1])]
@@ -122,7 +289,10 @@ fn update() {
 
                         grid_hit := pix_to_grid(a_pos[0], a_pos[1])
                         printf("grid hit x: %d, y: %d\n", grid_hit[0], grid_hit[1])
-                        state.map.data[grid_hit[1]][grid_hit[0]] = Bubble { type = .Normal, color_idx = 1 }
+                        state.map.data[grid_hit[1]][grid_hit[0]] = state.active
+
+                        match_check(grid_hit[0], grid_hit[1])
+                        drop_floaters()
                     }
                 }
 
@@ -130,40 +300,6 @@ fn update() {
         }
         state.active.pos = state.active.pos + state.active.vel
     }
-}
-
-fn grid_to_pix(x: i32, y: i32) -> [2]i32 {
-    fr := f32(bubble_radius)
-    cx: i32 = 0
-    cy: i32 = 0
-
-    cy = i32(f32(y) * fr * SQRT3 + fr)
-    if y % 2 == 0 {
-        cx = x * bubble_radius * 2 + bubble_radius
-    } else {
-        cx = x * bubble_radius * 2 + bubble_radius * 2
-    }
-
-    return [cx, cy]
-}
-
-fn pix_to_grid(cx: i32, cy: i32) -> [2]i32 {
-    fr := f32(bubble_radius)
-    x: i32 = 0
-    y: i32 = 0
-
-    fy := (f32(cy) - fr) / (fr * SQRT3)
-    y = i32(fy + 0.5)
-
-    if y % 2 == 0 {
-        fx := (f32(cx) - fr) / (fr * 2.0)
-        x = i32(fx + 0.5)
-    } else {
-        fx := (f32(cx) - fr * 2.0) / (fr * 2.0)
-        x = i32(fx + 0.5)
-    }
-
-    return [x, y]
 }
 
 fn render() {
@@ -176,6 +312,7 @@ fn render() {
             if bubble.type == .Normal {
                 bc := bubble_color[state.map.data[y][x].color_idx]
                 DrawCircle(pix_pos[0], pix_pos[1], f32(bubble_radius), bc) 
+                DrawCircleLines(pix_pos[0], pix_pos[1], f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
             }
         }
     }
@@ -204,7 +341,6 @@ fn main() {
 
     SetConfigFlags(32) // MSAA 4X
     InitWindow(W, H, "Bubble")
-
     for {
         if state.running == false {
             break
