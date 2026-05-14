@@ -18,6 +18,7 @@ bubble_color : [8]Color = [
 ]
 
 bubble_radius: i32 = 30
+SQRT3 : f32 = 1.7320508
 
 enum BubbleType {
     None
@@ -39,6 +40,7 @@ struct Map {
 struct Cannon {
     rect : Rectangle
     angle: f32
+    rotation_speed: f32
 }
 
 struct State {
@@ -79,20 +81,24 @@ fn init() {
         cannon = Cannon{ 
             rect = Rectangle { x = 350, y = 800, width = 50, height = 100 } 
             angle = 0
+            rotation_speed = 100
         }
         running = true
     }
 }
 
 fn update() {
-    if IsKeyPressed(KeyboardKey.ESCAPE) { // escape key
+    etime := f32(GetFrameTime())
+    delta_angle := etime * state.cannon.rotation_speed
+
+    if IsKeyPressed(KeyboardKey.ESCAPE) { 
         state.running = false
     }
     if IsKeyDown(KeyboardKey.LEFT) { 
-        state.cannon.angle = state.cannon.angle - 0.2
+        state.cannon.angle = state.cannon.angle - delta_angle
     }
     if IsKeyDown(KeyboardKey.RIGHT) { 
-        state.cannon.angle = state.cannon.angle + 0.2
+        state.cannon.angle = state.cannon.angle + delta_angle
     }
     if IsKeyPressed(KeyboardKey.SPACE) {
         shoot(&state.map, state.cannon)
@@ -111,8 +117,12 @@ fn update() {
                 if b.type == .Normal {
                     b_pos := grid_to_pix(x, y)
                     a_pos := [i32(state.active.pos[0]), i32(state.active.pos[1])]
-                    if dist(b_pos, a_pos) < f64(bubble_radius) {
+                    if dist(b_pos, a_pos) < f64(bubble_radius * 2) {
                         state.active.moving = false
+
+                        grid_hit := pix_to_grid(a_pos[0], a_pos[1])
+                        printf("grid hit x: %d, y: %d\n", grid_hit[0], grid_hit[1])
+                        state.map.data[grid_hit[1]][grid_hit[0]] = Bubble { type = .Normal, color_idx = 1 }
                     }
                 }
 
@@ -123,30 +133,34 @@ fn update() {
 }
 
 fn grid_to_pix(x: i32, y: i32) -> [2]i32 {
+    fr := f32(bubble_radius)
     cx: i32 = 0
     cy: i32 = 0
 
+    cy = i32(f32(y) * fr * SQRT3 + fr)
     if y % 2 == 0 {
-        cx = x * bubble_radius * 2
-        cy = y * bubble_radius * 2 - bubble_radius
+        cx = x * bubble_radius * 2 + bubble_radius
     } else {
-        cx = x * bubble_radius * 2 - bubble_radius
-        cy = y * bubble_radius * 2 - bubble_radius
+        cx = x * bubble_radius * 2 + bubble_radius * 2
     }
 
     return [cx, cy]
 }
 
 fn pix_to_grid(cx: i32, cy: i32) -> [2]i32 {
+    fr := f32(bubble_radius)
     x: i32 = 0
     y: i32 = 0
 
+    fy := (f32(cy) - fr) / (fr * SQRT3)
+    y = i32(fy + 0.5)
+
     if y % 2 == 0 {
-        x = cx / (bubble_radius * 2)
-        y = cy / (bubble_radius * 2) + bubble_radius
+        fx := (f32(cx) - fr) / (fr * 2.0)
+        x = i32(fx + 0.5)
     } else {
-        x = cx / (bubble_radius * 2) + bubble_radius
-        y = cy / (bubble_radius * 2) + bubble_radius
+        fx := (f32(cx) - fr * 2.0) / (fr * 2.0)
+        x = i32(fx + 0.5)
     }
 
     return [x, y]
@@ -165,7 +179,9 @@ fn render() {
             }
         }
     }
-    draw(state.active)
+    if state.active.moving {
+        draw(state.active)
+    }
     DrawRectanglePro(state.cannon.rect, Vector2 { x = state.cannon.rect.width / 2, y = state.cannon.rect.height }, state.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
     EndDrawing()
 }
