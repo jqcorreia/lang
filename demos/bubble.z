@@ -5,9 +5,7 @@ import "vendor:raylib"
 
 W : i32 = 800
 H : i32 = 800
-
 background_color := Color{ r= 100, g= 100, b= 0, a= 255 }
-
 bubble_color : [8]Color = [
     Color { r = 230, g = 30,  b = 30,  a = 255 } // red
     Color { r = 30,  g = 80,  b = 240, a = 255 } // blue
@@ -43,15 +41,22 @@ struct Cannon {
     angle: f32
 }
 
-active: Bubble 
+struct State {
+    running: bool
+    map: Map
+    cannon: Cannon
+    active: Bubble
+}
+
+state: State
 
 fn shoot(map: &Map, cannon: Cannon) {
     norm_angle := f64(cannon.angle + 90)
 
-    active.moving = true
-    active.pos = [cannon.rect.x, cannon.rect.y]
+    state.active.moving = true
+    state.active.pos = [cannon.rect.x, cannon.rect.y]
     rad_angle := to_rad(norm_angle)
-    active.vel = [-f32(cos(rad_angle)), -f32(sin(rad_angle))]
+    state.active.vel = [-f32(cos(rad_angle)), -f32(sin(rad_angle))]
 }
 
 fn draw(bubble: Bubble) {
@@ -59,14 +64,72 @@ fn draw(bubble: Bubble) {
     DrawCircle(i32(bubble.pos[0]), i32(bubble.pos[1]), f32(bubble_radius), bc) 
 }
 
-fn main() {
-    active = Bubble { type = .Normal, color_idx = 1 }  
-    map := Map{}
-    cannon := Cannon{ 
-        rect = Rectangle { x = 350, y = 800, width = 50, height = 100 } 
-        angle = 0
+
+fn init() {
+    state = State {
+        active = Bubble { type = .Normal, color_idx = 1 }  
+        map = Map{}
+        cannon = Cannon{ 
+            rect = Rectangle { x = 350, y = 800, width = 50, height = 100 } 
+            angle = 0
+        }
+        running = true
+    }
+}
+
+fn update() {
+    if IsKeyPressed(KeyboardKey.ESCAPE) { // escape key
+        state.running = false
+    }
+    if IsKeyDown(KeyboardKey.LEFT) { 
+        state.cannon.angle = state.cannon.angle - 0.2
+    }
+    if IsKeyDown(KeyboardKey.RIGHT) { 
+        state.cannon.angle = state.cannon.angle + 0.2
     }
 
+    if IsKeyPressed(KeyboardKey.SPACE) {
+        shoot(&state.map, state.cannon)
+    }
+    if state.active.moving {
+        if state.active.pos[0] < 0 || state.active.pos[0] > f32(W) {
+            state.active.vel[0] = -state.active.vel[0]
+        }
+        state.active.pos = state.active.pos + state.active.vel
+    }
+}
+
+fn render() {
+    BeginDrawing()
+    ClearBackground(background_color)
+    for y in 0..10 {
+        for x in 0..10 {
+            bubble := state.map.data[y][x]
+            cx: i32 = 0
+            cy: i32 = 0
+            if y % 2 == 0 {
+                cx = x * bubble_radius * 2
+                cy = y * bubble_radius * 2 - bubble_radius
+            } else {
+                cx = x * bubble_radius * 2 - bubble_radius
+                cy = y * bubble_radius * 2 - bubble_radius
+            }
+            if bubble.type == .Normal {
+                bc := bubble_color[state.map.data[y][x].color_idx]
+                DrawCircle(cx, cy, f32(bubble_radius), bc) 
+            }
+        }
+    }
+    draw(state.active)
+    DrawRectanglePro(state.cannon.rect, Vector2 { x = state.cannon.rect.width / 2, y = state.cannon.rect.height }, state.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
+    EndDrawing()
+}
+
+fn main() {
+
+    init()
+
+    // Init map
     for y in 0..10 {
         for x in 0..10 {
             rand_color := random() % 8
@@ -74,7 +137,7 @@ fn main() {
             if y > 6 && x > 2 && x < 8 {
                 bubble.type = .None
             } 
-            map.data[y][x] = bubble
+            state.map.data[y][x] = bubble
         }
     }
 
@@ -82,48 +145,11 @@ fn main() {
     InitWindow(W, H, "Bubble")
 
     for {
-        // printf("Sin: %f, Cos: %f\n", sin(to_rad(f64(cannon.angle))), cos(to_rad(f64(cannon.angle))))
-        if IsKeyPressed(KeyboardKey.ESCAPE) { // escape key
+        if state.running == false {
             break
         }
-        if IsKeyDown(KeyboardKey.LEFT) { 
-            cannon.angle = cannon.angle - 0.2
-        }
-        if IsKeyDown(KeyboardKey.RIGHT) { 
-            cannon.angle = cannon.angle + 0.2
-        }
-
-        if IsKeyPressed(KeyboardKey.SPACE) {
-            shoot(&map, cannon)
-        }
-
-        BeginDrawing()
-        ClearBackground(background_color)
-        for y in 0..10 {
-            for x in 0..10 {
-                bubble := map.data[y][x]
-                cx: i32 = 0
-                cy: i32 = 0
-                if y % 2 == 0 {
-                    cx = x * bubble_radius * 2
-                    cy = y * bubble_radius * 2 - bubble_radius
-                } else {
-                    cx = x * bubble_radius * 2 - bubble_radius
-                    cy = y * bubble_radius * 2 - bubble_radius
-                }
-                if bubble.type == .Normal {
-                    bc := bubble_color[map.data[y][x].color_idx]
-                    DrawCircle(cx, cy, f32(bubble_radius), bc) 
-                }
-            }
-        }
-        DrawRectanglePro(cannon.rect, Vector2 { x = cannon.rect.width / 2, y = cannon.rect.height }, cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
-        if active.moving {
-            // printf("Moving pos = %f,%f vel = %f,%f\n", active.pos[0], active.pos[1], active.vel[0], active.vel[1])
-            active.pos = active.pos + active.vel
-            draw(active)
-        }
-        EndDrawing()
+        update()
+        render()
     }
 
     CloseWindow()
