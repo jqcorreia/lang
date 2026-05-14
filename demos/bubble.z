@@ -49,11 +49,9 @@ fn shoot(map: &Map, cannon: Cannon) {
     norm_angle := f64(cannon.angle + 90)
 
     active.moving = true
-    active.pos = [300, 700]
+    active.pos = [cannon.rect.x, cannon.rect.y]
     rad_angle := to_rad(norm_angle)
-    active.vel = [cos(rad_angle), sin(rad_angle)]
-
-    printf("Moving pos = %f,%f vel = %f,%f\n", active.pos[0], active.pos[1], active.vel[0], active.vel[1])
+    active.vel = [-f32(cos(rad_angle)), -f32(sin(rad_angle))]
 }
 
 fn draw(bubble: Bubble) {
@@ -122,7 +120,7 @@ fn main() {
         DrawRectanglePro(cannon.rect, Vector2 { x = cannon.rect.width / 2, y = cannon.rect.height }, cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
         if active.moving {
             // printf("Moving pos = %f,%f vel = %f,%f\n", active.pos[0], active.pos[1], active.vel[0], active.vel[1])
-            // active.pos = active.pos + active.vel
+            active.pos = active.pos + active.vel
             draw(active)
         }
         EndDrawing()

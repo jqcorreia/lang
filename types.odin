@@ -104,6 +104,8 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		if from.size == to.size && coerce(from.elem_type, to.elem_type, scope) != nil {
 			return to
 		}
+		// Different element size/type, return nil to flag error
+		return nil
 	}
 
 	if from.kind == .Untyped_Int && to.numeric_integer {
