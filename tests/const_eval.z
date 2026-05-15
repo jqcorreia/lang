@@ -1,0 +1,16 @@
+import "std:c"
+
+W :: 20
+H :: 10
+SIZE :: W * H
+NEG :: -5 + 8
+PI :: 3.14
+
+fn main() {
+    a: [W]i32
+    b: [SIZE]i32
+    c: [W + H * 2]i32
+
+    d : f32 = PI * 2
+    printf("PI * 2 = %f\n", d)
+}

@@ -121,6 +121,7 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 }
 
 build :: proc(source: string) -> (ok: bool) {
+	// Reset the compiler arena
 	free_all(virtual.arena_allocator(&compiler.arena))
 	context.allocator = virtual.arena_allocator(&compiler.arena)
 
@@ -140,7 +141,7 @@ build :: proc(source: string) -> (ok: bool) {
 // 4. Functions
 stmt_priority :: proc(node: ^Ast_Node) -> int {
 	#partial switch &data in node.data {
-	case Ast_Import:
+	case Ast_Import, Ast_Const_Decl:
 		return 0
 	case Ast_Block:
 		return 1

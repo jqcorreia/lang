@@ -1,15 +1,19 @@
 package main
 
+import "core:fmt"
+
 Symbol :: struct {
-	name:  string,
-	kind:  Symbol_Kind,
-	type:  ^Type,
-	decl:  ^Ast_Node,
-	scope: ^Scope,
+	name:        string,
+	kind:        Symbol_Kind,
+	type:        ^Type,
+	decl:        ^Ast_Node,
+	scope:       ^Scope,
+	const_value: Const_Value,
 }
 
 Symbol_Kind :: enum {
 	Variable,
+	Constant,
 	Function,
 	Type,
 	Param,
@@ -30,6 +34,11 @@ ScopeKind :: enum {
 	Function,
 	Block,
 	Loop,
+}
+
+Const_Value :: union {
+	i64,
+	f64,
 }
 
 create_global_scope :: proc() -> ^Scope {
@@ -57,6 +66,8 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 			error_span(node.span, "Re-declaration of variable '%s'", data.name)
 			data.symbol = existing
 		}
+	case Ast_Const_Decl:
+		const_bind(node, cur_scope)
 	case Ast_Struct_Decl:
 		struct_bind(node, cur_scope)
 	case Ast_Enum_Decl:

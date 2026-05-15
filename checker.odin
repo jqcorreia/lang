@@ -14,6 +14,9 @@ check :: proc(c: ^Checker, nodes: []^Ast_Node) {
 		bind_scopes(node, global_scope)
 	}
 	for node in nodes {
+		const_eval(node, global_scope)
+	}
+	for node in nodes {
 		resolve_types(node)
 	}
 	for node in nodes {
@@ -23,6 +26,8 @@ check :: proc(c: ^Checker, nodes: []^Ast_Node) {
 
 check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	#partial switch &data in node.data {
+	case Ast_Const_Decl:
+	case Ast_Block:
 	case Ast_Expr:
 		check_expr(c, data.expr, node.scope, node.span)
 	case Ast_Var_Decl:
@@ -49,7 +54,6 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 		check_break(c, &data, node.scope, node.span)
 	case Ast_Continue:
 		check_continue(c, &data, node.scope, node.span)
-	case Ast_Block:
 	case Ast_Import:
 		check_import(c, &data, node.scope, node.span)
 	case:

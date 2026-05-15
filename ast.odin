@@ -12,6 +12,8 @@ Ast_Node :: struct {
 
 Ast_Data :: union {
 	Ast_Expr,
+	Ast_Const_Decl,
+	Ast_Var_Decl,
 	Ast_Var_Assign,
 	Ast_Function,
 	Ast_Return,
@@ -20,7 +22,6 @@ Ast_Data :: union {
 	Ast_For,
 	Ast_Break,
 	Ast_Continue,
-	Ast_Var_Decl,
 	Ast_Struct_Decl,
 	Ast_Enum_Decl,
 	Ast_Import,
@@ -35,7 +36,7 @@ Type_Expr :: union {
 Type_Expr_Name :: string
 
 Type_Expr_Array :: struct {
-	size: u64,
+	size: ^Expr,
 	elem: ^Type_Expr,
 }
 
@@ -232,6 +233,8 @@ traverse_ast :: proc(
 	case Ast_Import:
 		func(ast, userdata)
 	case Ast_Enum_Decl:
+		func(ast, userdata)
+	case Ast_Const_Decl:
 		func(ast, userdata)
 	case:
 		unimplemented(fmt.tprint("Unimplement traverse statement", ast))

@@ -224,9 +224,22 @@ resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^
 		if elem_type == &error_type {
 			return &error_type
 		}
+		value, ok := const_eval_expr(te.size, scope, span)
+		if !ok {
+			return &error_type
+		}
+		iv, is_int := value.(i64)
+		if !is_int {
+			error_span(span, "Array size must be an integer constant")
+			return &error_type
+		}
+		if iv < 0 {
+			error_span(span, "Array size must be non-negative")
+			return &error_type
+		}
 		type := new(Type)
 		type.kind = .Array
-		type.size = te.size
+		type.size = u64(iv)
 		type.elem_type = elem_type
 
 		return type

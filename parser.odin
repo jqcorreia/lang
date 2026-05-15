@@ -254,6 +254,8 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 			type_expr = type_expr,
 			expr = default_value_expr,
 		}
+	case peek(p).kind == .ColonColon:
+		return const_parse(p)
 	case peek(p).kind == .LBracket:
 		// --- Member assignment: foo.bar = expr ---
 		lhs := parse_expression(p, 0)
@@ -301,12 +303,12 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 		return advance(p).value.(string)
 	case .LBracket:
 		advance(p)
-		size_token := expect(p, .Number)
+		size_expr := parse_expression(p, 0)
 		expect(p, .RBracket)
 		elem_expr := new(Type_Expr)
 		elem_expr^ = parse_type_expr(p)
 		expr := Type_Expr_Array {
-			size = u64(size_token.value.(int)),
+			size = size_expr,
 			elem = elem_expr,
 		}
 		return expr

@@ -55,7 +55,7 @@ build_entry_alloca :: proc(gen: ^Generator, type: TypeRef, name: cstring) -> Val
 
 emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	#partial switch &data in node.data {
-	case Ast_Block, Ast_Import, Ast_Enum_Decl:
+	case Ast_Block, Ast_Import, Ast_Enum_Decl, Ast_Const_Decl:
 	// Do nothing
 	case Ast_Expr:
 		emit_value(gen, data.expr, node.scope, node.span)
@@ -201,8 +201,17 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Cast:
 		return cast_emit_value(gen, expr, scope, span)
 	case Expr_Variable:
-		ptr := emit_address(gen, expr, scope, span)
 		sym, _ := resolve_symbol(scope, e.value)
+		if sym.kind == .Constant {
+			type := get_llvm_type(gen, expr.type)
+			switch v in sym.const_value {
+			case i64:
+				return ConstInt(type, u64(v), 0)
+			case f64:
+				return ConstReal(type, v)
+			}
+		}
+		ptr := emit_address(gen, expr, scope, span)
 		val := BuildLoad2(gen.builder, get_llvm_type(gen, sym.type), ptr, "")
 		// Insert integer cast if expression type differs from storage type (e.g. untyped range var coerced to i32)
 		sym_is_int :=

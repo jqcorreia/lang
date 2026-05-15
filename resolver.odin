@@ -8,6 +8,9 @@ error_type := Type {
 
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
+	case Ast_Const_Decl:
+	case Ast_Break:
+	case Ast_Import:
 	case Ast_Block:
 		for n in data.statements {
 			resolve_types(n)
@@ -80,7 +83,6 @@ resolve_types :: proc(node: ^Ast_Node) {
 		if data.else_block != nil {
 			resolve_block_types(data.else_block)
 		}
-
 	case Ast_For:
 		if data.range != nil {
 			resolve_expr_type(data.range, node.scope, node.span)
@@ -103,8 +105,6 @@ resolve_types :: proc(node: ^Ast_Node) {
 			}
 		}
 
-	case Ast_Break:
-	case Ast_Import:
 	case:
 		unimplemented(fmt.tprintf("Unimplemented resolve for node %v", node))
 	}
