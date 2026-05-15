@@ -51,6 +51,7 @@ struct Game {
     map: Map
     cannon: Cannon
     active: Bubble
+    next_color_idx: u32
 }
 
 game: Game
@@ -68,10 +69,13 @@ fn shoot(map: &Map, cannon: Cannon) {
     }
     norm_angle := f64(cannon.angle + 90)
 
+    game.active.color_idx = game.next_color_idx
     game.active.moving = true
     game.active.pos = [cannon.rect.x, cannon.rect.y]
     rad_angle := to_rad(norm_angle)
     game.active.vel = [-f32(cos(rad_angle)), -f32(sin(rad_angle))]
+
+    game.next_color_idx = u32(random() % 8)
 }
 
 fn draw(bubble: Bubble) {
@@ -254,6 +258,7 @@ fn init() {
             rotation_speed = 100
         }
         running = true
+        next_color_idx = random() % 8
     }
 }
 
@@ -326,9 +331,10 @@ fn render() {
         }
     }
     if game.active.moving {
-        draw(game.active)
+        game.active.draw()
     }
     DrawRectanglePro(game.cannon.rect, Vector2 { x = game.cannon.rect.width / 2, y = game.cannon.rect.height }, game.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
+    DrawCircle(50,700, f32(bubble_radius), bubble_color[game.next_color_idx]) 
     EndDrawing()
 }
 
@@ -348,7 +354,7 @@ fn main() {
         }
     }
 
-    SetConfigFlags(32) // MSAA 4X
+    SetConfigFlags(ConfigFlags.MSAA_4X_HINT)
     InitWindow(W, H, "Bubble")
     for {
         if game.running == false {
