@@ -52,8 +52,10 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Enum with custom values (integers). Type-coerced on use site if need be.
 - [x] Untyped enum variants (odin-style .EnumVariant notation)
 - [x] Hexadecimal numericals support
+- [x] Constants with eager eval, usable everywhere 
+- [x] Array programming (element-wise operations), only Array x Array
 - [-] API and code cleanups after a first working pass
-- [ ] Array programming (element-wise operations)
+- [ ] Scalar x Array operations (splat)
 - [ ] Tagged Unions
 - [ ] Make sure that the available types are synched with the primitive types in codegen
 - [ ] Proper string with bound check and not null-terminated
