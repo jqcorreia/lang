@@ -45,7 +45,7 @@ fn clampf32(val: f32, min: f32, max: f32) -> f32 {
     return val
 }
 
-fn clampf32(val: f64, min: f64, max: f64) -> f64 {
+fn clampf64(val: f64, min: f64, max: f64) -> f64 {
     if val >= max {
         return max
     }
