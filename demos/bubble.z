@@ -144,11 +144,11 @@ fn match_check(gx: i32, gy: i32) {
     target_color := game.map.data[gy][gx].color_idx
     visited: [GRID_H][GRID_W]bool
 
-    queue: [144][2]i32
+    queue: [GRID_W * GRID_H][2]i32
     head: i32 = 0
     tail: i32 = 0
 
-    matched: [144][2]i32
+    matched: [GRID_W * GRID_H][2]i32
     matched_count: i32 = 0
 
     queue[tail] = [gx, gy]
@@ -196,7 +196,7 @@ fn match_check(gx: i32, gy: i32) {
 
 fn drop_floaters() {
     reachable: [GRID_H][GRID_W]bool
-    queue: [144][2]i32
+    queue: [GRID_W * GRID_H][2]i32
     head: i32 = 0
     tail: i32 = 0
 
@@ -280,6 +280,7 @@ fn update() {
             game.active.vel[0] = -game.active.vel[0]
         }
     
+        done_checking := false
         // Map bubble collision
         for y in 0..GRID_H {
             for x in 0..GRID_W {
@@ -295,7 +296,12 @@ fn update() {
 
                         match_check(grid_hit[0], grid_hit[1])
                         drop_floaters()
+                        done_checking = true
+                        break
                     }
+                }
+                if done_checking {
+                    break
                 }
 
             }
