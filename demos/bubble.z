@@ -312,9 +312,14 @@ fn update() {
     }
 }
 
-fn draw(bubble: Bubble) {
+fn draw_bubble(bubble: Bubble) {
+    draw_bubble_pos(i32(bubble.pos[0]), i32(bubble.pos[1]), bubble)
+}
+
+fn draw_bubble_pos(x: i32, y: i32, bubble: Bubble) {
     bc := bubble_color[bubble.color_idx]
-    DrawCircle(i32(bubble.pos[0]), i32(bubble.pos[1]), f32(bubble_radius), bc) 
+    DrawCircle(x, y, f32(bubble_radius), bc) 
+    DrawCircleLines(x, y, f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
 }
 
 
@@ -326,15 +331,16 @@ fn render() {
             bubble := game.map.data[y][x]
             pix_pos := grid_to_pix(x, y)
             if bubble.type == .Normal {
-                // draw(bubble)
-                bc := bubble_color[game.map.data[y][x].color_idx]
-                DrawCircle(pix_pos[0], pix_pos[1], f32(bubble_radius), bc) 
-                DrawCircleLines(pix_pos[0], pix_pos[1], f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
+                draw_bubble_pos(pix_pos[0], pix_pos[1], bubble)
+                // // draw(bubble)
+                // bc := bubble_color[game.map.data[y][x].color_idx]
+                // DrawCircle(pix_pos[0], pix_pos[1], f32(bubble_radius), bc) 
+                // DrawCircleLines(pix_pos[0], pix_pos[1], f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
             }
         }
     }
     if game.active.moving {
-        game.active.draw()
+        game.active.draw_bubble()
     }
     DrawRectanglePro(game.cannon.rect, Vector2 { x = game.cannon.rect.width / 2, y = game.cannon.rect.height }, game.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
     DrawCircle(50,700, f32(bubble_radius), bubble_color[game.next_color_idx]) 
