@@ -14,3 +14,14 @@ fn to_rad(degrees: f64) -> f64 {
 fn to_deg(rad: f64) -> f64 {
     return rad * (180 / PI)
 }
+
+fn clampi32(val: i32, min: i32, max: i32) -> i32 {
+    if val >= max {
+        return max
+    }
+    if val <= min {
+        return min
+    }
+    return val
+}
+

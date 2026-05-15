@@ -283,6 +283,9 @@ fn update() {
         done_checking := false
         // Map bubble collision
         for y in 0..GRID_H {
+            if done_checking {
+                    break
+            }
             for x in 0..GRID_W {
                 b := &game.map.data[y][x]
                 if b.type == .Normal {
@@ -292,6 +295,8 @@ fn update() {
                         game.active.moving = false
 
                         grid_hit := pix_to_grid(a_pos[0], a_pos[1])
+                        grid_hit[0] = clampi32(grid_hit[0], 0, GRID_W - 1)
+                        grid_hit[1] = clampi32(grid_hit[1], 0, GRID_H - 1)
                         game.map.data[grid_hit[1]][grid_hit[0]] = game.active
 
                         match_check(grid_hit[0], grid_hit[1])
@@ -300,10 +305,6 @@ fn update() {
                         break
                     }
                 }
-                if done_checking {
-                    break
-                }
-
             }
         }
         game.active.pos = game.active.pos + game.active.vel
