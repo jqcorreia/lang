@@ -31,6 +31,7 @@ Type_Expr :: union {
 	Type_Expr_Name,
 	Type_Expr_Array,
 	Type_Expr_Pointer,
+	Type_Expr_Function,
 }
 
 Type_Expr_Name :: string
@@ -42,6 +43,11 @@ Type_Expr_Array :: struct {
 
 Type_Expr_Pointer :: struct {
 	pointee: ^Type_Expr,
+}
+
+Type_Expr_Function :: struct {
+	params:      []^Type_Expr,
+	return_type: ^Type_Expr,
 }
 
 Ast_Expr :: struct {

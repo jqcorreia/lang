@@ -312,6 +312,31 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 			elem = elem_expr,
 		}
 		return expr
+	case .Func_Keyword:
+		params: [dynamic]^Type_Expr
+
+		advance(p)
+		expect(p, .LParen)
+
+		for current(p).kind != .RParen {
+			pe := new(Type_Expr)
+			pe^ = parse_type_expr(p)
+			append(&params, pe)
+			if current(p).kind == .Comma {
+				advance(p)
+			}
+		}
+		expect(p, .RParen)
+
+		ret := new(Type_Expr)
+		if current(p).kind == .RightArrow {
+			advance(p)
+			ret^ = parse_type_expr(p)
+		} else {
+			ret^ = Type_Expr_Name("") // void, matches function_ret_type_parse convention
+		}
+
+		return Type_Expr_Function{params = params[:], return_type = ret}
 	case:
 		fatal_token(current(p), "Unexpected token in type expression")
 	}

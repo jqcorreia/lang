@@ -55,6 +55,7 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Constants with eager eval, usable everywhere 
 - [x] Array programming (element-wise operations), only Array x Array
 - [-] API and code cleanups after a first working pass
+- [ ] Function pointers / Functions as values
 - [ ] Scalar x Array operations (splat)
 - [ ] Tagged Unions
 - [ ] Make sure that the available types are synched with the primitive types in codegen

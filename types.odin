@@ -13,6 +13,8 @@ Type :: struct {
 	size:            u64,
 	elem_type:       ^Type,
 	pointee_type:    ^Type, // Maybe not needed, could use elem_type, for now use a different field for clarity
+	params:          [dynamic]^Type,
+	return_type:     ^Type,
 }
 
 Struct_Field :: struct {
@@ -55,6 +57,7 @@ Type_Kind :: enum {
 	Enum,
 	Array,
 	Pointer,
+	Function,
 }
 
 create_type :: proc(
@@ -254,6 +257,7 @@ resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^
 		type.pointee_type = pointee_type
 
 		return type
+	case Type_Expr_Function:
 	}
 	return nil
 }

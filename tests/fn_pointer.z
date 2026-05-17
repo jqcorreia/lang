@@ -1,0 +1,7 @@
+import "std:c"
+
+add: fn(u32, u32) -> u32
+
+fn main() {
+
+}
