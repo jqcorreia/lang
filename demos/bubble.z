@@ -20,7 +20,7 @@ bubble_color : [8]Color = [
     Color { r = 150, g = 40,  b = 220, a = 255 } // purple
 ]
 
-bubble_radius: i32 = 30
+bubble_radius: i32 = 32
 SQRT3 : f32 = 1.7320508
 
 enum BubbleType {
@@ -239,7 +239,7 @@ fn shoot(map: &Map, cannon: Cannon) {
     game.active.moving = true
     game.active.pos = [cannon.rect.x, cannon.rect.y]
     rad_angle := to_rad(norm_angle)
-    game.active.vel = [-f32(cos(rad_angle)), -f32(sin(rad_angle))]
+    game.active.vel = [-f32(cos(rad_angle)) * 0.25, -f32(sin(rad_angle)) * 0.25]
 
     game.next_color_idx = u32(random() % 8)
 }
@@ -258,7 +258,7 @@ fn init() {
             rotation_speed = 100
         }
         running = true
-        next_color_idx = random() % 8
+        next_color_idx = u32(random() % 8)
     }
 }
 
@@ -322,13 +322,14 @@ fn draw_bubble(bubble: Bubble) {
 }
 
 fn draw_bubble_pos(x: i32, y: i32, bubble: Bubble) {
+    radius :f32= 32
     bc := bubble_color[bubble.color_idx]
     // DrawCircle(x, y, f32(bubble_radius), bc) 
     // DrawCircleLines(x, y, f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
 
-    src := Rectangle { x = 0, y = 0, width = 64, height = 64 }
-    dst := Rectangle { x = 0, y = 0, width = 64, height = 64 }
-    origin := Vector2 { x = x, y = y }
+    src := Rectangle { x = 0, y = 0, width = radius * 2, height = radius * 2}
+    dst := Rectangle { x = f32(x) - radius, y = f32(y) - radius, width = 64, height = 64 }
+    origin := Vector2 { x = 0, y = 0 }
     rotation: f32 = 0
     DrawTexturePro(tex, src, dst, origin, rotation, bc)
 }
@@ -369,7 +370,7 @@ fn main() {
     for y in 0..GRID_H {
         for x in 0..GRID_W {
             rand_color := random() % 8
-            bubble := Bubble { type = .Normal, color_idx = rand_color }
+            bubble := Bubble { type = .Normal, color_idx = u32(rand_color) }
             if y > 6 && x > 2 && x < 8 {
                 bubble.type = .None
             } 
