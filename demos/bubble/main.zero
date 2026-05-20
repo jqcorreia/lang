@@ -153,6 +153,13 @@ fn update() {
     }
     game.cannon.angle = clampf32(game.cannon.angle, -70, 70)
 
+    for y in 0..GRID_H {
+        for x in 0..GRID_W {
+            b := &game.map.data[y][x]
+            b.pos = b.pos + b.vel
+
+        }
+    }
     if game.active.moving {
         // Wall collision
         if game.active.pos[0] < 0 || game.active.pos[0] > f32(W) {
@@ -236,6 +243,9 @@ fn render() {
 
 fn main() {
     SetConfigFlags(ConfigFlags.MSAA_4X_HINT)
+    SetTargetFPS(60)
+
+    DrawFPS(W-50, H - 20)
     InitWindow(W, H, "Bubble")
 
     init()

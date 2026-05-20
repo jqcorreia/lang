@@ -5,7 +5,7 @@ import "core:os"
 import "core:testing"
 
 TEST_FOLDER :: "tests"
-SKIP_TESTS := [?]string{"var_shadow.z", "bench_large.z", "fn_pointer.z"}
+SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero", "fn_pointer.zero"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {

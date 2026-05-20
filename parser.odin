@@ -68,8 +68,8 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 			raw_path := import_node.path
 
 			// Resolve import path:
-			//   "std:c"         -> <exe_dir>/std/c.z  (compiler-relative, ":" as collection separator)
-			//   "vendor/raylib" -> <source_dir>/vendor/raylib.z (source-relative)
+			//   "std:c"         -> <exe_dir>/std/c.zero  (compiler-relative, ":" as collection separator)
+			//   "vendor/raylib" -> <source_dir>/vendor/raylib.zero (source-relative)
 			resolved_path: string
 			if colon_idx := strings.index(raw_path, ":"); colon_idx >= 0 {
 				collection := raw_path[:colon_idx]
@@ -84,8 +84,8 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 					context.allocator,
 				)
 			}
-			if !strings.ends_with(resolved_path, ".z") {
-				resolved_path = fmt.tprintf("%s.z", resolved_path)
+			if !strings.ends_with(resolved_path, ".zero") {
+				resolved_path = fmt.tprintf("%s.zero", resolved_path)
 			}
 			contents :=
 				os.read_entire_file(resolved_path, context.allocator) or_else panic(

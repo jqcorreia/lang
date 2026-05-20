@@ -68,7 +68,7 @@ Potentially this README can look a lot different in a couple of months if this b
 # Try it
 ```
 odin build .
-./zero run tests/basic.z 
+./zero run tests/basic.zero 
 ```
 
 # Testing
@@ -78,7 +78,7 @@ Run the tests by simply calling `odin test .`
 # Dependencies
 - `linux` at least until we properly know what we are doing
 - `cc` as the C compiler that does the linking in the end
-- `raylib` in order to run the raylib example in `tests/raylib.z`
+- `raylib` in order to run the raylib example in `tests/raylib.zero`
 
 # License
 MIT — see [LICENSE](LICENSE).
