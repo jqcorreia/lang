@@ -94,6 +94,12 @@ struct_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type 
 				if coerced_type != nil {
 					set_expr_type(arg, coerced_type, scope)
 				} else {
+					error_span(
+						span,
+						"Invalid field type, expected %s, got %s",
+						field.type.kind,
+						arg_type.kind,
+					)
 					arg.type = arg_type
 				}
 			}
