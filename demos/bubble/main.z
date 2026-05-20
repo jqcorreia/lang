@@ -227,7 +227,8 @@ fn render() {
         game.active.draw_bubble()
     }
     DrawRectanglePro(game.cannon.rect, Vector2 { x = game.cannon.rect.width / 2, y = game.cannon.rect.height }, game.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
-    draw_bubble_pos(i32(game.cannon.rect.x + game.cannon.rect.width / 2), W - 32, Bubble { color_idx = game.next_color_idx})
+    // Draw preview bubble
+    draw_bubble_pos(i32(game.cannon.rect.x ), W - 32, Bubble { color_idx = game.next_color_idx})
     // DrawCircle(50,700, f32(bubble_radius), bubble_color[game.next_color_idx]) 
 
     EndDrawing()
