@@ -8,6 +8,7 @@ W :: 800
 H :: 800
 GRID_W :: 12
 GRID_H :: 12
+SHOOT_SPEED :: 100
 
 background_color := Color{ r= 100, g= 100, b= 0, a= 255 }
 bubble_color : [8]Color = [
@@ -112,7 +113,7 @@ fn shoot(map: &Map, cannon: Cannon) {
     game.active.moving = true
     game.active.pos = [cannon.rect.x, cannon.rect.y]
     rad_angle := to_rad(norm_angle)
-    game.active.vel = [-f32(cos(rad_angle)) * 0.25, -f32(sin(rad_angle)) * 0.25]
+    game.active.vel = [-f32(cos(rad_angle)) * 1600, -f32(sin(rad_angle)) * 1600]
 
     game.next_color_idx = u32(random() % 8)
 }
@@ -183,6 +184,9 @@ fn update() {
                         grid_hit := pix_to_grid(a_pos[0], a_pos[1])
                         grid_hit[0] = clampi32(grid_hit[0], 0, GRID_W - 1)
                         grid_hit[1] = clampi32(grid_hit[1], 0, GRID_H - 1)
+                        gp := grid_to_pix(grid_hit[0], grid_hit[1])
+                        game.active.pos = [f32(gp[0]), f32(gp[1])]
+                        game.active.vel = [f32(0), f32(0)]
                         game.map.data[grid_hit[1]][grid_hit[0]] = game.active
 
                         match_check(grid_hit[0], grid_hit[1])
@@ -193,7 +197,9 @@ fn update() {
                 }
             }
         }
-        game.active.pos = game.active.pos + game.active.vel
+        // Update active bubble pos
+        game.active.pos[0] = game.active.pos[0] + game.active.vel[0] * etime
+        game.active.pos[1] = game.active.pos[1] + game.active.vel[1] * etime
     }
 }
 
@@ -221,12 +227,8 @@ fn render() {
     for y in 0..GRID_H {
         for x in 0..GRID_W {
             bubble := game.map.data[y][x]
-            pix_pos := grid_to_pix(x, y)
             if bubble.type == .Normal {
-                draw_bubble_pos(pix_pos[0], pix_pos[1], bubble)
-                // bc := bubble_color[game.map.data[y][x].color_idx]
-                // DrawCircle(pix_pos[0], pix_pos[1], f32(bubble_radius), bc) 
-                // DrawCircleLines(pix_pos[0], pix_pos[1], f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
+                draw_bubble(bubble)
             }
         }
     }
@@ -254,10 +256,15 @@ fn main() {
     for y in 0..GRID_H {
         for x in 0..GRID_W {
             rand_color := random() % 8
-            bubble := Bubble { type = .Normal, color_idx = u32(rand_color) }
+            gp := grid_to_pix(x, y)
+            bubble := Bubble {
+                type = .Normal,
+                color_idx = u32(rand_color),
+                pos = [f32(gp[0]), f32(gp[1])]
+            }
             if y > 6 && x > 2 && x < 8 {
                 bubble.type = .None
-            } 
+            }
             game.map.data[y][x] = bubble
         }
     }
