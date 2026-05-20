@@ -38,6 +38,7 @@ struct Bubble {
     moving: bool
     pos: [2]f32
     vel: [2]f32
+    acc: [2]f32
 }
 
 struct Map {
@@ -143,6 +144,9 @@ fn update() {
     if IsKeyPressed(KeyboardKey.ESCAPE) { 
         game.running = false
     }
+    if IsKeyPressed(KeyboardKey.Q) { 
+        drop_all()
+    }
     if IsKeyDown(KeyboardKey.LEFT) { 
         game.cannon.angle = game.cannon.angle - delta_angle
     }
@@ -157,8 +161,12 @@ fn update() {
     for y in 0..GRID_H {
         for x in 0..GRID_W {
             b := &game.map.data[y][x]
-            b.pos = b.pos + b.vel
+            b.pos[0] = b.pos[0] + b.vel[0] * etime
+            b.pos[1] = b.pos[1] + b.vel[1] * etime
 
+            if b.pos[1] > f32(H) {
+                b.type = .None
+            }
         }
     }
     if game.active.moving {
@@ -210,8 +218,6 @@ fn draw_bubble(bubble: Bubble) {
 fn draw_bubble_pos(x: i32, y: i32, bubble: Bubble) {
     radius :f32= 32
     bc := bubble_color[bubble.color_idx]
-    // DrawCircle(x, y, f32(bubble_radius), bc) 
-    // DrawCircleLines(x, y, f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
 
     src := Rectangle { x = 0, y = 0, width = radius * 2, height = radius * 2}
     dst := Rectangle { x = f32(x) - radius, y = f32(y) - radius, width = radius * 2, height = radius * 2 }

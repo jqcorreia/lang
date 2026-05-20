@@ -73,6 +73,7 @@ fn match_check(gx: i32, gy: i32) {
             mx := matched[i][0]
             my := matched[i][1]
             game.map.data[my][mx].type = .None
+            // game.map.data[my][mx].vel = [0, f32(random() % 400 + 200)]
         }
     }
 }
@@ -120,8 +121,19 @@ fn drop_floaters() {
         for x in 0..GRID_W {
             if game.map.data[y][x].type == .Normal {
                 if reachable[y][x] == false {
-                    game.map.data[y][x].type = .None
+                    game.map.data[y][x].type = .Normal
+                    game.map.data[y][x].vel = [0, f32(random() % 400 + 200)]
                 }
+            }
+        }
+    }
+}
+
+fn drop_all() {
+    for y in 0..GRID_H {
+        for x in 0..GRID_W {
+            if game.map.data[y][x].type == .Normal {
+                game.map.data[y][x].vel = [0, f32(random() % 400 + 200)]
             }
         }
     }
