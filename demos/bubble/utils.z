@@ -1,0 +1,128 @@
+fn neighbors(x: i32, y: i32) -> [6][2]i32 {
+    if y % 2 == 0 {
+        return [
+            [x - 1, y    ],
+            [x + 1, y    ],
+            [x - 1, y - 1],
+            [x,     y - 1],
+            [x - 1, y + 1],
+            [x,     y + 1]
+        ]
+    } 
+    return [
+        [x - 1, y    ],
+        [x + 1, y    ],
+        [x,     y - 1],
+        [x + 1, y - 1],
+        [x,     y + 1],
+        [x + 1, y + 1]
+    ]
+}
+
+fn match_check(gx: i32, gy: i32) {
+    if game.map.data[gy][gx].type != .Normal {
+        return
+    }
+
+    target_color := game.map.data[gy][gx].color_idx
+    visited: [GRID_H][GRID_W]bool
+
+    queue: [GRID_W * GRID_H][2]i32
+    head: i32 = 0
+    tail: i32 = 0
+
+    matched: [GRID_W * GRID_H][2]i32
+    matched_count: i32 = 0
+
+    queue[tail] = [gx, gy]
+    tail = tail + 1
+    visited[gy][gx] = true
+
+    for {
+        if head >= tail { 
+            break 
+        }
+
+        cell := queue[head]
+        head = head + 1
+        cx := cell[0]
+        cy := cell[1]
+
+        matched[matched_count] = [cx, cy]
+        matched_count = matched_count + 1
+
+        nbrs := neighbors(cx, cy)
+        for i in 0..6 {
+            nx := nbrs[i][0]
+            ny := nbrs[i][1]
+            if nx >= 0 && nx < GRID_W && ny >= 0 && ny < GRID_H {
+                if visited[ny][nx] == false {
+                    nb := game.map.data[ny][nx]
+                    if nb.type == .Normal && nb.color_idx == target_color {
+                        visited[ny][nx] = true
+                        queue[tail] = [nx, ny]
+                        tail = tail + 1
+                    }
+                }
+            }
+        }
+    }
+
+    if matched_count >= 3 {
+        for i in 0..matched_count{
+            mx := matched[i][0]
+            my := matched[i][1]
+            game.map.data[my][mx].type = .None
+        }
+    }
+}
+
+fn drop_floaters() {
+    reachable: [GRID_H][GRID_W]bool
+    queue: [GRID_W * GRID_H][2]i32
+    head: i32 = 0
+    tail: i32 = 0
+
+    for x in 0..GRID_W {
+        if game.map.data[0][x].type == .Normal {
+            reachable[0][x] = true
+            queue[tail] = [x, 0]
+            tail = tail + 1
+        }
+    }
+
+    for {
+        if head >= tail { 
+            break 
+        }
+        cell := queue[head]
+        head = head + 1
+        cx := cell[0]
+        cy := cell[1]
+
+        nbrs := neighbors(cx, cy)
+        for i in 0..6 {
+            nx := nbrs[i][0]
+            ny := nbrs[i][1]
+            if nx >= 0 && nx < GRID_W && ny >= 0 && ny < GRID_H {
+                if reachable[ny][nx] == false {
+                    if game.map.data[ny][nx].type == .Normal {
+                        reachable[ny][nx] = true
+                        queue[tail] = [nx, ny]
+                        tail = tail + 1
+                    }
+                }
+            }
+        }
+    }
+
+    for y in 0..GRID_H {
+        for x in 0..GRID_W {
+            if game.map.data[y][x].type == .Normal {
+                if reachable[y][x] == false {
+                    game.map.data[y][x].type = .None
+                }
+            }
+        }
+    }
+}
