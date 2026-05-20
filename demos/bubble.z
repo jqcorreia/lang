@@ -28,6 +28,8 @@ enum BubbleType {
     Normal
 }
 
+tex: Texture
+
 struct Bubble {
     type: BubbleType
     color_idx: u32
@@ -244,6 +246,9 @@ fn shoot(map: &Map, cannon: Cannon) {
 
 
 fn init() {
+    // image := LoadImage("spheres.png")
+    tex = LoadTexture("demos/sphere.png")
+
     game = Game {
         active = Bubble { type = .Normal, color_idx = 1 }  
         map = Map{}
@@ -318,8 +323,14 @@ fn draw_bubble(bubble: Bubble) {
 
 fn draw_bubble_pos(x: i32, y: i32, bubble: Bubble) {
     bc := bubble_color[bubble.color_idx]
-    DrawCircle(x, y, f32(bubble_radius), bc) 
-    DrawCircleLines(x, y, f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
+    // DrawCircle(x, y, f32(bubble_radius), bc) 
+    // DrawCircleLines(x, y, f32(bubble_radius), Color {r = 0, g = 0, b = 0, a = 255}) 
+
+    src := Rectangle { x = 0, y = 0, width = 64, height = 64 }
+    dst := Rectangle { x = 0, y = 0, width = 64, height = 64 }
+    origin := Vector2 { x = x, y = y }
+    rotation: f32 = 0
+    DrawTexturePro(tex, src, dst, origin, rotation, bc)
 }
 
 
@@ -344,10 +355,13 @@ fn render() {
     DrawRectanglePro(game.cannon.rect, Vector2 { x = game.cannon.rect.width / 2, y = game.cannon.rect.height }, game.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
     draw_bubble_pos(50, 700, Bubble { color_idx = game.next_color_idx})
     // DrawCircle(50,700, f32(bubble_radius), bubble_color[game.next_color_idx]) 
+
     EndDrawing()
 }
 
 fn main() {
+    SetConfigFlags(ConfigFlags.MSAA_4X_HINT)
+    InitWindow(W, H, "Bubble")
 
     init()
 
@@ -363,8 +377,6 @@ fn main() {
         }
     }
 
-    SetConfigFlags(ConfigFlags.MSAA_4X_HINT)
-    InitWindow(W, H, "Bubble")
     for {
         if game.running == false {
             break
