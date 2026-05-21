@@ -1,0 +1,679 @@
+// GLFW 3.5 bindings for zerolang
+// Generated from glfw3.h
+//
+// Type mapping:
+//   int                 -> i32
+//   unsigned int        -> u32
+//   float               -> f32
+//   double              -> f64
+//   bool                -> bool  (GLFW does not really use bool — uses int)
+//   char* / const char* -> cstr
+//   void*               -> str   (opaque pointer)
+//   unsigned char       -> u8
+//   unsigned short      -> u16
+//   long                -> i64
+//   uint64_t            -> u64
+//   T*                  -> &T
+//   T arr[N]            -> [N]T
+//   size_t              -> u64
+//
+// Opaque handle structs (GLFWmonitor, GLFWwindow, GLFWcursor) are defined as
+// empty structs; the C `T*` becomes `&T`.
+//
+// Not supported (commented out):
+//   typedef function pointers     (no fn-pointer type)
+//   any function taking or returning a function pointer
+//     (every glfwSet*Callback, plus glfwGetProcAddress / glfwGetInstanceProcAddress)
+//   char** / const char**         (pointer-to-pointer) — affects glfwGetMonitors,
+//                                  glfwGetRequiredInstanceExtensions, GLFWdropfun
+//   Vulkan-typed APIs             (VkInstance / VkResult / VkSurfaceKHR / etc.)
+//   GLFWallocator fields          (function-pointer members) — represented as
+//                                  opaque `str` so the struct itself remains usable.
+//   #define aliases that point at another #define (LEFT/RIGHT/etc.) are kept as
+//   comments with their resolved numeric value where useful.
+
+// === OPAQUE HANDLE STRUCTS ===
+
+struct GLFWmonitor {}
+struct GLFWwindow {}
+struct GLFWcursor {}
+
+// === CONCRETE STRUCTS ===
+
+struct GLFWvidmode {
+    width: i32
+    height: i32
+    redBits: i32
+    greenBits: i32
+    blueBits: i32
+    refreshRate: i32
+}
+
+struct GLFWgammaramp {
+    red: &u16
+    green: &u16
+    blue: &u16
+    size: u32
+}
+
+struct GLFWimage {
+    width: i32
+    height: i32
+    pixels: &u8
+}
+
+struct GLFWgamepadstate {
+    buttons: [15]u8
+    axes: [6]f32
+}
+
+struct GLFWallocator {
+    // allocate / reallocate / deallocate are function pointers — represented
+    // as opaque pointers so the struct still has the correct layout/size.
+    allocate: str
+    reallocate: str
+    deallocate: str
+    user: str
+}
+
+// === TYPEDEFS / FUNCTION POINTERS (not supported) ===
+// typedef GLFWglproc                = void (*)()
+// typedef GLFWvkproc                = void (*)()
+// typedef GLFWallocatefun           = void* (*)(size_t, void*)
+// typedef GLFWreallocatefun         = void* (*)(void*, size_t, void*)
+// typedef GLFWdeallocatefun         = void (*)(void*, void*)
+// typedef GLFWerrorfun              = void (*)(int, const char*)
+// typedef GLFWwindowposfun          = void (*)(GLFWwindow*, int, int)
+// typedef GLFWwindowsizefun         = void (*)(GLFWwindow*, int, int)
+// typedef GLFWwindowclosefun        = void (*)(GLFWwindow*)
+// typedef GLFWwindowrefreshfun      = void (*)(GLFWwindow*)
+// typedef GLFWwindowfocusfun        = void (*)(GLFWwindow*, int)
+// typedef GLFWwindowiconifyfun      = void (*)(GLFWwindow*, int)
+// typedef GLFWwindowmaximizefun     = void (*)(GLFWwindow*, int)
+// typedef GLFWframebuffersizefun    = void (*)(GLFWwindow*, int, int)
+// typedef GLFWwindowcontentscalefun = void (*)(GLFWwindow*, float, float)
+// typedef GLFWmousebuttonfun        = void (*)(GLFWwindow*, int, int, int)
+// typedef GLFWcursorposfun          = void (*)(GLFWwindow*, double, double)
+// typedef GLFWcursorenterfun        = void (*)(GLFWwindow*, int)
+// typedef GLFWscrollfun             = void (*)(GLFWwindow*, double, double)
+// typedef GLFWkeyfun                = void (*)(GLFWwindow*, int, int, int, int)
+// typedef GLFWcharfun               = void (*)(GLFWwindow*, unsigned int)
+// typedef GLFWcharmodsfun           = void (*)(GLFWwindow*, unsigned int, int)
+// typedef GLFWdropfun               = void (*)(GLFWwindow*, int, const char*[])
+// typedef GLFWmonitorfun            = void (*)(GLFWmonitor*, int)
+// typedef GLFWjoystickfun           = void (*)(int, int)
+
+// === ENUMS ===
+
+enum VersionInfo {
+    VERSION_MAJOR = 3
+    VERSION_MINOR = 5
+    VERSION_REVISION = 0
+}
+
+enum Boolean {
+    TRUE = 1
+    FALSE = 0
+}
+
+enum KeyAction {
+    RELEASE = 0
+    PRESS = 1
+    REPEAT = 2
+}
+
+enum HatState {
+    CENTERED = 0
+    UP = 1
+    RIGHT = 2
+    DOWN = 4
+    LEFT = 8
+    RIGHT_UP = 3    // = RIGHT | UP
+    RIGHT_DOWN = 6  // = RIGHT | DOWN
+    LEFT_UP = 9     // = LEFT  | UP
+    LEFT_DOWN = 12  // = LEFT  | DOWN
+}
+
+enum Key {
+    UNKNOWN = -1
+    SPACE = 32
+    APOSTROPHE = 39
+    COMMA = 44
+    MINUS = 45
+    PERIOD = 46
+    SLASH = 47
+    K0 = 48
+    K1 = 49
+    K2 = 50
+    K3 = 51
+    K4 = 52
+    K5 = 53
+    K6 = 54
+    K7 = 55
+    K8 = 56
+    K9 = 57
+    SEMICOLON = 59
+    EQUAL = 61
+    A = 65
+    B = 66
+    C = 67
+    D = 68
+    E = 69
+    F = 70
+    G = 71
+    H = 72
+    I = 73
+    J = 74
+    K = 75
+    L = 76
+    M = 77
+    N = 78
+    O = 79
+    P = 80
+    Q = 81
+    R = 82
+    S = 83
+    T = 84
+    U = 85
+    V = 86
+    W = 87
+    X = 88
+    Y = 89
+    Z = 90
+    LEFT_BRACKET = 91
+    BACKSLASH = 92
+    RIGHT_BRACKET = 93
+    GRAVE_ACCENT = 96
+    WORLD_1 = 161
+    WORLD_2 = 162
+    ESCAPE = 256
+    ENTER = 257
+    TAB = 258
+    BACKSPACE = 259
+    INSERT = 260
+    DELETE = 261
+    RIGHT = 262
+    LEFT = 263
+    DOWN = 264
+    UP = 265
+    PAGE_UP = 266
+    PAGE_DOWN = 267
+    HOME = 268
+    END = 269
+    CAPS_LOCK = 280
+    SCROLL_LOCK = 281
+    NUM_LOCK = 282
+    PRINT_SCREEN = 283
+    PAUSE = 284
+    F1 = 290
+    F2 = 291
+    F3 = 292
+    F4 = 293
+    F5 = 294
+    F6 = 295
+    F7 = 296
+    F8 = 297
+    F9 = 298
+    F10 = 299
+    F11 = 300
+    F12 = 301
+    F13 = 302
+    F14 = 303
+    F15 = 304
+    F16 = 305
+    F17 = 306
+    F18 = 307
+    F19 = 308
+    F20 = 309
+    F21 = 310
+    F22 = 311
+    F23 = 312
+    F24 = 313
+    F25 = 314
+    KP_0 = 320
+    KP_1 = 321
+    KP_2 = 322
+    KP_3 = 323
+    KP_4 = 324
+    KP_5 = 325
+    KP_6 = 326
+    KP_7 = 327
+    KP_8 = 328
+    KP_9 = 329
+    KP_DECIMAL = 330
+    KP_DIVIDE = 331
+    KP_MULTIPLY = 332
+    KP_SUBTRACT = 333
+    KP_ADD = 334
+    KP_ENTER = 335
+    KP_EQUAL = 336
+    LEFT_SHIFT = 340
+    LEFT_CONTROL = 341
+    LEFT_ALT = 342
+    LEFT_SUPER = 343
+    RIGHT_SHIFT = 344
+    RIGHT_CONTROL = 345
+    RIGHT_ALT = 346
+    RIGHT_SUPER = 347
+    MENU = 348
+    LAST = 348  // = MENU
+}
+
+enum Modifier {
+    SHIFT = 0x0001
+    CONTROL = 0x0002
+    ALT = 0x0004
+    SUPER = 0x0008
+    CAPS_LOCK = 0x0010
+    NUM_LOCK = 0x0020
+}
+
+enum MouseButton {
+    BUTTON_1 = 0
+    BUTTON_2 = 1
+    BUTTON_3 = 2
+    BUTTON_4 = 3
+    BUTTON_5 = 4
+    BUTTON_6 = 5
+    BUTTON_7 = 6
+    BUTTON_8 = 7
+    LAST = 7    // = BUTTON_8
+    LEFT = 0    // = BUTTON_1
+    RIGHT = 1   // = BUTTON_2
+    MIDDLE = 2  // = BUTTON_3
+}
+
+enum Joystick {
+    JOY_1 = 0
+    JOY_2 = 1
+    JOY_3 = 2
+    JOY_4 = 3
+    JOY_5 = 4
+    JOY_6 = 5
+    JOY_7 = 6
+    JOY_8 = 7
+    JOY_9 = 8
+    JOY_10 = 9
+    JOY_11 = 10
+    JOY_12 = 11
+    JOY_13 = 12
+    JOY_14 = 13
+    JOY_15 = 14
+    JOY_16 = 15
+    LAST = 15   // = JOY_16
+}
+
+enum GamepadButton {
+    A = 0
+    B = 1
+    X = 2
+    Y = 3
+    LEFT_BUMPER = 4
+    RIGHT_BUMPER = 5
+    BACK = 6
+    START = 7
+    GUIDE = 8
+    LEFT_THUMB = 9
+    RIGHT_THUMB = 10
+    DPAD_UP = 11
+    DPAD_RIGHT = 12
+    DPAD_DOWN = 13
+    DPAD_LEFT = 14
+    LAST = 14       // = DPAD_LEFT
+    CROSS = 0       // = A
+    CIRCLE = 1      // = B
+    SQUARE = 2      // = X
+    TRIANGLE = 3    // = Y
+}
+
+enum GamepadAxis {
+    LEFT_X = 0
+    LEFT_Y = 1
+    RIGHT_X = 2
+    RIGHT_Y = 3
+    LEFT_TRIGGER = 4
+    RIGHT_TRIGGER = 5
+    LAST = 5  // = RIGHT_TRIGGER
+}
+
+enum Error {
+    NO_ERROR = 0
+    NOT_INITIALIZED = 0x00010001
+    NO_CURRENT_CONTEXT = 0x00010002
+    INVALID_ENUM = 0x00010003
+    INVALID_VALUE = 0x00010004
+    OUT_OF_MEMORY = 0x00010005
+    API_UNAVAILABLE = 0x00010006
+    VERSION_UNAVAILABLE = 0x00010007
+    PLATFORM_ERROR = 0x00010008
+    FORMAT_UNAVAILABLE = 0x00010009
+    NO_WINDOW_CONTEXT = 0x0001000A
+    CURSOR_UNAVAILABLE = 0x0001000B
+    FEATURE_UNAVAILABLE = 0x0001000C
+    FEATURE_UNIMPLEMENTED = 0x0001000D
+    PLATFORM_UNAVAILABLE = 0x0001000E
+}
+
+enum WindowHint {
+    FOCUSED = 0x00020001
+    ICONIFIED = 0x00020002
+    RESIZABLE = 0x00020003
+    VISIBLE = 0x00020004
+    DECORATED = 0x00020005
+    AUTO_ICONIFY = 0x00020006
+    FLOATING = 0x00020007
+    MAXIMIZED = 0x00020008
+    CENTER_CURSOR = 0x00020009
+    TRANSPARENT_FRAMEBUFFER = 0x0002000A
+    HOVERED = 0x0002000B
+    FOCUS_ON_SHOW = 0x0002000C
+    MOUSE_PASSTHROUGH = 0x0002000D
+    POSITION_X = 0x0002000E
+    POSITION_Y = 0x0002000F
+    RED_BITS = 0x00021001
+    GREEN_BITS = 0x00021002
+    BLUE_BITS = 0x00021003
+    ALPHA_BITS = 0x00021004
+    DEPTH_BITS = 0x00021005
+    STENCIL_BITS = 0x00021006
+    ACCUM_RED_BITS = 0x00021007
+    ACCUM_GREEN_BITS = 0x00021008
+    ACCUM_BLUE_BITS = 0x00021009
+    ACCUM_ALPHA_BITS = 0x0002100A
+    AUX_BUFFERS = 0x0002100B
+    STEREO = 0x0002100C
+    SAMPLES = 0x0002100D
+    SRGB_CAPABLE = 0x0002100E
+    REFRESH_RATE = 0x0002100F
+    DOUBLEBUFFER = 0x00021010
+    CLIENT_API = 0x00022001
+    CONTEXT_VERSION_MAJOR = 0x00022002
+    CONTEXT_VERSION_MINOR = 0x00022003
+    CONTEXT_REVISION = 0x00022004
+    CONTEXT_ROBUSTNESS = 0x00022005
+    OPENGL_FORWARD_COMPAT = 0x00022006
+    CONTEXT_DEBUG = 0x00022007
+    OPENGL_DEBUG_CONTEXT = 0x00022007  // = CONTEXT_DEBUG
+    OPENGL_PROFILE = 0x00022008
+    CONTEXT_RELEASE_BEHAVIOR = 0x00022009
+    CONTEXT_NO_ERROR = 0x0002200A
+    CONTEXT_CREATION_API = 0x0002200B
+    SCALE_TO_MONITOR = 0x0002200C
+    SCALE_FRAMEBUFFER = 0x0002200D
+    COCOA_RETINA_FRAMEBUFFER = 0x00023001
+    COCOA_FRAME_NAME = 0x00023002
+    COCOA_GRAPHICS_SWITCHING = 0x00023003
+    X11_CLASS_NAME = 0x00024001
+    X11_INSTANCE_NAME = 0x00024002
+    WIN32_KEYBOARD_MENU = 0x00025001
+    WIN32_SHOWDEFAULT = 0x00025002
+    WAYLAND_APP_ID = 0x00026001
+}
+
+enum ClientAPI {
+    NO_API = 0
+    OPENGL_API = 0x00030001
+    OPENGL_ES_API = 0x00030002
+}
+
+enum ContextRobustness {
+    NO_ROBUSTNESS = 0
+    NO_RESET_NOTIFICATION = 0x00031001
+    LOSE_CONTEXT_ON_RESET = 0x00031002
+}
+
+enum OpenGLProfile {
+    OPENGL_ANY_PROFILE = 0
+    OPENGL_CORE_PROFILE = 0x00032001
+    OPENGL_COMPAT_PROFILE = 0x00032002
+}
+
+enum InputMode {
+    CURSOR = 0x00033001
+    STICKY_KEYS = 0x00033002
+    STICKY_MOUSE_BUTTONS = 0x00033003
+    LOCK_KEY_MODS = 0x00033004
+    RAW_MOUSE_MOTION = 0x00033005
+    UNLIMITED_MOUSE_BUTTONS = 0x00033006
+}
+
+enum CursorMode {
+    NORMAL = 0x00034001
+    HIDDEN = 0x00034002
+    DISABLED = 0x00034003
+    CAPTURED = 0x00034004
+}
+
+enum ContextReleaseBehavior {
+    ANY = 0
+    FLUSH = 0x00035001
+    NONE = 0x00035002
+}
+
+enum ContextCreationAPI {
+    NATIVE = 0x00036001
+    EGL = 0x00036002
+    OSMESA = 0x00036003
+}
+
+enum AnglePlatformType {
+    NONE = 0x00037001
+    OPENGL = 0x00037002
+    OPENGLES = 0x00037003
+    D3D9 = 0x00037004
+    D3D11 = 0x00037005
+    VULKAN = 0x00037007
+    METAL = 0x00037008
+}
+
+enum WaylandLibdecor {
+    PREFER_LIBDECOR = 0x00038001
+    DISABLE_LIBDECOR = 0x00038002
+}
+
+enum WindowPosition {
+    ANY_POSITION = 0x80000000
+}
+
+// NOTE: GLFW_*_CURSOR values intentionally collide numerically with the
+// ContextCreationAPI values above (both ranges start at 0x00036001). They are
+// used in different APIs so the overlap is benign.
+enum CursorShape {
+    ARROW = 0x00036001
+    IBEAM = 0x00036002
+    CROSSHAIR = 0x00036003
+    POINTING_HAND = 0x00036004
+    RESIZE_EW = 0x00036005
+    RESIZE_NS = 0x00036006
+    RESIZE_NWSE = 0x00036007
+    RESIZE_NESW = 0x00036008
+    RESIZE_ALL = 0x00036009
+    NOT_ALLOWED = 0x0003600A
+    HRESIZE = 0x00036005     // = RESIZE_EW
+    VRESIZE = 0x00036006     // = RESIZE_NS
+    HAND = 0x00036004        // = POINTING_HAND
+}
+
+enum ConnectionEvent {
+    CONNECTED = 0x00040001
+    DISCONNECTED = 0x00040002
+}
+
+enum InitHint {
+    JOYSTICK_HAT_BUTTONS = 0x00050001
+    ANGLE_PLATFORM_TYPE = 0x00050002
+    PLATFORM = 0x00050003
+    COCOA_CHDIR_RESOURCES = 0x00051001
+    COCOA_MENUBAR = 0x00051002
+    X11_XCB_VULKAN_SURFACE = 0x00052001
+    WAYLAND_LIBDECOR = 0x00053001
+}
+
+enum Platform {
+    ANY = 0x00060000
+    WIN32 = 0x00060001
+    COCOA = 0x00060002
+    WAYLAND = 0x00060003
+    X11 = 0x00060004
+    NULL = 0x00060005
+}
+
+enum Misc {
+    DONT_CARE = -1
+}
+
+// === EXTERNAL FUNCTIONS ===
+
+external "glfw" {
+    // === INIT / TERMINATE / VERSION ===
+    fn glfwInit() -> i32
+    fn glfwTerminate()
+    fn glfwInitHint(hint: i32, value: i32)
+    fn glfwInitAllocator(allocator: &GLFWallocator)
+    // fn glfwInitVulkanLoader(loader: PFN_vkGetInstanceProcAddr)  // Vulkan type, not supported
+    fn glfwGetVersion(major: &i32, minor: &i32, rev: &i32)
+    fn glfwGetVersionString() -> cstr
+    fn glfwGetError(description: &cstr) -> i32
+    // fn glfwSetErrorCallback(callback: GLFWerrorfun) -> GLFWerrorfun  // function pointer, not supported
+    fn glfwGetPlatform() -> i32
+    fn glfwPlatformSupported(platform: i32) -> i32
+
+    // === MONITOR ===
+    // fn glfwGetMonitors(count: &i32) -> &&GLFWmonitor  // GLFWmonitor** (pointer-to-pointer), not supported
+    fn glfwGetPrimaryMonitor() -> &GLFWmonitor
+    fn glfwGetMonitorPos(monitor: &GLFWmonitor, xpos: &i32, ypos: &i32)
+    fn glfwGetMonitorWorkarea(monitor: &GLFWmonitor, xpos: &i32, ypos: &i32, width: &i32, height: &i32)
+    fn glfwGetMonitorPhysicalSize(monitor: &GLFWmonitor, widthMM: &i32, heightMM: &i32)
+    fn glfwGetMonitorContentScale(monitor: &GLFWmonitor, xscale: &f32, yscale: &f32)
+    fn glfwGetMonitorName(monitor: &GLFWmonitor) -> cstr
+    fn glfwSetMonitorUserPointer(monitor: &GLFWmonitor, pointer: str)
+    fn glfwGetMonitorUserPointer(monitor: &GLFWmonitor) -> str
+    // fn glfwSetMonitorCallback(callback: GLFWmonitorfun) -> GLFWmonitorfun  // function pointer, not supported
+
+    // === VIDEO MODES / GAMMA ===
+    fn glfwGetVideoModes(monitor: &GLFWmonitor, count: &i32) -> &GLFWvidmode
+    fn glfwGetVideoMode(monitor: &GLFWmonitor) -> &GLFWvidmode
+    fn glfwSetGamma(monitor: &GLFWmonitor, gamma: f32)
+    fn glfwGetGammaRamp(monitor: &GLFWmonitor) -> &GLFWgammaramp
+    fn glfwSetGammaRamp(monitor: &GLFWmonitor, ramp: &GLFWgammaramp)
+
+    // === WINDOW HINTS / CREATION ===
+    fn glfwDefaultWindowHints()
+    fn glfwWindowHint(hint: i32, value: i32)
+    fn glfwWindowHintString(hint: i32, value: cstr)
+    fn glfwCreateWindow(width: i32, height: i32, title: cstr, monitor: &GLFWmonitor, share: &GLFWwindow) -> &GLFWwindow
+    fn glfwDestroyWindow(window: &GLFWwindow)
+    fn glfwWindowShouldClose(window: &GLFWwindow) -> i32
+    fn glfwSetWindowShouldClose(window: &GLFWwindow, value: i32)
+    fn glfwGetWindowTitle(window: &GLFWwindow) -> cstr
+    fn glfwSetWindowTitle(window: &GLFWwindow, title: cstr)
+    fn glfwSetWindowIcon(window: &GLFWwindow, count: i32, images: &GLFWimage)
+    fn glfwGetWindowPos(window: &GLFWwindow, xpos: &i32, ypos: &i32)
+    fn glfwSetWindowPos(window: &GLFWwindow, xpos: i32, ypos: i32)
+    fn glfwGetWindowSize(window: &GLFWwindow, width: &i32, height: &i32)
+    fn glfwSetWindowSizeLimits(window: &GLFWwindow, minwidth: i32, minheight: i32, maxwidth: i32, maxheight: i32)
+    fn glfwSetWindowAspectRatio(window: &GLFWwindow, numer: i32, denom: i32)
+    fn glfwSetWindowSize(window: &GLFWwindow, width: i32, height: i32)
+    fn glfwGetFramebufferSize(window: &GLFWwindow, width: &i32, height: &i32)
+    fn glfwGetWindowFrameSize(window: &GLFWwindow, left: &i32, top: &i32, right: &i32, bottom: &i32)
+    fn glfwGetWindowContentScale(window: &GLFWwindow, xscale: &f32, yscale: &f32)
+    fn glfwGetWindowOpacity(window: &GLFWwindow) -> f32
+    fn glfwSetWindowOpacity(window: &GLFWwindow, opacity: f32)
+    fn glfwIconifyWindow(window: &GLFWwindow)
+    fn glfwRestoreWindow(window: &GLFWwindow)
+    fn glfwMaximizeWindow(window: &GLFWwindow)
+    fn glfwShowWindow(window: &GLFWwindow)
+    fn glfwHideWindow(window: &GLFWwindow)
+    fn glfwFocusWindow(window: &GLFWwindow)
+    fn glfwRequestWindowAttention(window: &GLFWwindow)
+    fn glfwGetWindowMonitor(window: &GLFWwindow) -> &GLFWmonitor
+    fn glfwSetWindowMonitor(window: &GLFWwindow, monitor: &GLFWmonitor, xpos: i32, ypos: i32, width: i32, height: i32, refreshRate: i32)
+    fn glfwGetWindowAttrib(window: &GLFWwindow, attrib: i32) -> i32
+    fn glfwSetWindowAttrib(window: &GLFWwindow, attrib: i32, value: i32)
+    fn glfwSetWindowUserPointer(window: &GLFWwindow, pointer: str)
+    fn glfwGetWindowUserPointer(window: &GLFWwindow) -> str
+
+    // === WINDOW CALLBACKS (function pointers, not supported) ===
+    // fn glfwSetWindowPosCallback(window: &GLFWwindow, callback: GLFWwindowposfun) -> GLFWwindowposfun                       // function pointer, not supported
+    // fn glfwSetWindowSizeCallback(window: &GLFWwindow, callback: GLFWwindowsizefun) -> GLFWwindowsizefun                    // function pointer, not supported
+    // fn glfwSetWindowCloseCallback(window: &GLFWwindow, callback: GLFWwindowclosefun) -> GLFWwindowclosefun                 // function pointer, not supported
+    // fn glfwSetWindowRefreshCallback(window: &GLFWwindow, callback: GLFWwindowrefreshfun) -> GLFWwindowrefreshfun           // function pointer, not supported
+    // fn glfwSetWindowFocusCallback(window: &GLFWwindow, callback: GLFWwindowfocusfun) -> GLFWwindowfocusfun                 // function pointer, not supported
+    // fn glfwSetWindowIconifyCallback(window: &GLFWwindow, callback: GLFWwindowiconifyfun) -> GLFWwindowiconifyfun           // function pointer, not supported
+    // fn glfwSetWindowMaximizeCallback(window: &GLFWwindow, callback: GLFWwindowmaximizefun) -> GLFWwindowmaximizefun        // function pointer, not supported
+    // fn glfwSetFramebufferSizeCallback(window: &GLFWwindow, callback: GLFWframebuffersizefun) -> GLFWframebuffersizefun     // function pointer, not supported
+    // fn glfwSetWindowContentScaleCallback(window: &GLFWwindow, callback: GLFWwindowcontentscalefun) -> GLFWwindowcontentscalefun  // function pointer, not supported
+
+    // === EVENTS ===
+    fn glfwPollEvents()
+    fn glfwWaitEvents()
+    fn glfwWaitEventsTimeout(timeout: f64)
+    fn glfwPostEmptyEvent()
+
+    // === INPUT MODES / KEY / MOUSE ===
+    fn glfwGetInputMode(window: &GLFWwindow, mode: i32) -> i32
+    fn glfwSetInputMode(window: &GLFWwindow, mode: i32, value: i32)
+    fn glfwRawMouseMotionSupported() -> i32
+    fn glfwGetKeyName(key: i32, scancode: i32) -> cstr
+    fn glfwGetKeyScancode(key: i32) -> i32
+    fn glfwGetKey(window: &GLFWwindow, key: i32) -> i32
+    fn glfwGetMouseButton(window: &GLFWwindow, button: i32) -> i32
+    fn glfwGetCursorPos(window: &GLFWwindow, xpos: &f64, ypos: &f64)
+    fn glfwSetCursorPos(window: &GLFWwindow, xpos: f64, ypos: f64)
+
+    // === CURSORS ===
+    fn glfwCreateCursor(image: &GLFWimage, xhot: i32, yhot: i32) -> &GLFWcursor
+    fn glfwCreateStandardCursor(shape: i32) -> &GLFWcursor
+    fn glfwDestroyCursor(cursor: &GLFWcursor)
+    fn glfwSetCursor(window: &GLFWwindow, cursor: &GLFWcursor)
+
+    // === INPUT CALLBACKS (function pointers, not supported) ===
+    // fn glfwSetKeyCallback(window: &GLFWwindow, callback: GLFWkeyfun) -> GLFWkeyfun                               // function pointer, not supported
+    // fn glfwSetCharCallback(window: &GLFWwindow, callback: GLFWcharfun) -> GLFWcharfun                            // function pointer, not supported
+    // fn glfwSetCharModsCallback(window: &GLFWwindow, callback: GLFWcharmodsfun) -> GLFWcharmodsfun                // function pointer, not supported
+    // fn glfwSetMouseButtonCallback(window: &GLFWwindow, callback: GLFWmousebuttonfun) -> GLFWmousebuttonfun       // function pointer, not supported
+    // fn glfwSetCursorPosCallback(window: &GLFWwindow, callback: GLFWcursorposfun) -> GLFWcursorposfun             // function pointer, not supported
+    // fn glfwSetCursorEnterCallback(window: &GLFWwindow, callback: GLFWcursorenterfun) -> GLFWcursorenterfun       // function pointer, not supported
+    // fn glfwSetScrollCallback(window: &GLFWwindow, callback: GLFWscrollfun) -> GLFWscrollfun                      // function pointer, not supported
+    // fn glfwSetDropCallback(window: &GLFWwindow, callback: GLFWdropfun) -> GLFWdropfun                            // function pointer (and char**), not supported
+
+    // === JOYSTICK / GAMEPAD ===
+    fn glfwJoystickPresent(jid: i32) -> i32
+    fn glfwGetJoystickAxes(jid: i32, count: &i32) -> &f32
+    fn glfwGetJoystickButtons(jid: i32, count: &i32) -> &u8
+    fn glfwGetJoystickHats(jid: i32, count: &i32) -> &u8
+    fn glfwGetJoystickName(jid: i32) -> cstr
+    fn glfwGetJoystickGUID(jid: i32) -> cstr
+    fn glfwSetJoystickUserPointer(jid: i32, pointer: str)
+    fn glfwGetJoystickUserPointer(jid: i32) -> str
+    fn glfwJoystickIsGamepad(jid: i32) -> i32
+    // fn glfwSetJoystickCallback(callback: GLFWjoystickfun) -> GLFWjoystickfun  // function pointer, not supported
+    fn glfwUpdateGamepadMappings(string: cstr) -> i32
+    fn glfwGetGamepadName(jid: i32) -> cstr
+    fn glfwGetGamepadState(jid: i32, state: &GLFWgamepadstate) -> i32
+
+    // === CLIPBOARD ===
+    fn glfwSetClipboardString(window: &GLFWwindow, string: cstr)
+    fn glfwGetClipboardString(window: &GLFWwindow) -> cstr
+
+    // === TIME ===
+    fn glfwGetTime() -> f64
+    fn glfwSetTime(time: f64)
+    fn glfwGetTimerValue() -> u64
+    fn glfwGetTimerFrequency() -> u64
+
+    // === CONTEXT ===
+    fn glfwMakeContextCurrent(window: &GLFWwindow)
+    fn glfwGetCurrentContext() -> &GLFWwindow
+    fn glfwSwapBuffers(window: &GLFWwindow)
+    fn glfwSwapInterval(interval: i32)
+    fn glfwExtensionSupported(extension: cstr) -> i32
+    // fn glfwGetProcAddress(procname: cstr) -> GLFWglproc  // function pointer return, not supported
+
+    // === VULKAN ===
+    fn glfwVulkanSupported() -> i32
+    // fn glfwGetRequiredInstanceExtensions(count: &u32) -> &cstr                                                  // const char** (pointer-to-pointer), not supported
+    // fn glfwGetInstanceProcAddress(instance: VkInstance, procname: cstr) -> GLFWvkproc                           // Vulkan type + function pointer, not supported
+    // fn glfwGetPhysicalDevicePresentationSupport(instance: VkInstance, device: VkPhysicalDevice, queuefamily: u32) -> i32  // Vulkan types, not supported
+    // fn glfwCreateWindowSurface(instance: VkInstance, window: &GLFWwindow, allocator: &VkAllocationCallbacks, surface: &VkSurfaceKHR) -> VkResult  // Vulkan types, not supported
+}
