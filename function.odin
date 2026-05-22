@@ -153,12 +153,36 @@ function_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	}
 }
 
+function_signature_resolve :: proc(node: ^Ast_Function, scope: ^Scope, span: Span) -> ^Type {
+	type := new(Type)
+	type.kind = .Function
+	for &param in node.params {
+		if param.variadic_marker {
+			variadic_type := new(Type)
+			variadic_type.variadic = true
+			append(&type.params, variadic_type)
+			continue
+		}
+		param_type := resolve_type_expr(&param.type_expr, scope, span)
+		append(&type.params, param_type)
+	}
+	ret_type := resolve_type_expr(&node.ret_type_expr, scope, span)
+
+	if ret_type == &error_type {
+		return &error_type
+	}
+
+	type.return_type = ret_type
+
+	return type
+}
+
 function_resolve :: proc(node: ^Ast_Node) {
 	data := node.data.(Ast_Function)
 	for &param in data.params {
 		param.symbol.type = resolve_type_expr(&param.type_expr, node.scope, node.span)
 	}
-	data.symbol.type = resolve_type_expr(&data.ret_type_expr, node.scope, node.span)
+	data.symbol.type = function_signature_resolve(&data, node.scope, node.span)
 
 	if !data.external {
 		resolve_block_types(data.body)
@@ -173,19 +197,22 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		expr.type = &error_type
 		return &error_type
 	}
+
 	// If the symbol exists, but is of kind .Type then this a cast
 	if sym.kind == .Type {
 		return cast_resolve(expr, sym, scope, span)
 	}
+
 	decl := sym.decl.data.(Ast_Function)
 	if sym.type == nil {
-		// Not resolved yet, do it here
-		type := resolve_type_expr(&decl.ret_type_expr, scope, span)
+		// Not resolved yet, do it here. resolve the full signature
+		type := function_signature_resolve(&decl, scope, span)
 		e.callee.type = type
 		sym.type = type
 	} else {
 		e.callee.type = sym.type
 	}
+
 	variadic_found := false
 	for i in 0 ..< len(e.args) {
 		arg := e.args[i]
@@ -243,8 +270,8 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			}
 		}
 	}
-	expr.type = e.callee.type
-	return e.callee.type
+	expr.type = e.callee.type.return_type
+	return e.callee.type.return_type
 }
 
 function_check :: proc(c: ^Checker, s: ^Ast_Function, scope: ^Scope, span: Span) {
@@ -338,8 +365,7 @@ function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 	byval_param_idxs: [dynamic]u32
 	byval_param_tys: [dynamic]TypeRef
 
-	//NOTE(quadrado): This must change so a function can return more than primitive types
-	ret_type_ref := get_llvm_type(gen, s.symbol.type)
+	ret_type_ref := get_llvm_type(gen, s.symbol.type.return_type)
 
 	variadic := false
 	for param in s.params {
@@ -555,7 +581,7 @@ function_body_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
     NOTE(quadrado): Using the "terminated" field in the Ast is not good but GetBasicBlockTerminator 
     always returns a value and not nil as expected of a non-terminated block.
     */
-	if s.symbol.type.kind == .Void && !s.body.terminated {
+	if s.symbol.type.return_type.kind == .Void && !s.body.terminated {
 		BuildRetVoid(gen.builder)
 	}
 

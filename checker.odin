@@ -169,7 +169,7 @@ check_return :: proc(c: ^Checker, s: ^Ast_Return, scope: ^Scope, span: Span) {
 	if fn_type == nil || fn_type.kind == .Error {
 		return
 	}
-	if coerce(s.expr.type, fn_type, scope) == nil {
+	if coerce(s.expr.type, fn_type.return_type, scope) == nil {
 		error_span(
 			span,
 			"Return type mismatch in '%s': expected '%s', got '%s'",

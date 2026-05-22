@@ -111,7 +111,6 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 }
 
 parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
-	fmt.println("..............", p.filename)
 	t := current(p)
 	span := Span {
 		start    = t.span.start,

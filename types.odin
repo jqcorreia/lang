@@ -2,6 +2,7 @@
 
 package main
 
+//@Note: We need to split this. This struct encodes a bunch of different meanings
 Type :: struct {
 	kind:            Type_Kind,
 	compiled:        Compiled_Type,
@@ -15,6 +16,7 @@ Type :: struct {
 	pointee_type:    ^Type, // Maybe not needed, could use elem_type, for now use a different field for clarity
 	params:          [dynamic]^Type,
 	return_type:     ^Type,
+	variadic:        bool,
 }
 
 Struct_Field :: struct {
@@ -257,8 +259,28 @@ resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^
 		type.pointee_type = pointee_type
 
 		return type
+
 	case Type_Expr_Function:
+		type := new(Type)
+		type.kind = .Function
+		for param in te.params {
+			param_type := resolve_type_expr(param, scope, span)
+			if param_type == &error_type {
+				return &error_type
+			}
+			append(&type.params, param_type)
+		}
+		ret_type := resolve_type_expr(te.return_type, scope, span)
+
+		if ret_type == &error_type {
+			return &error_type
+		}
+
+		type.return_type = ret_type
+
+		return type
 	}
+
 	return nil
 }
 

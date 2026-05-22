@@ -35,6 +35,10 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	if type.kind == .Enum {
 		return Int64TypeInContext(gen.ctx)
 	}
+	// Functions are pointers internally
+	if type.kind == .Function {
+		return PointerTypeInContext(gen.ctx, 0)
+	}
 	return gen.primitive_types[type]
 }
 
