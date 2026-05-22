@@ -104,7 +104,7 @@ lsp_publish_diagnostics :: proc(uri: string, source: string) {
 	// Extract file path from file:// URI and set source directory for import resolution
 	file_path := strings.has_prefix(uri, "file://") ? uri[len("file://"):] : uri
 	compiler.current_filepath = filepath.dir(file_path)
-	_, _ = compile(source)
+	_, _ = compile(source, file_path)
 
 	diagnostics_sb := strings.builder_make()
 	strings.write_string(&diagnostics_sb, "[")

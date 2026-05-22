@@ -6,8 +6,9 @@ import "core:path/filepath"
 import "core:strings"
 
 Parser :: struct {
-	tokens: []Token,
-	pos:    int,
+	tokens:   []Token,
+	pos:      int,
+	filename: string,
 }
 
 
@@ -91,9 +92,10 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 				os.read_entire_file(resolved_path, context.allocator) or_else panic(
 					fmt.tprintf("Import not found: %s", resolved_path),
 				)
-			import_tokens := lex(string(contents))
+			import_tokens := lex(string(contents), resolved_path)
 			import_parser := Parser {
-				tokens = import_tokens,
+				tokens   = import_tokens,
+				filename = resolved_path,
 			}
 
 			import_stmts := parse_program(&import_parser)
@@ -109,9 +111,11 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 }
 
 parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
+	fmt.println("..............", p.filename)
 	t := current(p)
 	span := Span {
-		start = t.span.start,
+		start    = t.span.start,
+		filename = p.filename,
 	}
 	ast_node := new(Ast_Node)
 	data := &ast_node.data

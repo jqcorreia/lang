@@ -70,10 +70,10 @@ struct GLFWgamepadstate {
 struct GLFWallocator {
     // allocate / reallocate / deallocate are function pointers — represented
     // as opaque pointers so the struct still has the correct layout/size.
-    allocate: str
-    reallocate: str
-    deallocate: str
-    user: str
+    allocate: cstr
+    reallocate: cstr
+    deallocate: cstr
+    user: cstr
 }
 
 // === TYPEDEFS / FUNCTION POINTERS (not supported) ===
@@ -135,7 +135,7 @@ enum HatState {
 }
 
 enum Key {
-    UNKNOWN = -1
+    UNKNOWN = 0
     SPACE = 32
     APOSTROPHE = 39
     COMMA = 44
@@ -519,7 +519,7 @@ enum Platform {
 }
 
 enum Misc {
-    DONT_CARE = -1
+    DONT_CARE = 0
 }
 
 // === EXTERNAL FUNCTIONS ===
@@ -546,8 +546,8 @@ external "glfw" {
     fn glfwGetMonitorPhysicalSize(monitor: &GLFWmonitor, widthMM: &i32, heightMM: &i32)
     fn glfwGetMonitorContentScale(monitor: &GLFWmonitor, xscale: &f32, yscale: &f32)
     fn glfwGetMonitorName(monitor: &GLFWmonitor) -> cstr
-    fn glfwSetMonitorUserPointer(monitor: &GLFWmonitor, pointer: str)
-    fn glfwGetMonitorUserPointer(monitor: &GLFWmonitor) -> str
+    fn glfwSetMonitorUserPointer(monitor: &GLFWmonitor, pointer: cstr)
+    fn glfwGetMonitorUserPointer(monitor: &GLFWmonitor) -> cstr
     // fn glfwSetMonitorCallback(callback: GLFWmonitorfun) -> GLFWmonitorfun  // function pointer, not supported
 
     // === VIDEO MODES / GAMMA ===
@@ -590,8 +590,8 @@ external "glfw" {
     fn glfwSetWindowMonitor(window: &GLFWwindow, monitor: &GLFWmonitor, xpos: i32, ypos: i32, width: i32, height: i32, refreshRate: i32)
     fn glfwGetWindowAttrib(window: &GLFWwindow, attrib: i32) -> i32
     fn glfwSetWindowAttrib(window: &GLFWwindow, attrib: i32, value: i32)
-    fn glfwSetWindowUserPointer(window: &GLFWwindow, pointer: str)
-    fn glfwGetWindowUserPointer(window: &GLFWwindow) -> str
+    fn glfwSetWindowUserPointer(window: &GLFWwindow, pointer: cstr)
+    fn glfwGetWindowUserPointer(window: &GLFWwindow) -> cstr
 
     // === WINDOW CALLBACKS (function pointers, not supported) ===
     // fn glfwSetWindowPosCallback(window: &GLFWwindow, callback: GLFWwindowposfun) -> GLFWwindowposfun                       // function pointer, not supported
@@ -644,8 +644,8 @@ external "glfw" {
     fn glfwGetJoystickHats(jid: i32, count: &i32) -> &u8
     fn glfwGetJoystickName(jid: i32) -> cstr
     fn glfwGetJoystickGUID(jid: i32) -> cstr
-    fn glfwSetJoystickUserPointer(jid: i32, pointer: str)
-    fn glfwGetJoystickUserPointer(jid: i32) -> str
+    fn glfwSetJoystickUserPointer(jid: i32, pointer: cstr)
+    fn glfwGetJoystickUserPointer(jid: i32) -> cstr
     fn glfwJoystickIsGamepad(jid: i32) -> i32
     // fn glfwSetJoystickCallback(callback: GLFWjoystickfun) -> GLFWjoystickfun  // function pointer, not supported
     fn glfwUpdateGamepadMappings(string: cstr) -> i32

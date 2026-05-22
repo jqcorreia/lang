@@ -27,7 +27,7 @@ error_span :: proc(span: Span, format: string, args: ..any) {
 
 error_string :: proc(span: Span, format: string, args: ..any) -> string {
 	row, col := span_to_location(span)
-	loc := fmt.tprintf("%s:%d:%d", "filename", row, col)
+	loc := fmt.tprintf("%s:%d:%d", span.filename, row, col)
 	msg := fmt.tprintf(format, ..args)
 	error := fmt.tprintf("%s: %s", loc, msg)
 
@@ -167,29 +167,36 @@ unexpected_token :: proc(token: Token, loc := #caller_location) {
 }
 
 one_char_span :: proc(lexer: Lexer) -> Span {
-	return Span{start = lexer.pos, end = lexer.pos}
+	return Span{start = lexer.pos, end = lexer.pos, filename = lexer.filename}
 
 }
 
 two_char_span :: proc(lexer: Lexer) -> Span {
-	return Span{start = lexer.pos, end = lexer.pos + 1}
+	return Span{start = lexer.pos, end = lexer.pos + 1, filename = lexer.filename}
 
 }
 
 n_char_span :: proc(lexer: Lexer, n: int) -> Span {
-	return Span{start = lexer.pos, end = lexer.pos + n - 1}
+	return Span{start = lexer.pos, end = lexer.pos + n - 1, filename = lexer.filename}
 }
 
 span_to_location :: proc(span: Span) -> (line: int, col: int) {
+	starts := compiler.line_starts[span.filename]
+	if len(starts) == 0 {
+		// Span without a known file — usually an Ast_Node whose `.span` was
+		// never populated. Return a sentinel so error reporting doesn't crash;
+		// grep error output for `:1:1` to find the offending construction site.
+		return 1, 1
+	}
 	pos := span.start
 	// Find the last line_start that is <= pos
 	result_line := 0
-	for i in 0 ..< len(compiler.line_starts) {
-		if compiler.line_starts[i] <= pos {
+	for i in 0 ..< len(starts) {
+		if starts[i] <= pos {
 			result_line = i
 		} else {
 			break
 		}
 	}
-	return result_line + 1, pos - compiler.line_starts[result_line] + 1
+	return result_line + 1, pos - starts[result_line] + 1
 }

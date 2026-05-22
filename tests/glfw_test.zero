@@ -1,0 +1,59 @@
+import "std:c"
+import "vendor:glfw"
+
+// Legacy fixed-function OpenGL — exported directly from libGL, so no
+// glfwGetProcAddress dance needed. Enough to draw a single triangle.
+external "GL" {
+    fn glClear(mask: u32)
+    fn glClearColor(r: f32, g: f32, b: f32, a: f32)
+    fn glViewport(x: i32, y: i32, width: i32, height: i32)
+    fn glBegin(mode: u32)
+    fn glEnd()
+    fn glColor3f(r: f32, g: f32, b: f32)
+    fn glVertex2f(x: f32, y: f32)
+}
+
+fn main() {
+    if glfwInit() == 0 {
+        printf("glfwInit failed\n")
+        return
+    }
+
+    window := glfwCreateWindow(800, 600, "Hello Triangle", nil, nil)
+    if window == nil {
+        printf("glfwCreateWindow failed\n")
+        glfwTerminate()
+        return
+    }
+
+    glfwMakeContextCurrent(window)
+    glfwSwapInterval(1)
+    glViewport(0, 0, 800, 600)
+
+    for {
+        if glfwWindowShouldClose(window) != 0 {
+            break
+        }
+        if glfwGetKey(window, Key.ESCAPE) == KeyAction.PRESS {
+            break
+        }
+
+        glClearColor(0.1, 0.1, 0.15, 1.0)
+        glClear(0x4000)  // GL_COLOR_BUFFER_BIT
+
+        glBegin(0x0004)  // GL_TRIANGLES
+        glColor3f(1.0, 0.0, 0.0)
+        glVertex2f(-0.6, -0.4)
+        glColor3f(0.0, 1.0, 0.0)
+        glVertex2f(0.6, -0.4)
+        glColor3f(0.0, 0.0, 1.0)
+        glVertex2f(0.0, 0.6)
+        glEnd()
+
+        glfwSwapBuffers(window)
+        glfwPollEvents()
+    }
+
+    glfwDestroyWindow(window)
+    glfwTerminate()
+}

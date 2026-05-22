@@ -5,7 +5,7 @@ import "core:os"
 import "core:testing"
 
 TEST_FOLDER :: "tests"
-SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero", "fn_pointer.zero"}
+SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero", "fn_pointer.zero", "glfw_test.zero"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {
@@ -46,7 +46,7 @@ run_tests :: proc(t: ^testing.T) {
 		}
 
 		fmt.println(fi.name)
-		build_ok := build(string(source))
+		build_ok := build(string(source), fi.fullpath)
 		if !build_ok {
 			for err in compiler.errors {
 				fmt.printf("[%s] %s\n", fi.name, err.message)

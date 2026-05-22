@@ -103,10 +103,17 @@ function_external_block_parse :: proc(p: ^Parser, lib_name: string) -> ^Ast_Bloc
 			continue
 		}
 
+		// Get token here so we can create a proper span here
+		fn_tok := current(p)
 		expect(p, .Func_Keyword)
 		data := function_decl_parse(p, external = true)
 		stmt := new(Ast_Node)
 		stmt.data = data^
+		stmt.span = Span {
+			start    = fn_tok.span.start,
+			end      = current(p).span.end,
+			filename = p.filename,
+		}
 		append(&res, stmt)
 	}
 	advance(p)

@@ -69,8 +69,9 @@ Token_Val :: union {
 
 
 Span :: struct {
-	start: int,
-	end:   int,
+	start:    int,
+	end:      int,
+	filename: string,
 }
 
 Token :: struct {
@@ -83,7 +84,8 @@ Token :: struct {
 Lexer :: struct {
 	input:       string,
 	pos:         int,
-	line_starts: []int,
+	line_starts: [dynamic]int,
+	filename:    string,
 }
 
 is_numeric :: proc(c: byte) -> bool {
@@ -167,7 +169,7 @@ lex_number :: proc(lexer: ^Lexer, tokens: ^[dynamic]Token) {
 		end := lexer.pos
 		if end == digit_start {
 			fatal_span(
-				Span{start = start, end = end},
+				Span{start = start, end = end, filename = lexer.filename},
 				"Hexadecimal literal must have at least one digit",
 			)
 		}
@@ -177,7 +179,7 @@ lex_number :: proc(lexer: ^Lexer, tokens: ^[dynamic]Token) {
 				kind = .Number,
 				lexeme = lexer.input[start:end],
 				value = hex_value,
-				span = Span{start = start, end = end},
+				span = Span{start = start, end = end, filename = lexer.filename},
 			},
 		)
 		return
@@ -210,20 +212,21 @@ lex_number :: proc(lexer: ^Lexer, tokens: ^[dynamic]Token) {
 			kind = .Number,
 			lexeme = lexer.input[start:end],
 			value = is_integer ? int(value) : f64(value),
-			span = Span{start = start, end = end},
+			span = Span{start = start, end = end, filename = lexer.filename},
 		},
 	)
 }
 
-lex :: proc(input: string) -> []Token {
+lex :: proc(input: string, filename: string) -> []Token {
 	tokens: [dynamic]Token
 	lexer := Lexer {
-		input = input,
-		pos   = 0,
+		input    = input,
+		pos      = 0,
+		filename = filename,
 	}
 
 	// Always a line start at offset 0
-	append(&compiler.line_starts, 0)
+	append(&lexer.line_starts, 0)
 
 	for {
 		if lexer.pos >= len(lexer.input) {
@@ -241,11 +244,11 @@ lex :: proc(input: string) -> []Token {
 		case is_newline(c):
 			append(&tokens, Token{kind = .NewLine, lexeme = "\n", span = one_char_span(lexer)})
 			lexer.pos += 1
-			append(&compiler.line_starts, lexer.pos)
+			append(&lexer.line_starts, lexer.pos)
 			// Skip any repeated newlines
 			for lexer.pos < len(lexer.input) && is_newline(lexer.input[lexer.pos]) {
 				lexer.pos += 1
-				append(&compiler.line_starts, lexer.pos)
+				append(&lexer.line_starts, lexer.pos)
 			}
 		case is_numeric(c):
 			lex_number(&lexer, &tokens)
@@ -262,7 +265,11 @@ lex :: proc(input: string) -> []Token {
 			if kind, exists := Keyword_Map[lexeme]; exists {
 				append(
 					&tokens,
-					Token{kind = kind, lexeme = lexeme, span = Span{start = start, end = end}},
+					Token {
+						kind = kind,
+						lexeme = lexeme,
+						span = Span{start = start, end = end, filename = filename},
+					},
 				)
 			} else {
 				append(
@@ -271,7 +278,7 @@ lex :: proc(input: string) -> []Token {
 						kind = .Identifier,
 						lexeme = lexeme,
 						value = lexeme,
-						span = Span{start = start, end = end},
+						span = Span{start = start, end = end, filename = filename},
 					},
 				)
 			}
@@ -304,7 +311,7 @@ lex :: proc(input: string) -> []Token {
 				Token {
 					kind = .QuotedString,
 					lexeme = lexeme,
-					span = Span{start = start, end = end},
+					span = Span{start = start, end = end, filename = filename},
 					value = value,
 				},
 			)
@@ -472,8 +479,13 @@ lex :: proc(input: string) -> []Token {
 				lexer.pos += 1
 			}
 		case:
-			fatal_span(Span{start = lexer.pos}, "Unrecognized character %c", c)
+			fatal_span(
+				Span{start = lexer.pos, filename = filename},
+				"Unrecognized character %c",
+				c,
+			)
 		}
 	}
+	compiler.line_starts[filename] = lexer.line_starts
 	return tokens[:]
 }

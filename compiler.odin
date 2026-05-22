@@ -6,39 +6,10 @@ import "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
 
-// The contract you want is:
-
-//   - context.temp_allocator → genuinely transient stuff (tprintf, debug formatting, throwaway intermediates). Anyone is allowed to free_all
-//   it; that's its job.
-//   - context.allocator → set to a separate arena that lives for one compilation. Only your build pipeline knows about it. No one else can or
-//   should free_all it.
-
-//   In Odin, the cleanest way is core:mem/virtual Arena on the Compiler struct:
-
-//   import "core:mem/virtual"
-
-//   Compiler :: struct {
-//       // ... existing ...
-//       arena: virtual.Arena,
-//   }
-
-//   compiler_init :: proc() {
-//       err := virtual.arena_init_growing(&compiler.arena)
-//       assert(err == .None)
-//       setup_native_types(&compiler)
-//       // ...
-//   }
-
-//   build :: proc(path: string) -> bool {
-//       free_all(virtual.arena_allocator(&compiler.arena))
-//       context.allocator = virtual.arena_allocator(&compiler.arena)
-//       // ...
-//   }
-
 Compiler :: struct {
 	current_filepath:     string, // Directory of the source file being compiled
 	exe_dir:              string, // Directory of the compiler executable
-	line_starts:          [dynamic]int,
+	line_starts:          map[string][dynamic]int,
 	scopes:               queue.Queue(Scope),
 	global_scope:         Scope,
 	loops:                queue.Queue(Loop),
@@ -69,35 +40,40 @@ compiler_init :: proc() {
 
 compiler_reset :: proc() {
 	compiler.errors = {}
-	compiler.line_starts = {}
+	compiler.line_starts = make(map[string][dynamic]int)
 	compiler.loops = {}
 	compiler.external_linker_libs = {}
 }
 
-compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
+compile :: proc(source: string, filename: string) -> (stmts: []^Ast_Node, ok: bool) {
 	compiler_reset()
 
 	// Auto-include the runtime, resolved relative to the executable
-	runtime_path, _ := filepath.join({compiler.exe_dir, "runtime", "start.zero"}, context.allocator)
+	runtime_path, _ := filepath.join(
+		{compiler.exe_dir, "runtime", "start.zero"},
+		context.allocator,
+	)
 	runtime_source :=
 		os.read_entire_file(runtime_path, context.allocator) or_else panic(
 			fmt.tprintf("Runtime not found at %s", runtime_path),
 		)
-	runtime_tokens := lex(string(runtime_source))
+	runtime_tokens := lex(string(runtime_source), runtime_path)
 	runtime_parser := Parser {
-		tokens = runtime_tokens,
+		tokens   = runtime_tokens,
+		filename = runtime_path,
 	}
 	runtime_stmts := parse_program(&runtime_parser)
 
 	// Reset line_starts so they reflect user source only (for error reporting)
 	compiler.line_starts = {}
-	tokens := lex(source)
+	tokens := lex(source, filename)
 	when ODIN_DEBUG {
 		tokens_print(tokens)
 	}
 
 	parser := Parser {
-		tokens = tokens,
+		tokens   = tokens,
+		filename = filename,
 	}
 	user_stmts := parse_program(&parser)
 
@@ -120,13 +96,13 @@ compile :: proc(source: string) -> (stmts: []^Ast_Node, ok: bool) {
 	return
 }
 
-build :: proc(source: string) -> (ok: bool) {
+build :: proc(source: string, filename: string) -> (ok: bool) {
 	// Reset the compiler arena
 	free_all(virtual.arena_allocator(&compiler.arena))
 	context.allocator = virtual.arena_allocator(&compiler.arena)
 
 	stmts: []^Ast_Node
-	stmts, ok = compile(source)
+	stmts, ok = compile(source, filename)
 	if !ok {
 		return
 	}

@@ -32,9 +32,9 @@ main :: proc() {
 
 	ok: bool
 	if opt.command == "check" {
-		_, ok = compile(string(source))
+		_, ok = compile(string(source), opt.file)
 	} else {
-		ok = build(string(source))
+		ok = build(string(source), opt.file)
 	}
 
 	if !ok {
