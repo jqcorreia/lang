@@ -14,6 +14,11 @@ check :: proc(c: ^Checker, nodes: []^Ast_Node) {
 		bind_scopes(node, global_scope)
 	}
 	for node in nodes {
+		if fn, ok := node.data.(Ast_Function); ok {
+			fn.symbol.type = function_signature_resolve(&fn, node.scope, node.span)
+		}
+	}
+	for node in nodes {
 		const_eval(node, global_scope)
 	}
 	for node in nodes {

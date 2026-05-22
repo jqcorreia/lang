@@ -179,10 +179,12 @@ function_signature_resolve :: proc(node: ^Ast_Function, scope: ^Scope, span: Spa
 
 function_resolve :: proc(node: ^Ast_Node) {
 	data := node.data.(Ast_Function)
-	for &param in data.params {
-		param.symbol.type = resolve_type_expr(&param.type_expr, node.scope, node.span)
+	sig := function_signature_resolve(&data, node.scope, node.span)
+	data.symbol.type = sig
+
+	for &param, i in data.params {
+		param.symbol.type = sig.params[i]
 	}
-	data.symbol.type = function_signature_resolve(&data, node.scope, node.span)
 
 	if !data.external {
 		resolve_block_types(data.body)
@@ -203,38 +205,31 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		return cast_resolve(expr, sym, scope, span)
 	}
 
-	decl := sym.decl.data.(Ast_Function)
-	if sym.type == nil {
-		// Not resolved yet, do it here. resolve the full signature
-		type := function_signature_resolve(&decl, scope, span)
-		e.callee.type = type
-		sym.type = type
-	} else {
-		e.callee.type = sym.type
-	}
+	type := sym.type
+	e.callee.type = type
 
 	variadic_found := false
 	for i in 0 ..< len(e.args) {
 		arg := e.args[i]
 		arg.type = resolve_expr_type(arg, scope, span)
 
-		if variadic_found || i >= len(decl.params) {
+		if variadic_found || i >= len(type.params) {
 			continue
 		}
 
-		param := &decl.params[i]
-		if param.variadic_marker {
+		param := type.params[i]
+		if param.variadic {
 			variadic_found = true
 			continue
 		}
 
-		decl_type := param.symbol.type
-		if decl_type == nil {
-			// Not resolved yet, do it here
-			param_type := resolve_type_expr(&param.type_expr, scope, span)
-			param.symbol.type = param_type
-			decl_type = param_type
-		}
+		decl_type := param
+		// if decl_type == nil {
+		// 	// Not resolved yet, do it here
+		// 	param_type := resolve_type_expr(&param.type_expr, scope, span)
+		// 	param.symbol.type = param_type
+		// 	decl_type = param_type
+		// }
 
 		// Auto-ref / auto-deref the receiver of a method-style call
 		if e.method && i == 0 && decl_type != nil && arg.type != nil {
@@ -310,11 +305,11 @@ function_call_check :: proc(
 		error_span(span, "Undefined function '%s'", func_name)
 		return
 	}
-	decl := sym.decl.data.(Ast_Function)
+	decl := sym.type
 	variadic_found := false
 	required_params := 0
 	for param in decl.params {
-		if !param.variadic_marker {
+		if !param.variadic {
 			required_params += 1
 		}
 	}
@@ -331,11 +326,11 @@ function_call_check :: proc(
 			continue
 		}
 		param := decl.params[i]
-		if param.variadic_marker {
+		if param.variadic {
 			variadic_found = true
 			continue
 		}
-		decl_type := param.symbol.type
+		decl_type := param
 		if decl_type == nil || decl_type.kind == .Error {
 			continue
 		}
