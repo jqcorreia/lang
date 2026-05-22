@@ -487,5 +487,6 @@ lex :: proc(input: string, filename: string) -> []Token {
 		}
 	}
 	compiler.line_starts[filename] = lexer.line_starts
+	compiler.sources[filename] = input
 	return tokens[:]
 }

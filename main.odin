@@ -40,7 +40,7 @@ main :: proc() {
 	if !ok {
 		fmt.printf("Compilation failed with %d errors:\n", len(compiler.errors))
 		for error in compiler.errors {
-			fmt.println(error.message)
+			print_error_pretty(error)
 		}
 		os.exit(1)
 	}

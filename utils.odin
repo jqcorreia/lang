@@ -19,19 +19,90 @@ error_token :: proc(token: Token, format: string, args: ..any) {
 }
 
 error_span :: proc(span: Span, format: string, args: ..any) {
-	append(
-		&compiler.errors,
-		Compiler_Error{span = span, message = error_string(span, format, ..args)},
-	)
+	msg := fmt.tprintf(format, ..args)
+	append(&compiler.errors, Compiler_Error{span = span, message = msg})
 }
 
 error_string :: proc(span: Span, format: string, args: ..any) -> string {
 	row, col := span_to_location(span)
 	loc := fmt.tprintf("%s:%d:%d", span.filename, row, col)
 	msg := fmt.tprintf(format, ..args)
-	error := fmt.tprintf("%s: %s", loc, msg)
+	return fmt.tprintf("%s: %s", loc, msg)
+}
 
-	return error
+print_error_pretty :: proc(err: Compiler_Error) {
+	ANSI_RED :: "\e[1;31m"
+	ANSI_BLUE :: "\e[1;34m"
+	ANSI_YELLOW :: "\e[1;33m"
+	ANSI_BOLD :: "\e[1m"
+	ANSI_RESET :: "\e[0m"
+
+	line, col := span_to_location(err.span)
+
+	fmt.printf("%serror%s%s: %s%s\n",
+		ANSI_RED, ANSI_RESET, ANSI_BOLD, err.message, ANSI_RESET)
+	fmt.printf("  %s-->%s %s:%d:%d\n",
+		ANSI_BLUE, ANSI_RESET, err.span.filename, line, col)
+
+	source, has_source := compiler.sources[err.span.filename]
+	starts := compiler.line_starts[err.span.filename]
+	if !has_source || len(starts) == 0 {
+		fmt.println()
+		return
+	}
+
+	context_lines := 2
+	first := line - context_lines
+	if first < 1 { first = 1 }
+	last := line + context_lines
+	if last > len(starts) { last = len(starts) }
+
+	gutter_w := digit_count(last)
+	gutter_pad := strings.repeat(" ", gutter_w, context.allocator)
+
+	fmt.printf("%s %s|%s\n", gutter_pad, ANSI_BLUE, ANSI_RESET)
+	for n in first ..= last {
+		content := source_line(source, starts, n)
+		num_str := fmt.tprintf("%d", n)
+		left_pad := strings.repeat(" ", gutter_w - len(num_str), context.allocator)
+		fmt.printf("%s%s%s %s|%s %s\n",
+			left_pad, ANSI_BLUE, num_str, ANSI_BLUE, ANSI_RESET, content)
+
+		if n == line {
+			underline_len := err.span.end - err.span.start + 1
+			line_len := len(content)
+			if col - 1 + underline_len > line_len {
+				underline_len = line_len - (col - 1)
+			}
+			if underline_len < 1 { underline_len = 1 }
+			col_pad := strings.repeat(" ", col - 1, context.allocator)
+			carets := strings.repeat("^", underline_len, context.allocator)
+			fmt.printf("%s %s|%s %s%s%s%s\n",
+				gutter_pad, ANSI_BLUE, ANSI_RESET,
+				col_pad, ANSI_YELLOW, carets, ANSI_RESET)
+		}
+	}
+	fmt.println()
+}
+
+source_line :: proc(source: string, starts: [dynamic]int, line_n: int) -> string {
+	start := starts[line_n - 1]
+	end := len(source)
+	if line_n < len(starts) {
+		end = starts[line_n]
+	}
+	s := source[start:end]
+	if len(s) > 0 && s[len(s) - 1] == '\n' { s = s[:len(s) - 1] }
+	if len(s) > 0 && s[len(s) - 1] == '\r' { s = s[:len(s) - 1] }
+	return s
+}
+
+digit_count :: proc(n: int) -> int {
+	v := n
+	if v <= 0 { return 1 }
+	count := 0
+	for v > 0 { count += 1; v /= 10 }
+	return count
 }
 
 token_serialize :: proc(token: Token) -> string {

@@ -10,6 +10,7 @@ Compiler :: struct {
 	current_filepath:     string, // Directory of the source file being compiled
 	exe_dir:              string, // Directory of the compiler executable
 	line_starts:          map[string][dynamic]int,
+	sources:              map[string]string,
 	scopes:               queue.Queue(Scope),
 	global_scope:         Scope,
 	loops:                queue.Queue(Loop),
@@ -41,6 +42,7 @@ compiler_init :: proc() {
 compiler_reset :: proc() {
 	compiler.errors = {}
 	compiler.line_starts = make(map[string][dynamic]int)
+	compiler.sources = make(map[string]string)
 	compiler.loops = {}
 	compiler.external_linker_libs = {}
 }
