@@ -13,6 +13,9 @@ external "GL" {
     fn glVertex2f(x: f32, y: f32)
 }
 
+GL_COLOR_BUFFER_BIT :: 0x4000
+GL_TRIANGLES :: 0x0004
+
 fn main() {
     if glfwInit() == 0 {
         printf("glfwInit failed\n")
@@ -39,9 +42,9 @@ fn main() {
         }
 
         glClearColor(0.1, 0.1, 0.15, 1.0)
-        glClear(0x4000)  // GL_COLOR_BUFFER_BIT
+        glClear(GL_COLOR_BUFFER_BIT)  
 
-        glBegin(0x0004)  // GL_TRIANGLES
+        glBegin(GL_TRIANGLES)  
         glColor3f(1.0, 0.0, 0.0)
         glVertex2f(-0.6, -0.4)
         glColor3f(0.0, 1.0, 0.0)
