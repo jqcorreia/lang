@@ -488,11 +488,8 @@ function_call_emit_sysv :: proc(
 	sym_value := gen.values[sym]
 
 	call: ValueRef
-	if len(args) == 0 {
-		call = BuildCall2(gen.builder, sym_type, sym_value, nil, 0, "")
-	} else {
-		call = BuildCall2(gen.builder, sym_type, sym_value, &args[0], u32(len(args)), "")
-	}
+	args_ptr := len(args) == 0 ? nil : &args[0]
+	call = BuildCall2(gen.builder, sym_type, sym_value, args_ptr, u32(len(args)), "")
 
 	if len(byval_arg_idxs) > 0 {
 		byval_kind := GetEnumAttributeKindForName("byval", 5)
