@@ -6,8 +6,8 @@ fn add2(a: u32, b: u32) -> u32 {
 
 
 fn main() {
-    add: fn(u32, u32) -> u32
+    // add: fn(u32, u32) -> u32
 
-    add = add2
-    add(10, 32)
+    // add = add2
+    printf("%d", add2(10, 32))
 }

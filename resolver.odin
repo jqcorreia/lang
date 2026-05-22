@@ -96,7 +96,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 			expr_type := resolve_expr_type(data.expr, node.scope, node.span)
 			sym := get_scope_function(node.scope)
 			if sym != nil && sym.type != nil && sym.type.kind != .Error {
-				coerced_type := coerce(expr_type, sym.type, node.scope)
+				coerced_type := coerce(expr_type, sym.type.return_type, node.scope)
 				if coerced_type != nil {
 					set_expr_type(data.expr, coerced_type, node.scope)
 				}
