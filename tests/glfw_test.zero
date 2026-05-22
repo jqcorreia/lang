@@ -1,7 +1,7 @@
 import "std:c"
 import "vendor:glfw"
 
-// Legacy fixed-function OpenGL — exported directly from libGL, so no
+// Legacy fixed-function OpenGL exported directly from libGL, so no
 // glfwGetProcAddress dance needed. Enough to draw a single triangle.
 external "GL" {
     fn glClear(mask: u32)
