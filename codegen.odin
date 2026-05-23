@@ -215,6 +215,9 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 				return ConstReal(type, v)
 			}
 		}
+		if sym.kind == .Function {
+			return gen.values[sym]
+		}
 		ptr := emit_address(gen, expr, scope, span)
 		val := BuildLoad2(gen.builder, get_llvm_type(gen, sym.type), ptr, "")
 		// Insert integer cast if expression type differs from storage type (e.g. untyped range var coerced to i32)

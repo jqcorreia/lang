@@ -347,28 +347,26 @@ function_call_check :: proc(
 	}
 }
 
-
-// SysV variants of function declaration, body and call site
-//
-// These three procs drive parameter passing entirely from abi_classify_param,
-// applying SysV AMD64 uniformly to internal and external calls. They exist in
-// parallel with function_{decl,call,body}_emit so the old path keeps working
-// while the new one can be wired in piecewise.
-
-function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
+build_llvm_fn_type_sysv :: proc(
+	gen: ^Generator,
+	sig: ^Type,
+) -> (
+	TypeRef,
+	[dynamic]u32,
+	[dynamic]TypeRef,
+) {
 	param_types: [dynamic]TypeRef
 	byval_param_idxs: [dynamic]u32
 	byval_param_tys: [dynamic]TypeRef
-
-	ret_type_ref := get_llvm_type(gen, s.symbol.type.return_type)
-
 	variadic := false
-	for param in s.params {
-		if param.variadic_marker {
+
+	ret_type_ref := get_llvm_type(gen, sig.return_type)
+	for param in sig.params {
+		if param.variadic {
 			variadic = true
 			continue
 		}
-		switch l in abi_classify_param(gen, param.symbol.type) {
+		switch l in abi_classify_param(gen, param) {
 		case ABI_Direct:
 			append(&param_types, l.llvm_type)
 		case ABI_Coerce:
@@ -383,12 +381,14 @@ function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 		}
 	}
 
-	fn_type: TypeRef
-	if len(param_types) > 0 {
-		fn_type = FunctionType(ret_type_ref, &param_types[0], u32(len(param_types)), i32(variadic))
-	} else {
-		fn_type = FunctionType(ret_type_ref, nil, 0, i32(variadic))
-	}
+	param_types_ptr := len(param_types) == 0 ? nil : &param_types[0]
+	fn_type := FunctionType(ret_type_ref, param_types_ptr, u32(len(param_types)), i32(variadic))
+
+	return fn_type, byval_param_idxs, byval_param_tys
+}
+
+function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope, span: Span) {
+	fn_type, byval_param_idxs, byval_param_tys := build_llvm_fn_type_sysv(gen, s.symbol.type)
 
 	// Rename main functions because of runtime entrypoint
 	sym := s.symbol
@@ -428,15 +428,15 @@ function_call_emit_sysv :: proc(
 		fatal_span(span, "Unresolved function %s in function call", fn_name)
 	}
 
-	decl := sym.decl.data.(Ast_Function)
+	fn_type := sym.type
 	args: [dynamic]ValueRef
 	byval_arg_idxs: [dynamic]u32
 	byval_arg_tys: [dynamic]TypeRef
 
 	variadic_found := false
 	for a, i in e.args {
-		is_variadic := variadic_found || i >= len(decl.params)
-		if !is_variadic && decl.params[i].variadic_marker {
+		is_variadic := variadic_found || i >= len(fn_type.params)
+		if !is_variadic && fn_type.params[i].variadic {
 			variadic_found = true
 			is_variadic = true
 		}
@@ -453,7 +453,7 @@ function_call_emit_sysv :: proc(
 
 		// Classify by the declared param type, not arg.type, so caller and
 		// callee agree even when numeric coercion has rewritten the arg type.
-		param_type := decl.params[i].symbol.type
+		param_type := fn_type.params[i]
 		switch l in abi_classify_param(gen, param_type) {
 		case ABI_Direct:
 			append(&args, emit_value(gen, a, scope, span))
@@ -480,12 +480,23 @@ function_call_emit_sysv :: proc(
 		}
 	}
 
-	// Lazily emit external function declarations on first use.
-	if sym not_in gen.values {
-		function_decl_emit_sysv(gen, &decl, scope, span)
+	sym_type: TypeRef
+	sym_value: ValueRef
+	if sym.kind == .Function {
+		// Direct call: lazily emit the function declaration on first use
+		// (covers external functions and forward refs).
+		if sym not_in gen.values {
+			decl := sym.decl.data.(Ast_Function)
+			function_decl_emit_sysv(gen, &decl, scope, span)
+		}
+		sym_type = gen.types[sym]
+		sym_value = gen.values[sym]
+	} else {
+		// Indirect call through a function-pointer value. Build the LLVM
+		// FunctionType from the signature and load the callee at the call site.
+		sym_value = emit_value(gen, e.callee, scope, span)
+		sym_type, _, _ = build_llvm_fn_type_sysv(gen, sym.type)
 	}
-	sym_type := gen.types[sym]
-	sym_value := gen.values[sym]
 
 	call: ValueRef
 	args_ptr := len(args) == 0 ? nil : &args[0]
