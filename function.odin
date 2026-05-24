@@ -14,7 +14,7 @@ Ast_Function :: struct {
 Expr_Call :: struct {
 	callee: ^Expr,
 	args:   []^Expr,
-	method: bool, // true if desugared from receiver.method(args) — enables auto-ref/deref on arg 0
+	method: bool, // true if desugared from receiver.method(args), enables auto-ref/deref on arg 0
 }
 
 function_decl_parse :: proc(p: ^Parser, external: bool = false) -> ^Ast_Function {
@@ -541,7 +541,7 @@ function_body_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 			// Materialize back into a struct alloca. Storing the scalar at the
 			// struct's base address relies on opaque pointers + the eightbyte
 			// layout produced by abi_classify_param matching the struct field
-			// layout — true today since get_type_byte_size has no padding.
+			// layout, true today since get_type_byte_size has no padding.
 			p := GetParam(fn, llvm_idx)
 			alloca := BuildAlloca(gen.builder, l.struct_type, name)
 			BuildStore(gen.builder, p, alloca)

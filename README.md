@@ -87,4 +87,4 @@ A current example of this is the minimal LSP implementation which for the time b
 **This is not, by any means, an AI generated project.**
 
 # License
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

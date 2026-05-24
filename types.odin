@@ -102,7 +102,7 @@ create_primitive_types :: proc(scope: ^Scope) {
 }
 
 // coerce: directional. Can a `from` value be used where a `to` is expected?
-// Asymmetric — e.g. Untyped_Int → f64 is fine, f64 → Untyped_Int is not.
+// Asymmetric: e.g. Untyped_Int -> f64 is fine, f64 -> Untyped_Int is not.
 // For symmetric "what type do these meet at" queries, use `unify` instead.
 coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	if from.kind == .Function && to.kind == .Function {

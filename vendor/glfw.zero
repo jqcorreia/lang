@@ -6,7 +6,7 @@
 //   unsigned int        -> u32
 //   float               -> f32
 //   double              -> f64
-//   bool                -> bool  (GLFW does not really use bool — uses int)
+//   bool                -> bool  (GLFW does not really use bool, uses int)
 //   char* / const char* -> cstr
 //   void*               -> str   (opaque pointer)
 //   unsigned char       -> u8
@@ -24,10 +24,10 @@
 //   typedef function pointers     (no fn-pointer type)
 //   any function taking or returning a function pointer
 //     (every glfwSet*Callback, plus glfwGetProcAddress / glfwGetInstanceProcAddress)
-//   char** / const char**         (pointer-to-pointer) — affects glfwGetMonitors,
+//   char** / const char**         (pointer-to-pointer), affects glfwGetMonitors,
 //                                  glfwGetRequiredInstanceExtensions, GLFWdropfun
 //   Vulkan-typed APIs             (VkInstance / VkResult / VkSurfaceKHR / etc.)
-//   GLFWallocator fields          (function-pointer members) — represented as
+//   GLFWallocator fields          (function-pointer members), represented as
 //                                  opaque `str` so the struct itself remains usable.
 //   #define aliases that point at another #define (LEFT/RIGHT/etc.) are kept as
 //   comments with their resolved numeric value where useful.
@@ -68,7 +68,7 @@ struct GLFWgamepadstate {
 }
 
 struct GLFWallocator {
-    // allocate / reallocate / deallocate are function pointers — represented
+    // allocate / reallocate / deallocate are function pointers, represented
     // as opaque pointers so the struct still has the correct layout/size.
     allocate: cstr
     reallocate: cstr

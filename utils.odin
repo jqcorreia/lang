@@ -254,7 +254,7 @@ n_char_span :: proc(lexer: Lexer, n: int) -> Span {
 span_to_location :: proc(span: Span) -> (line: int, col: int) {
 	starts := compiler.line_starts[span.filename]
 	if len(starts) == 0 {
-		// Span without a known file — usually an Ast_Node whose `.span` was
+		// Span without a known file, usually an Ast_Node whose `.span` was
 		// never populated. Return a sentinel so error reporting doesn't crash;
 		// grep error output for `:1:1` to find the offending construction site.
 		return 1, 1

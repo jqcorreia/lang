@@ -61,7 +61,7 @@ const_eval_expr :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> (Const_Value,
 			return nil, false
 		}
 		if sym.const_value == nil {
-			// Forward reference within the same const-eval pass — order-of-decl matters today.
+			// Forward reference within the same const-eval pass. Order-of-decl matters today.
 			error_span(span, "Constant '%s' used before its value is known", e.value)
 			return nil, false
 		}

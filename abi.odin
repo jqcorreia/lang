@@ -29,7 +29,7 @@ ABI_Direct :: struct {
 }
 
 ABI_Coerce :: struct {
-	scalar_type: TypeRef, // i32 / i64 / float / double — the LLVM param type
+	scalar_type: TypeRef, // i32 / i64 / float / double, the LLVM param type
 	struct_type: TypeRef, // original struct type, kept for body re-store
 }
 
@@ -52,7 +52,7 @@ Eightbyte_Class :: enum {
 
 // SysV merge rule: anything + Memory = Memory; Integer dominates SSE on conflict;
 // NoClass is the identity element. (Real spec has more cases - X87, ComplexX87,
-// unaligned — that we don't generate today.)
+// unaligned, that we don't generate today.)
 abi_merge_class :: proc(a, b: Eightbyte_Class) -> Eightbyte_Class {
 	if a == b do return a
 	if a == .No_Class do return b
