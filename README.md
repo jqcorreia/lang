@@ -73,7 +73,7 @@ odin build .
 
 # Testing
 All the compiler tests reside in `tests/` and adding a file there will automatically add it to the test suite
-Run the tests by simply calling `odin test .`
+Run the tests by simply calling `odin test .` or `make test`
 
 # Dependencies
 - `linux` at least until we properly know what we are doing
