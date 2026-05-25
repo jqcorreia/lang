@@ -194,6 +194,13 @@ unify :: proc(a: ^Type, b: ^Type, scope: ^Scope) -> ^Type {
 	return coerce(b, a, scope)
 }
 
+is_untyped :: proc(t: ^Type) -> bool {
+	if t == nil do return false
+	if t.kind == .Untyped_Int || t.kind == .Untyped_Float do return true
+	if t.kind == .Array do return is_untyped(t.elem_type)
+	return false
+}
+
 // Set the type on an expression and propagate it inward to untyped sub-expressions.
 // This happens because some expressions can be typed but the components be still untyped
 set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
@@ -208,11 +215,11 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 		if l := coerce(e.left.type, type, scope); l != nil {
 			set_expr_type(e.left, l, scope)
 		}
-		if r := coerce(e.left.type, type, scope); r != nil {
+		if r := coerce(e.right.type, type, scope); r != nil {
 			set_expr_type(e.right, r, scope)
 		}
 	case Expr_Array_Literal:
-		if type.elem_type == nil {return}
+		if type.elem_type == nil do return
 		for elem in e.elements {
 			if elem.type.kind == .Array {
 				set_expr_type(elem, type.elem_type, scope)
@@ -221,6 +228,27 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 				if coerced != nil {elem.type = coerced}
 			}
 		}
+	case Expr_Variable:
+		// Note: this is a mess and needs to be resolved with a better resolver....
+
+		// In this case we might need to change the symbol type itself
+		// so the alloca has the correct size. 
+		// An untyped array can be later coerced into the correct shape but
+		// the symbol still has the incorrect type as well as the initializer
+		sym, ok := resolve_symbol(scope, e.value)
+		if !ok do return
+		if sym.kind != .Variable do return
+
+		// Only if the symbol is untyped and the target type is not untyped_*
+		if !is_untyped(sym.type) || is_untyped(type) do return
+		if sym.decl == nil do return
+
+		decl, decl_ok := sym.decl.data.(Ast_Var_Decl)
+		if !decl_ok || decl.expr == nil do return
+		sym.type = type
+
+		// Also set the expression type itself so it matches
+		set_expr_type(decl.expr, type, scope)
 	}
 }
 

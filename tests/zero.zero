@@ -1,0 +1,53 @@
+// This file is the syntax speedrun, condensed examples of all the syntax constructs.
+
+import "std:c" // minimal libc bindings, import into top-level scope
+
+// Constants
+PI :: 3.1415
+
+// basic types are u<size>, i<size>, f<size>, bool, cstr
+// fn add(a: i32, b: i32) -> i32 {
+//     return a + b
+// }
+
+// structs and arrays
+struct Object {
+    pos: [2]u32
+    status: Status
+}
+
+// The order of declaration is irrelevant
+enum Status {
+    ACTIVE   = 0x01
+    SHOOTING = 0x10
+}
+
+// This will automatically link with `libm` and expose the sin() function to this code
+external "m" {
+    fn sin(rad: f64) -> f64
+}
+
+// main is just main()
+fn main() {
+
+    player := Object { pos = [10,20]  } // Arrays are json style
+    // player = Object { [10,20] } // this also works, positional fields on struct literals
+
+    printf("player pos %d %d\n", player.pos[0], player.pos[1])
+    
+    player_velocity := [2, 3]
+
+    // Array -> Array operations are suported. 
+    player.pos = player.pos + player_velocity 
+
+    printf("player pos %d %d\n", player.pos[0], player.pos[1])
+    // printf("sin 45 degrees = %f", sin(45 * (PI / 180)))
+
+    // Exclusive ranged-for-loop
+    for x in 0..100 {
+    }
+
+    // Inclusive ranged-for-loop
+    for x in 0..=100 {
+    }
+}
