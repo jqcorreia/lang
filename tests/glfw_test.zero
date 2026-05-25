@@ -16,7 +16,49 @@ external "GL" {
 GL_COLOR_BUFFER_BIT :: 0x4000
 GL_TRIANGLES :: 0x0004
 
+fn on_error(code: i32, description: cstr) {
+    printf("[glfw error 0x%x] %s\n", code, description)
+}
+
+fn on_key(window: &GLFWwindow, key: i32, scancode: i32, action: i32, mods: i32) {
+    if action == KeyAction.PRESS {
+        printf("[key press] key=%d scancode=%d mods=0x%x\n", key, scancode, mods)
+        if key == Key.ESCAPE {
+            glfwSetWindowShouldClose(window, Boolean.TRUE)
+        }
+    }
+    if action == KeyAction.RELEASE {
+        printf("[key release] key=%d\n", key)
+    }
+}
+
+fn on_mouse_button(window: &GLFWwindow, button: i32, action: i32, mods: i32) {
+    xpos: f64
+    ypos: f64
+    glfwGetCursorPos(window, &xpos, &ypos)
+    printf("[mouse] button=%d action=%d at (%.1f, %.1f)\n", button, action, xpos, ypos)
+}
+
+fn on_cursor_pos(window: &GLFWwindow, xpos: f64, ypos: f64) {
+    // Too chatty to log every frame; only mention crossing into the
+    // top-left corner so the callback is observably alive without spam.
+    if xpos < 5.0 && ypos < 5.0 {
+        printf("[cursor] near top-left at (%.1f, %.1f)\n", xpos, ypos)
+    }
+}
+
+fn on_framebuffer_size(window: &GLFWwindow, width: i32, height: i32) {
+    printf("[framebuffer resize] %dx%d\n", width, height)
+    glViewport(0, 0, width, height)
+}
+
+fn on_window_close(window: &GLFWwindow) {
+    printf("[window close requested]\n")
+}
+
 fn main() {
+    glfwSetErrorCallback(on_error)
+
     if glfwInit() == 0 {
         printf("glfwInit failed\n")
         return
@@ -33,18 +75,21 @@ fn main() {
     glfwSwapInterval(1)
     glViewport(0, 0, 800, 600)
 
+    glfwSetKeyCallback(window, on_key)
+    glfwSetMouseButtonCallback(window, on_mouse_button)
+    glfwSetCursorPosCallback(window, on_cursor_pos)
+    glfwSetFramebufferSizeCallback(window, on_framebuffer_size)
+    glfwSetWindowCloseCallback(window, on_window_close)
+
     for {
         if glfwWindowShouldClose(window) != 0 {
             break
         }
-        if glfwGetKey(window, Key.ESCAPE) == KeyAction.PRESS {
-            break
-        }
 
         glClearColor(0.1, 0.1, 0.15, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT)  
+        glClear(GL_COLOR_BUFFER_BIT)
 
-        glBegin(GL_TRIANGLES)  
+        glBegin(GL_TRIANGLES)
         glColor3f(1.0, 0.0, 0.0)
         glVertex2f(-0.6, -0.4)
         glColor3f(0.0, 1.0, 0.0)

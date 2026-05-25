@@ -21,16 +21,17 @@
 // empty structs; the C `T*` becomes `&T`.
 //
 // Not supported (commented out):
-//   typedef function pointers     (no fn-pointer type)
-//   any function taking or returning a function pointer
-//     (every glfwSet*Callback, plus glfwGetProcAddress / glfwGetInstanceProcAddress)
 //   char** / const char**         (pointer-to-pointer), affects glfwGetMonitors,
 //                                  glfwGetRequiredInstanceExtensions, GLFWdropfun
 //   Vulkan-typed APIs             (VkInstance / VkResult / VkSurfaceKHR / etc.)
-//   GLFWallocator fields          (function-pointer members), represented as
-//                                  opaque `str` so the struct itself remains usable.
+//   glfwGetProcAddress / glfwGetInstanceProcAddress (return GLFWglproc, a
+//                                  parameterless function pointer that zerolang
+//                                  cannot yet spell)
 //   #define aliases that point at another #define (LEFT/RIGHT/etc.) are kept as
 //   comments with their resolved numeric value where useful.
+//
+// Callback parameters use zerolang inline fn(...) types since there is no
+// typedef construct.
 
 // === OPAQUE HANDLE STRUCTS ===
 
@@ -68,40 +69,37 @@ struct GLFWgamepadstate {
 }
 
 struct GLFWallocator {
-    // allocate / reallocate / deallocate are function pointers, represented
-    // as opaque pointers so the struct still has the correct layout/size.
-    allocate: cstr
-    reallocate: cstr
-    deallocate: cstr
+    allocate: fn(u64, cstr) -> cstr
+    reallocate: fn(cstr, u64, cstr) -> cstr
+    deallocate: fn(cstr, cstr)
     user: cstr
 }
 
-// === TYPEDEFS / FUNCTION POINTERS (not supported) ===
-// typedef GLFWglproc                = void (*)()
-// typedef GLFWvkproc                = void (*)()
-// typedef GLFWallocatefun           = void* (*)(size_t, void*)
-// typedef GLFWreallocatefun         = void* (*)(void*, size_t, void*)
-// typedef GLFWdeallocatefun         = void (*)(void*, void*)
-// typedef GLFWerrorfun              = void (*)(int, const char*)
-// typedef GLFWwindowposfun          = void (*)(GLFWwindow*, int, int)
-// typedef GLFWwindowsizefun         = void (*)(GLFWwindow*, int, int)
-// typedef GLFWwindowclosefun        = void (*)(GLFWwindow*)
-// typedef GLFWwindowrefreshfun      = void (*)(GLFWwindow*)
-// typedef GLFWwindowfocusfun        = void (*)(GLFWwindow*, int)
-// typedef GLFWwindowiconifyfun      = void (*)(GLFWwindow*, int)
-// typedef GLFWwindowmaximizefun     = void (*)(GLFWwindow*, int)
-// typedef GLFWframebuffersizefun    = void (*)(GLFWwindow*, int, int)
-// typedef GLFWwindowcontentscalefun = void (*)(GLFWwindow*, float, float)
-// typedef GLFWmousebuttonfun        = void (*)(GLFWwindow*, int, int, int)
-// typedef GLFWcursorposfun          = void (*)(GLFWwindow*, double, double)
-// typedef GLFWcursorenterfun        = void (*)(GLFWwindow*, int)
-// typedef GLFWscrollfun             = void (*)(GLFWwindow*, double, double)
-// typedef GLFWkeyfun                = void (*)(GLFWwindow*, int, int, int, int)
-// typedef GLFWcharfun               = void (*)(GLFWwindow*, unsigned int)
-// typedef GLFWcharmodsfun           = void (*)(GLFWwindow*, unsigned int, int)
-// typedef GLFWdropfun               = void (*)(GLFWwindow*, int, const char*[])
-// typedef GLFWmonitorfun            = void (*)(GLFWmonitor*, int)
-// typedef GLFWjoystickfun           = void (*)(int, int)
+// === FUNCTION POINTER SIGNATURE REFERENCE ===
+// zerolang has no typedef, so the inline fn(...) types in the external block
+// below correspond to these C typedefs:
+//   GLFWerrorfun              fn(i32, cstr)
+//   GLFWmonitorfun            fn(&GLFWmonitor, i32)
+//   GLFWwindowposfun          fn(&GLFWwindow, i32, i32)
+//   GLFWwindowsizefun         fn(&GLFWwindow, i32, i32)
+//   GLFWwindowclosefun        fn(&GLFWwindow)
+//   GLFWwindowrefreshfun      fn(&GLFWwindow)
+//   GLFWwindowfocusfun        fn(&GLFWwindow, i32)
+//   GLFWwindowiconifyfun      fn(&GLFWwindow, i32)
+//   GLFWwindowmaximizefun     fn(&GLFWwindow, i32)
+//   GLFWframebuffersizefun    fn(&GLFWwindow, i32, i32)
+//   GLFWwindowcontentscalefun fn(&GLFWwindow, f32, f32)
+//   GLFWmousebuttonfun        fn(&GLFWwindow, i32, i32, i32)
+//   GLFWcursorposfun          fn(&GLFWwindow, f64, f64)
+//   GLFWcursorenterfun        fn(&GLFWwindow, i32)
+//   GLFWscrollfun             fn(&GLFWwindow, f64, f64)
+//   GLFWkeyfun                fn(&GLFWwindow, i32, i32, i32, i32)
+//   GLFWcharfun               fn(&GLFWwindow, u32)
+//   GLFWcharmodsfun           fn(&GLFWwindow, u32, i32)
+//   GLFWjoystickfun           fn(i32, i32)
+//   GLFWdropfun               (uses const char**, not supported)
+//   GLFWglproc / GLFWvkproc   parameterless function pointers, not yet
+//                             expressible in zerolang fn(...) syntax
 
 // === ENUMS ===
 
@@ -534,7 +532,7 @@ external "glfw" {
     fn glfwGetVersion(major: &i32, minor: &i32, rev: &i32)
     fn glfwGetVersionString() -> cstr
     fn glfwGetError(description: &cstr) -> i32
-    // fn glfwSetErrorCallback(callback: GLFWerrorfun) -> GLFWerrorfun  // function pointer, not supported
+    fn glfwSetErrorCallback(callback: fn(i32, cstr)) -> fn(i32, cstr)
     fn glfwGetPlatform() -> i32
     fn glfwPlatformSupported(platform: i32) -> i32
 
@@ -548,7 +546,7 @@ external "glfw" {
     fn glfwGetMonitorName(monitor: &GLFWmonitor) -> cstr
     fn glfwSetMonitorUserPointer(monitor: &GLFWmonitor, pointer: cstr)
     fn glfwGetMonitorUserPointer(monitor: &GLFWmonitor) -> cstr
-    // fn glfwSetMonitorCallback(callback: GLFWmonitorfun) -> GLFWmonitorfun  // function pointer, not supported
+    fn glfwSetMonitorCallback(callback: fn(&GLFWmonitor, i32)) -> fn(&GLFWmonitor, i32)
 
     // === VIDEO MODES / GAMMA ===
     fn glfwGetVideoModes(monitor: &GLFWmonitor, count: &i32) -> &GLFWvidmode
@@ -593,16 +591,16 @@ external "glfw" {
     fn glfwSetWindowUserPointer(window: &GLFWwindow, pointer: cstr)
     fn glfwGetWindowUserPointer(window: &GLFWwindow) -> cstr
 
-    // === WINDOW CALLBACKS (function pointers, not supported) ===
-    // fn glfwSetWindowPosCallback(window: &GLFWwindow, callback: GLFWwindowposfun) -> GLFWwindowposfun                       // function pointer, not supported
-    // fn glfwSetWindowSizeCallback(window: &GLFWwindow, callback: GLFWwindowsizefun) -> GLFWwindowsizefun                    // function pointer, not supported
-    // fn glfwSetWindowCloseCallback(window: &GLFWwindow, callback: GLFWwindowclosefun) -> GLFWwindowclosefun                 // function pointer, not supported
-    // fn glfwSetWindowRefreshCallback(window: &GLFWwindow, callback: GLFWwindowrefreshfun) -> GLFWwindowrefreshfun           // function pointer, not supported
-    // fn glfwSetWindowFocusCallback(window: &GLFWwindow, callback: GLFWwindowfocusfun) -> GLFWwindowfocusfun                 // function pointer, not supported
-    // fn glfwSetWindowIconifyCallback(window: &GLFWwindow, callback: GLFWwindowiconifyfun) -> GLFWwindowiconifyfun           // function pointer, not supported
-    // fn glfwSetWindowMaximizeCallback(window: &GLFWwindow, callback: GLFWwindowmaximizefun) -> GLFWwindowmaximizefun        // function pointer, not supported
-    // fn glfwSetFramebufferSizeCallback(window: &GLFWwindow, callback: GLFWframebuffersizefun) -> GLFWframebuffersizefun     // function pointer, not supported
-    // fn glfwSetWindowContentScaleCallback(window: &GLFWwindow, callback: GLFWwindowcontentscalefun) -> GLFWwindowcontentscalefun  // function pointer, not supported
+    // === WINDOW CALLBACKS ===
+    fn glfwSetWindowPosCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32, i32)) -> fn(&GLFWwindow, i32, i32)
+    fn glfwSetWindowSizeCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32, i32)) -> fn(&GLFWwindow, i32, i32)
+    fn glfwSetWindowCloseCallback(window: &GLFWwindow, callback: fn(&GLFWwindow)) -> fn(&GLFWwindow)
+    fn glfwSetWindowRefreshCallback(window: &GLFWwindow, callback: fn(&GLFWwindow)) -> fn(&GLFWwindow)
+    fn glfwSetWindowFocusCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32)) -> fn(&GLFWwindow, i32)
+    fn glfwSetWindowIconifyCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32)) -> fn(&GLFWwindow, i32)
+    fn glfwSetWindowMaximizeCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32)) -> fn(&GLFWwindow, i32)
+    fn glfwSetFramebufferSizeCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32, i32)) -> fn(&GLFWwindow, i32, i32)
+    fn glfwSetWindowContentScaleCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, f32, f32)) -> fn(&GLFWwindow, f32, f32)
 
     // === EVENTS ===
     fn glfwPollEvents()
@@ -627,15 +625,15 @@ external "glfw" {
     fn glfwDestroyCursor(cursor: &GLFWcursor)
     fn glfwSetCursor(window: &GLFWwindow, cursor: &GLFWcursor)
 
-    // === INPUT CALLBACKS (function pointers, not supported) ===
-    // fn glfwSetKeyCallback(window: &GLFWwindow, callback: GLFWkeyfun) -> GLFWkeyfun                               // function pointer, not supported
-    // fn glfwSetCharCallback(window: &GLFWwindow, callback: GLFWcharfun) -> GLFWcharfun                            // function pointer, not supported
-    // fn glfwSetCharModsCallback(window: &GLFWwindow, callback: GLFWcharmodsfun) -> GLFWcharmodsfun                // function pointer, not supported
-    // fn glfwSetMouseButtonCallback(window: &GLFWwindow, callback: GLFWmousebuttonfun) -> GLFWmousebuttonfun       // function pointer, not supported
-    // fn glfwSetCursorPosCallback(window: &GLFWwindow, callback: GLFWcursorposfun) -> GLFWcursorposfun             // function pointer, not supported
-    // fn glfwSetCursorEnterCallback(window: &GLFWwindow, callback: GLFWcursorenterfun) -> GLFWcursorenterfun       // function pointer, not supported
-    // fn glfwSetScrollCallback(window: &GLFWwindow, callback: GLFWscrollfun) -> GLFWscrollfun                      // function pointer, not supported
-    // fn glfwSetDropCallback(window: &GLFWwindow, callback: GLFWdropfun) -> GLFWdropfun                            // function pointer (and char**), not supported
+    // === INPUT CALLBACKS ===
+    fn glfwSetKeyCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32, i32, i32, i32)) -> fn(&GLFWwindow, i32, i32, i32, i32)
+    fn glfwSetCharCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, u32)) -> fn(&GLFWwindow, u32)
+    fn glfwSetCharModsCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, u32, i32)) -> fn(&GLFWwindow, u32, i32)
+    fn glfwSetMouseButtonCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32, i32, i32)) -> fn(&GLFWwindow, i32, i32, i32)
+    fn glfwSetCursorPosCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, f64, f64)) -> fn(&GLFWwindow, f64, f64)
+    fn glfwSetCursorEnterCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, i32)) -> fn(&GLFWwindow, i32)
+    fn glfwSetScrollCallback(window: &GLFWwindow, callback: fn(&GLFWwindow, f64, f64)) -> fn(&GLFWwindow, f64, f64)
+    // fn glfwSetDropCallback(window: &GLFWwindow, callback: GLFWdropfun) -> GLFWdropfun  // uses const char**, not supported
 
     // === JOYSTICK / GAMEPAD ===
     fn glfwJoystickPresent(jid: i32) -> i32
@@ -647,7 +645,7 @@ external "glfw" {
     fn glfwSetJoystickUserPointer(jid: i32, pointer: cstr)
     fn glfwGetJoystickUserPointer(jid: i32) -> cstr
     fn glfwJoystickIsGamepad(jid: i32) -> i32
-    // fn glfwSetJoystickCallback(callback: GLFWjoystickfun) -> GLFWjoystickfun  // function pointer, not supported
+    fn glfwSetJoystickCallback(callback: fn(i32, i32)) -> fn(i32, i32)
     fn glfwUpdateGamepadMappings(string: cstr) -> i32
     fn glfwGetGamepadName(jid: i32) -> cstr
     fn glfwGetGamepadState(jid: i32, state: &GLFWgamepadstate) -> i32
