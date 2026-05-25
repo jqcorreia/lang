@@ -1,0 +1,11 @@
+import "std:c"
+
+struct S {
+    x: u32
+    y: u32
+}
+
+fn main() {
+    s := S {100,42}
+    printf("s.x = %d\n", s.x)
+}

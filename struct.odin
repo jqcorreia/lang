@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:strings"
 
 Ast_Struct_Decl :: struct {
@@ -12,6 +13,13 @@ Ast_Struct_Field :: struct {
 	name:      string,
 	type_expr: Type_Expr,
 	symbol:    ^Symbol,
+}
+
+Expr_Struct_Literal :: struct {
+	type_expr:  Type_Expr,
+	args:       map[string]^Expr,
+	args_pos:   [dynamic]^Expr,
+	positional: bool,
 }
 
 struct_decl_parse :: proc(p: ^Parser) -> ^Ast_Struct_Decl {
@@ -41,6 +49,74 @@ struct_decl_parse :: proc(p: ^Parser) -> ^Ast_Struct_Decl {
 	}
 
 	return decl
+}
+
+struct_literal_parse :: proc(p: ^Parser, struct_name: string) -> ^Expr {
+	result := new(Expr)
+
+	lit := Expr_Struct_Literal{}
+	lit.type_expr = struct_name
+
+	struct_literal_fields_parse(p, &lit)
+	result.data = lit
+
+	return result
+}
+
+struct_literal_fields_parse :: proc(p: ^Parser, struct_expr: ^Expr_Struct_Literal) {
+	done := false
+	expect(p, .LBrace)
+
+	for current(p).kind == .NewLine {
+		fmt.println("skipping")
+		advance(p)
+	}
+
+	is_positional := peek(p).kind != .Equal
+
+	if !is_positional {
+		for !done {
+			#partial switch current(p).kind {
+			case .Identifier:
+				field_name := current(p).lexeme
+				advance(p)
+				expect(p, .Equal)
+				struct_expr.args[field_name] = parse_expression(p, 0)
+			case .Comma:
+				if peek(p).kind == .RBrace {
+					unexpected_token(peek(p))
+				}
+				advance(p)
+			case .RBrace:
+				advance(p)
+				done = true
+			case .NewLine:
+				advance(p)
+			case:
+				unexpected_token(current(p))
+			}
+		}
+	} else {
+		for !done {
+			fmt.println(current(p).kind)
+			#partial switch current(p).kind {
+			case .Comma:
+				if peek(p).kind == .RBrace {
+					unexpected_token(peek(p))
+				}
+				advance(p)
+			case .RBrace:
+				advance(p)
+				done = true
+			case .NewLine:
+				advance(p)
+			case:
+				append(&struct_expr.args_pos, parse_expression(p, 0))
+			// unexpected_token(current(p))
+			}
+		}
+	}
+	struct_expr.positional = is_positional
 }
 
 struct_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
@@ -86,25 +162,45 @@ struct_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type 
 	}
 
 	expr.type = type
-	for arg_name, arg in e.args {
-		for field in type.fields {
-			if field.name == arg_name {
-				arg_type := resolve_expr_type(arg, scope, span)
-				coerced_type := coerce(arg_type, field.type, scope)
-				if coerced_type != nil {
-					set_expr_type(arg, coerced_type, scope)
-				} else {
-					error_span(
-						span,
-						"Invalid field type, expected %s, got %s",
-						field.type.kind,
-						arg_type.kind,
-					)
-					arg.type = arg_type
+	if !e.positional {
+		for arg_name, arg in e.args {
+			for field in type.fields {
+				if field.name == arg_name {
+					arg_type := resolve_expr_type(arg, scope, span)
+					coerced_type := coerce(arg_type, field.type, scope)
+					if coerced_type != nil {
+						set_expr_type(arg, coerced_type, scope)
+					} else {
+						error_span(
+							span,
+							"Invalid field type, expected %s, got %s",
+							field.type.kind,
+							arg_type.kind,
+						)
+						arg.type = arg_type
+					}
 				}
 			}
 		}
+	} else {
+		for arg, idx in e.args_pos {
+			field := type.fields[idx]
+			arg_type := resolve_expr_type(arg, scope, span)
+			coerced_type := coerce(arg_type, field.type, scope)
+			if coerced_type != nil {
+				set_expr_type(arg, coerced_type, scope)
+			} else {
+				error_span(
+					span,
+					"Invalid field type, expected %s, got %s",
+					field.type.kind,
+					arg_type.kind,
+				)
+				arg.type = arg_type
+			}
+		}
 	}
+
 	return type
 }
 
@@ -173,7 +269,7 @@ struct_emit_into :: proc(
 
 	for field in type.fields {
 		field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, ptr, u32(field.index), "")
-		arg := e.args[field.name]
+		arg := e.positional ? e.args_pos[field.index] : e.args[field.name]
 		if arg == nil {
 			// In case of non defined field, zero initialize the literal
 			BuildStore(gen.builder, make_zero_value(gen, field.type), field_ptr)

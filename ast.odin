@@ -166,11 +166,6 @@ Expr_Variable :: struct {
 }
 
 
-Expr_Struct_Literal :: struct {
-	type_expr: Type_Expr,
-	args:      map[string]^Expr,
-}
-
 Expr_Range :: struct {
 	start:     ^Expr,
 	end:       ^Expr,

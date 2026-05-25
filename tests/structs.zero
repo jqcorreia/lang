@@ -4,7 +4,6 @@ struct Foo {
     data: [4][4]u8
 }
 
-
 fn test() {
     // Test scoped structs
     struct Bar {
