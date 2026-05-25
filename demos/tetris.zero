@@ -32,7 +32,7 @@ fn clear_grid(grid: &Grid) {
 
 fn new_random_block(grid: Grid) -> Block {
     x := grid.w / 2
-    y := 0
+    y : i32 = 0
 
     blocks: [7]Block = [
         Block { x = x, y = y, w = 2, h = 2, data = [ // square

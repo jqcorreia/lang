@@ -11,12 +11,11 @@ fn main() {
     fb: [4]f32 = [0.5, 0.5, 0.5, 0.5]
 
     fc := fa + fb
-    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3]) // 1.5 2.5 3.5 4.5
-
+    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3]) 
     fc = fa * fb
-    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3]) // 1.5 2.5 3.5 4.5
+    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3]) 
     fc = fa / fb
-    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3]) // 1.5 2.5 3.5 4.5
+    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
     fc = fa - fb
-    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3]) // 1.5 2.5 3.5 4.5
+    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
 }
