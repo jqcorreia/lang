@@ -111,6 +111,7 @@ Ast_Import :: struct {
 Expr :: struct {
 	data: Expr_Data,
 	type: ^Type,
+	span: Span,
 }
 
 Expr_Data :: union {

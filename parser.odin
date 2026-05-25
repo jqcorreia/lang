@@ -485,6 +485,10 @@ parse_expression :: proc(
 	allow_struct_literal: bool = true,
 ) -> ^Expr {
 	t := advance(p)
+	span := Span {
+		start    = t.span.start,
+		filename = p.filename,
+	}
 
 	left: ^Expr
 
@@ -583,6 +587,11 @@ parse_expression :: proc(
 			left = expr_binary(op.kind, left, right)
 		}
 	}
+	// Remove one because expression parsing lands on the next token. 
+	// This will potentially break when utf-8 characters are present.
+	span.end = current(p).span.end - 1
+	left.span = span
+
 	return left
 }
 
