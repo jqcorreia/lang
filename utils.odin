@@ -39,10 +39,8 @@ print_error_pretty :: proc(err: Compiler_Error) {
 
 	line, col := span_to_location(err.span)
 
-	fmt.printf("%serror%s%s: %s%s\n",
-		ANSI_RED, ANSI_RESET, ANSI_BOLD, err.message, ANSI_RESET)
-	fmt.printf("  %s-->%s %s:%d:%d\n",
-		ANSI_BLUE, ANSI_RESET, err.span.filename, line, col)
+	fmt.printf("%serror%s%s: %s%s\n", ANSI_RED, ANSI_RESET, ANSI_BOLD, err.message, ANSI_RESET)
+	fmt.printf("  %s-->%s %s:%d:%d\n", ANSI_BLUE, ANSI_RESET, err.span.filename, line, col)
 
 	source, has_source := compiler.sources[err.span.filename]
 	starts := compiler.line_starts[err.span.filename]
@@ -53,9 +51,9 @@ print_error_pretty :: proc(err: Compiler_Error) {
 
 	context_lines := 2
 	first := line - context_lines
-	if first < 1 { first = 1 }
+	if first < 1 {first = 1}
 	last := line + context_lines
-	if last > len(starts) { last = len(starts) }
+	if last > len(starts) {last = len(starts)}
 
 	gutter_w := digit_count(last)
 	gutter_pad := strings.repeat(" ", gutter_w, context.allocator)
@@ -65,8 +63,15 @@ print_error_pretty :: proc(err: Compiler_Error) {
 		content := source_line(source, starts, n)
 		num_str := fmt.tprintf("%d", n)
 		left_pad := strings.repeat(" ", gutter_w - len(num_str), context.allocator)
-		fmt.printf("%s%s%s %s|%s %s\n",
-			left_pad, ANSI_BLUE, num_str, ANSI_BLUE, ANSI_RESET, content)
+		fmt.printf(
+			"%s%s%s %s|%s %s\n",
+			left_pad,
+			ANSI_BLUE,
+			num_str,
+			ANSI_BLUE,
+			ANSI_RESET,
+			content,
+		)
 
 		if n == line {
 			underline_len := err.span.end - err.span.start + 1
@@ -74,12 +79,19 @@ print_error_pretty :: proc(err: Compiler_Error) {
 			if col - 1 + underline_len > line_len {
 				underline_len = line_len - (col - 1)
 			}
-			if underline_len < 1 { underline_len = 1 }
+			if underline_len < 1 {underline_len = 1}
 			col_pad := strings.repeat(" ", col - 1, context.allocator)
 			carets := strings.repeat("^", underline_len, context.allocator)
-			fmt.printf("%s %s|%s %s%s%s%s\n",
-				gutter_pad, ANSI_BLUE, ANSI_RESET,
-				col_pad, ANSI_YELLOW, carets, ANSI_RESET)
+			fmt.printf(
+				"%s %s|%s %s%s%s%s\n",
+				gutter_pad,
+				ANSI_BLUE,
+				ANSI_RESET,
+				col_pad,
+				ANSI_YELLOW,
+				carets,
+				ANSI_RESET,
+			)
 		}
 	}
 	fmt.println()
@@ -92,16 +104,16 @@ source_line :: proc(source: string, starts: [dynamic]int, line_n: int) -> string
 		end = starts[line_n]
 	}
 	s := source[start:end]
-	if len(s) > 0 && s[len(s) - 1] == '\n' { s = s[:len(s) - 1] }
-	if len(s) > 0 && s[len(s) - 1] == '\r' { s = s[:len(s) - 1] }
+	if len(s) > 0 && s[len(s) - 1] == '\n' {s = s[:len(s) - 1]}
+	if len(s) > 0 && s[len(s) - 1] == '\r' {s = s[:len(s) - 1]}
 	return s
 }
 
 digit_count :: proc(n: int) -> int {
 	v := n
-	if v <= 0 { return 1 }
+	if v <= 0 {return 1}
 	count := 0
-	for v > 0 { count += 1; v /= 10 }
+	for v > 0 {count += 1; v /= 10}
 	return count
 }
 
@@ -197,10 +209,10 @@ expr_print :: proc(expr: ^Expr, scope: ^Scope, lvl: u32 = 0) {
 		expr_print(e.left, scope, lvl + 1)
 		expr_print(e.right, scope, lvl + 1)
 	case Expr_Call:
-		fmt.println("Call ", e.callee.data.(Expr_Variable).value)
-		for arg in e.args {
-			expr_print(arg, scope, lvl + 1)
-		}
+	// fmt.println("Call ", e.callee.data.(Expr_Variable).value)
+	// for arg in e.args {
+	// 	expr_print(arg, scope, lvl + 1)
+	// }
 	case:
 		fmt.println(e)
 	}

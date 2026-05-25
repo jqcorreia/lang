@@ -269,7 +269,12 @@ struct_emit_into :: proc(
 
 	for field in type.fields {
 		field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, ptr, u32(field.index), "")
-		arg := e.positional ? e.args_pos[field.index] : e.args[field.name]
+		fmt.println(e.positional, span_to_location(span))
+
+		// We need to guard against a struct literal with no args
+		positional := len(e.args_pos) > 0 && e.positional
+
+		arg := positional ? e.args_pos[field.index] : e.args[field.name]
 		if arg == nil {
 			// In case of non defined field, zero initialize the literal
 			BuildStore(gen.builder, make_zero_value(gen, field.type), field_ptr)
@@ -347,4 +352,14 @@ struct_member_emit_value :: proc(
 ) -> ValueRef {
 	ptr := emit_address(gen, expr, scope, span)
 	return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), ptr, "")
+}
+
+struct_field_type_by_name :: proc(struct_type: ^Type, name: string) -> ^Type {
+	for field in struct_type.fields {
+		if field.name != name do continue
+		else {
+			return field.type
+		}
+	}
+	return nil
 }

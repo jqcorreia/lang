@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:strings"
 
 Ast_Function :: struct {
@@ -193,6 +194,19 @@ function_resolve :: proc(node: ^Ast_Node) {
 
 function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	e := expr.data.(Expr_Call)
+
+	// if data, is_member := e.callee.data.(Expr_Member); is_member {
+	// 	base_type := resolve_expr_type(data.base, scope, span)
+	// 	if base_type.kind == .Struct {
+	// 		field_type := struct_field_type_by_name(base_type, data.member)
+	// 		if field_type.kind == .Function {
+	// 			fmt.println("hooooooooooo")
+	// 			expr.type = e.callee.type.return_type
+	// 			return e.callee.type.return_type
+	// 		}
+	// 	}
+	// }
+
 	func_name := e.callee.data.(Expr_Variable).value
 	sym, ok := resolve_symbol(scope, func_name)
 	if !ok {

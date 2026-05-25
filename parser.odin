@@ -562,6 +562,8 @@ parse_expression :: proc(
 		case .Period:
 			field_name := expect(p, .Identifier).value.(string)
 			if current(p).kind == .LParen {
+				member := expr_member(left, field_name)
+
 				advance(p) // consume '(', parse_call_args expects it already eaten
 				rest := parse_call_args(p)
 				all := make([]^Expr, len(rest) + 1)
