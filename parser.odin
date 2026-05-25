@@ -587,7 +587,7 @@ parse_expression :: proc(
 			left = expr_binary(op.kind, left, right)
 		}
 	}
-	// Remove one because expression parsing lands on the next token. 
+	// Remove one because expression parsing lands on the next token.
 	// This will potentially break when utf-8 characters are present.
 	span.end = current(p).span.end - 1
 	left.span = span

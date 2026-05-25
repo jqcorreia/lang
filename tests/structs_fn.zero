@@ -1,0 +1,16 @@
+import "std:c"
+
+
+fn id(a: i32) -> i32{
+    return a
+}
+
+struct T {
+    f: fn(i32) -> i32
+}
+
+fn main() {
+    t := T { f = id }
+
+    // t.f(100)
+}
