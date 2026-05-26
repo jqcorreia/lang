@@ -14,6 +14,6 @@ fn main() {
     t := T { f = id }
 
     printf("t.f(100) = %d\n", t.f(100))
-    printf("t.f(100) = %d\n", t.s(100))
-    printf("t.f(100) = %d\n", t.g(100))
+    // printf("t.f(100) = %d\n", t.s(100))
+    // printf("t.f(100) = %d\n", t.g(100))
 }
