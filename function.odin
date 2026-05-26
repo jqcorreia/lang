@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import "core:strings"
 
 Ast_Function :: struct {
