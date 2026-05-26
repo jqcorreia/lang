@@ -276,43 +276,36 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			continue
 		}
 
-		decl_type := param
-		// if decl_type == nil {
-		// 	// Not resolved yet, do it here
-		// 	param_type := resolve_type_expr(&param.type_expr, scope, span)
-		// 	param.symbol.type = param_type
-		// 	decl_type = param_type
-		// }
 
 		// Auto-ref / auto-deref the receiver of a method-style call
-		if e.method && i == 0 && decl_type != nil && arg.type != nil {
-			if decl_type.kind == .Pointer &&
+		if e.method && i == 0 && param != nil && arg.type != nil {
+			if param.kind == .Pointer &&
 			   arg.type.kind != .Pointer &&
-			   decl_type.pointee_type == arg.type {
+			   param.pointee_type == arg.type {
 				wrapped := new(Expr)
 				wrapped.data = Expr_Unary {
 					op   = .Ampersand,
 					expr = arg,
 				}
-				wrapped.type = decl_type
+				wrapped.type = param
 				e.args[i] = wrapped
 				arg = wrapped
 			} else if arg.type.kind == .Pointer &&
-			   decl_type.kind != .Pointer &&
-			   arg.type.pointee_type == decl_type {
+			   param.kind != .Pointer &&
+			   arg.type.pointee_type == param {
 				wrapped := new(Expr)
 				wrapped.data = Expr_Unary {
 					op   = .Star,
 					expr = arg,
 				}
-				wrapped.type = decl_type
+				wrapped.type = param
 				e.args[i] = wrapped
 				arg = wrapped
 			}
 		}
 
-		if decl_type != nil {
-			coerced_type := coerce(arg.type, decl_type, scope)
+		if param != nil {
+			coerced_type := coerce(arg.type, param, scope)
 			if coerced_type != nil {
 				set_expr_type(arg, coerced_type, scope)
 			}

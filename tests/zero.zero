@@ -6,9 +6,9 @@ import "std:c" // minimal libc bindings, import into top-level scope
 PI :: 3.1415
 
 // basic types are u<size>, i<size>, f<size>, bool, cstr
-// fn add(a: i32, b: i32) -> i32 {
-//     return a + b
-// }
+fn add(a: i32, b: i32) -> i32 {
+    return a + b
+}
 
 // structs and arrays
 struct Object {
@@ -41,7 +41,7 @@ fn main() {
     player.pos = player.pos + player_velocity 
 
     printf("player pos %d %d\n", player.pos[0], player.pos[1])
-    // printf("sin 45 degrees = %f", sin(45 * (PI / 180)))
+    printf("sin 45 degrees = %f", sin(45 * (PI / 180)))
 
     // Exclusive ranged-for-loop
     for x in 0..100 {
