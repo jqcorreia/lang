@@ -232,7 +232,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 		// Note: this is a mess and needs to be resolved with a better resolver....
 
 		// In this case we might need to change the symbol type itself
-		// so the alloca has the correct size. 
+		// so the alloca has the correct size.
 		// An untyped array can be later coerced into the correct shape but
 		// the symbol still has the incorrect type as well as the initializer
 		sym, ok := resolve_symbol(scope, e.value)
@@ -356,4 +356,8 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 		return elem_size * u32(type.size)
 	}
 	return 0
+}
+
+deref_type :: proc(ptr: ^Type) -> ^Type {
+	return ptr.pointee_type != nil ? ptr.pointee_type : ptr
 }

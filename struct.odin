@@ -68,7 +68,6 @@ struct_literal_fields_parse :: proc(p: ^Parser, struct_expr: ^Expr_Struct_Litera
 	expect(p, .LBrace)
 
 	for current(p).kind == .NewLine {
-		fmt.println("skipping")
 		advance(p)
 	}
 
@@ -98,7 +97,6 @@ struct_literal_fields_parse :: proc(p: ^Parser, struct_expr: ^Expr_Struct_Litera
 		}
 	} else {
 		for !done {
-			fmt.println(current(p).kind)
 			#partial switch current(p).kind {
 			case .Comma:
 				if peek(p).kind == .RBrace {
@@ -269,7 +267,6 @@ struct_emit_into :: proc(
 
 	for field in type.fields {
 		field_ptr := BuildStructGEP2(gen.builder, struct_llvm_type, ptr, u32(field.index), "")
-		fmt.println(e.positional, span_to_location(span))
 
 		// We need to guard against a struct literal with no args
 		positional := len(e.args_pos) > 0 && e.positional
@@ -355,7 +352,10 @@ struct_member_emit_value :: proc(
 }
 
 struct_field_type_by_name :: proc(struct_type: ^Type, name: string) -> ^Type {
-	for field in struct_type.fields {
+	// Deref the struct if needed
+	ptr := struct_type.kind == .Pointer ? struct_type.pointee_type : struct_type
+
+	for field in ptr.fields {
 		if field.name != name do continue
 		else {
 			return field.type

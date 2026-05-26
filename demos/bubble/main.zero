@@ -239,7 +239,7 @@ fn render() {
         }
     }
     if game.active.moving {
-        game.active.draw_bubble()
+        draw_bubble(game.active)
     }
     DrawRectanglePro(game.cannon.rect, Vector2 { x = game.cannon.rect.width / 2, y = game.cannon.rect.height }, game.cannon.angle, Color { r = 255, g = 100, b = 100, a = 255 })
     // Draw preview bubble

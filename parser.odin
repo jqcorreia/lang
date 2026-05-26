@@ -569,7 +569,7 @@ parse_expression :: proc(
 				all := make([]^Expr, len(rest) + 1)
 				all[0] = left
 				for a, i in rest do all[i + 1] = a
-				left = expr_call(expr_ident(field_name), all, method = true)
+				left = expr_call(member, all, method = true)
 			} else {
 				left = expr_member(left, field_name)
 			}

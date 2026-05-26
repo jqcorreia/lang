@@ -7,10 +7,13 @@ fn id(a: i32) -> i32{
 
 struct T {
     f: fn(i32) -> i32
+    g: i32
 }
 
 fn main() {
     t := T { f = id }
 
-    // t.f(100)
+    printf("t.f(100) = %d\n", t.f(100))
+    printf("t.f(100) = %d\n", t.s(100))
+    printf("t.f(100) = %d\n", t.g(100))
 }

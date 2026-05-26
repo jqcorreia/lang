@@ -193,45 +193,85 @@ function_resolve :: proc(node: ^Ast_Node) {
 }
 
 function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
-	e := expr.data.(Expr_Call)
+	e := &expr.data.(Expr_Call)
 
-	// if data, is_member := e.callee.data.(Expr_Member); is_member {
-	// 	base_type := resolve_expr_type(data.base, scope, span)
-	// 	if base_type.kind == .Struct {
-	// 		field_type := struct_field_type_by_name(base_type, data.member)
-	// 		if field_type.kind == .Function {
-	// 			fmt.println("hooooooooooo")
-	// 			expr.type = e.callee.type.return_type
-	// 			return e.callee.type.return_type
-	// 		}
-	// 	}
-	// }
+	fn_type: ^Type
+	args := e.args
 
-	func_name := e.callee.data.(Expr_Variable).value
-	sym, ok := resolve_symbol(scope, func_name)
-	if !ok {
-		expr.type = &error_type
-		return &error_type
+	#partial switch data in e.callee.data {
+	case Expr_Member:
+		base_type := resolve_expr_type(data.base, scope, span)
+
+		if base_type.kind == .Error {
+			expr.type = &error_type
+			e.callee.type = &error_type
+			return expr.type
+		}
+
+		base_type = deref_type(base_type)
+
+		if base_type.kind == .Struct {
+			field_type := struct_field_type_by_name(base_type, data.member)
+
+			if field_type == nil {
+				sym, ok := resolve_symbol(scope, data.member)
+				if !ok {
+					error_span(
+						expr.span,
+						"Undefined function '%s' (no such field or method)",
+						data.member,
+					)
+					expr.type = &error_type
+					e.callee.type = &error_type
+					return &error_type
+				}
+				fn_type = sym.type
+
+				// This change allows the codegen to see this as a regular function, which it should be
+				e.callee.data = Expr_Variable {
+					value = data.member,
+				}
+			} else {
+				if field_type.kind == .Function {
+					fn_type = field_type
+					args = e.args[1:]
+					e.method = false
+				} else {
+					error_span(expr.span, "Field '%s' is not a function", data.member)
+					expr.type = &error_type
+					e.callee.type = &error_type
+					return expr.type
+				}
+			}
+		}
+
+	case Expr_Variable:
+		sym, ok := resolve_symbol(scope, data.value)
+		if !ok {
+			expr.type = &error_type
+			return &error_type
+		}
+
+		// If the symbol exists, but is of kind .Type then this a cast
+		if sym.kind == .Type {
+			return cast_resolve(expr, sym, scope, span)
+		}
+		fn_type = sym.type
 	}
 
-	// If the symbol exists, but is of kind .Type then this a cast
-	if sym.kind == .Type {
-		return cast_resolve(expr, sym, scope, span)
-	}
-
-	type := sym.type
-	e.callee.type = type
+	e.callee.type = fn_type
+	e.args = args
 
 	variadic_found := false
 	for i in 0 ..< len(e.args) {
 		arg := e.args[i]
 		arg.type = resolve_expr_type(arg, scope, span)
 
-		if variadic_found || i >= len(type.params) {
+		if variadic_found || i >= len(fn_type.params) {
 			continue
 		}
 
-		param := type.params[i]
+		param := fn_type.params[i]
 		if param.variadic {
 			variadic_found = true
 			continue
@@ -279,6 +319,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			}
 		}
 	}
+
 	expr.type = e.callee.type.return_type
 	return e.callee.type.return_type
 }
@@ -313,16 +354,23 @@ function_call_check :: proc(
 	scope: ^Scope,
 	span: Span,
 ) {
-	func_name := e.callee.data.(Expr_Variable).value
-	sym, ok := resolve_symbol(scope, func_name)
-	if !ok {
-		error_span(span, "Undefined function '%s'", func_name)
+	func_name: string
+	#partial switch data in e.callee.data {
+	case Expr_Variable:
+		func_name = data.value
+	case Expr_Member:
+		func_name = data.member
+	}
+
+	type := e.callee.type
+
+	if type == nil || type.kind == .Error {
 		return
 	}
-	decl := sym.type
+
 	variadic_found := false
 	required_params := 0
-	for param in decl.params {
+	for param in type.params {
 		if !param.variadic {
 			required_params += 1
 		}
@@ -335,26 +383,26 @@ function_call_check :: proc(
 		if variadic_found || arg.type.kind == .Error {
 			continue
 		}
-		if i >= len(decl.params) {
+		if i >= len(type.params) {
 			error_span(span, "Too many arguments for '%s'", func_name)
 			continue
 		}
-		param := decl.params[i]
+		param := type.params[i]
 		if param.variadic {
 			variadic_found = true
 			continue
 		}
-		decl_type := param
-		if decl_type == nil || decl_type.kind == .Error {
+		param_type := param
+		if param_type == nil || param_type.kind == .Error {
 			continue
 		}
-		if coerce(arg.type, decl_type, scope) == nil {
+		if coerce(arg.type, param_type, scope) == nil {
 			error_span(
 				span,
 				"Argument %d of '%s': expected '%s', got '%s'",
 				i + 1,
 				func_name,
-				decl_type.kind,
+				param_type.kind,
 				arg.type.kind,
 			)
 		}
@@ -435,14 +483,31 @@ function_call_emit_sysv :: proc(
 	scope: ^Scope,
 	span: Span,
 ) -> ValueRef {
-	fn_name := e.callee.data.(Expr_Variable).value
+	indirect := false
+	direct_sym: ^Symbol
+	fn_type: ^Type
 
-	sym, ok := resolve_symbol(scope, fn_name)
-	if !ok {
-		fatal_span(span, "Unresolved function %s in function call", fn_name)
+	#partial switch data in e.callee.data {
+	case Expr_Variable:
+		fn_name := data.value
+		sym, ok := resolve_symbol(scope, fn_name)
+		if !ok {
+			fatal_span(span, "Unresolved function %s in function call", fn_name)
+		}
+		if sym.kind == .Function {
+			indirect = false
+			direct_sym = sym
+			fn_type = sym.type
+		}
+		if sym.kind == .Variable {
+			indirect = true
+			fn_type = sym.type
+		}
+	case Expr_Member:
+		indirect = true
+		fn_type = e.callee.type
 	}
 
-	fn_type := sym.type
 	args: [dynamic]ValueRef
 	byval_arg_idxs: [dynamic]u32
 	byval_arg_tys: [dynamic]TypeRef
@@ -496,20 +561,20 @@ function_call_emit_sysv :: proc(
 
 	sym_type: TypeRef
 	sym_value: ValueRef
-	if sym.kind == .Function {
+	if !indirect {
 		// Direct call: lazily emit the function declaration on first use
 		// (covers external functions and forward refs).
-		if sym not_in gen.values {
-			decl := sym.decl.data.(Ast_Function)
+		if direct_sym not_in gen.values {
+			decl := direct_sym.decl.data.(Ast_Function)
 			function_decl_emit_sysv(gen, &decl, scope, span)
 		}
-		sym_type = gen.types[sym]
-		sym_value = gen.values[sym]
+		sym_type = gen.types[direct_sym]
+		sym_value = gen.values[direct_sym]
 	} else {
 		// Indirect call through a function-pointer value. Build the LLVM
 		// FunctionType from the signature and load the callee at the call site.
 		sym_value = emit_value(gen, e.callee, scope, span)
-		sym_type, _, _ = build_llvm_fn_type_sysv(gen, sym.type)
+		sym_type, _, _ = build_llvm_fn_type_sysv(gen, fn_type)
 	}
 
 	call: ValueRef
