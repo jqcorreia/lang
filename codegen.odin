@@ -43,6 +43,8 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 }
 
 build_entry_alloca :: proc(gen: ^Generator, type: TypeRef, name: cstring) -> ValueRef {
+	// Just keep track of current insertion point and make sure that the allocas
+	// are created at the top of a block
 	cur_bb := GetInsertBlock(gen.builder)
 	function := GetBasicBlockParent(cur_bb)
 	entry_bb := GetEntryBasicBlock(function)

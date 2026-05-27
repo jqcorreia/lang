@@ -38,6 +38,7 @@ const_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 
 // A bare identifier is ambiguous with a constant alias, so it counts only when
 // it already names a type. Other type-shaped expressions are always aliases.
+// Note: This is ORDER-DEPENDENT since it runs in the bind phase
 const_decl_is_alias :: proc(expr: ^Expr, scope: ^Scope) -> bool {
 	if _, ok := expr_to_type_expr(expr); !ok {
 		return false
