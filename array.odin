@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+
 Expr_Array_Literal :: struct {
 	elements: []^Expr,
 }
@@ -181,23 +183,38 @@ array_binary_emit_vector :: proc(
 	scope: ^Scope,
 	span: Span,
 ) -> ValueRef {
-	// Get pointers to the operand arrays.
-	left_addr := emit_address(gen, e.left, scope, span)
-	right_addr := emit_address(gen, e.right, scope, span)
 
-	// Build <N x T> matching the [N x T] storage.
-	elem_llvm := get_llvm_type(gen, result_type.elem_type)
-	vec_type := VectorType(elem_llvm, u32(result_type.size))
+	fmt.println(e.left.type.kind, e.right.type.kind)
+	gen_vec :: proc(
+		gen: ^Generator,
+		expr: ^Expr,
+		array_type: ^Type,
+		scope: ^Scope,
+		span: Span,
+	) -> ValueRef {
+		// Build <N x T> matching the [N x T] storage.
+		elem_llvm := get_llvm_type(gen, array_type.elem_type)
+		vec_type := VectorType(elem_llvm, u32(array_type.size))
+		vec: ValueRef
+
+		if expr.type.kind == .Array {
+			addr := emit_address(gen, expr, scope, span)
+			vec = BuildLoad2(gen.builder, vec_type, addr, "lvec")
+		} else {
+			// It can only be a scalar
+
+		}
+
+		// @Note: this uses alignment of 1 in order to not care right now for array alignments
+		// Need to revisit this later.
+		SetAlignment(vec, 1)
+		return vec
+	}
 
 	// Load both arrays *as vectors*. Opaque pointers make this a
 	// pure reinterpretation. No bitcast instruction needed.
-	lvec := BuildLoad2(gen.builder, vec_type, left_addr, "lvec")
-	rvec := BuildLoad2(gen.builder, vec_type, right_addr, "rvec")
-
-	// @Note: this uses alignment of 1 in order to not care right now for array alignments
-	// Need to revisit this later.
-	SetAlignment(lvec, 1)
-	SetAlignment(rvec, 1)
+	lvec := gen_vec(gen, e.left, result_type, scope, span)
+	rvec := gen_vec(gen, e.right, result_type, scope, span)
 
 	// Use same ops as scalar, they dispatch on Type so they
 	// will operate on vectors, no problem
@@ -223,4 +240,19 @@ array_binary_emit_vector :: proc(
 		fatal_span(span, "Unsupported array operator '%v'", e.op)
 	}
 	return nil
+}
+
+coerce_to_array :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
+	if from.kind == .Array &&
+	   from.size == to.size &&
+	   coerce(from.elem_type, to.elem_type, scope) != nil {
+		return to
+	}
+	// from is maybe a scalar, coerce it into the elem_type
+	coerced_scalar_type := coerce(from, to.elem_type, scope)
+	if coerced_scalar_type != nil do return to
+
+	// Different element size/type, return nil to flag error
+	return nil
+
 }

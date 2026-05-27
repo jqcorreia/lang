@@ -115,12 +115,8 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return to
 	}
 
-	if from.kind == .Array && to.kind == .Array {
-		if from.size == to.size && coerce(from.elem_type, to.elem_type, scope) != nil {
-			return to
-		}
-		// Different element size/type, return nil to flag error
-		return nil
+	if to.kind == .Array {
+		return coerce_to_array(from, to, scope)
 	}
 
 	if from.kind == .Untyped_Int && to.numeric_integer {
@@ -252,10 +248,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 	}
 }
 
-// Reinterpret an expression as a type expression: the unification bridge.
-// Everything parses as an `Expr`; wherever a type is required we lower here.
-// Succeeds only for type-shaped expressions, so callers can report "value used
-// where a type is expected" on failure.
+// Reinterpret an expression as a type expression
 expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 	#partial switch d in e.data {
 	case Expr_Variable:

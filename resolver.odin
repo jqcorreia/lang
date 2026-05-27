@@ -259,6 +259,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		left := resolve_expr_type(e.left, scope, span)
 		right := resolve_expr_type(e.right, scope, span)
 		coerced_type := unify(left, right, scope)
+		fmt.println(left.kind, right.kind, coerced_type.kind)
 		if coerced_type == nil {
 			error_span(
 				span,
