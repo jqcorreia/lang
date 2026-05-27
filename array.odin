@@ -190,7 +190,7 @@ array_binary_emit_vector :: proc(
 	vec_type := VectorType(elem_llvm, u32(result_type.size))
 
 	// Load both arrays *as vectors*. Opaque pointers make this a
-	//pure reinterpretation; no bitcast instruction needed.
+	// pure reinterpretation. No bitcast instruction needed.
 	lvec := BuildLoad2(gen.builder, vec_type, left_addr, "lvec")
 	rvec := BuildLoad2(gen.builder, vec_type, right_addr, "rvec")
 
