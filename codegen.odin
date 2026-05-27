@@ -185,12 +185,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Struct_Literal:
 		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:
-		base_type: ^Type
-		if e.base.type.kind == .Pointer {
-			base_type = e.base.type.pointee_type
-		} else {
-			base_type = e.base.type
-		}
+		base_type := deref_type(e.base.type)
 
 		if base_type.kind == .Struct {
 			return struct_member_emit_value(gen, expr, scope, span)
