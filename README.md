@@ -3,28 +3,7 @@
 Procedural language with basics done right. Straightforward, correct and if possible with some syntatic sugar on top.
 Aims to be explicit but to not sacrifice all the creature comforts of a modern language.
 
-Already done:
-- Lexing
-- Parsing / AST construction (straightforward Pratt parser)
-- Basic Checker (semantic and basic types)
-- Order-independent declarations
-- Integers and Boolean support
-- Float support (f16, f32, f64)
-- C-String support
-- Comments (surprisingly hard to implement well actually)
-- User functions
-- Recursion
-- Structs (including nested structs)
-- Arrays (declarations, literals, indexed read/write, nested in structs, compile-time bounds check)
-- Unconditional For loop with break and continue
-- Single file, single module
-- External function interface
-- Global scope import (a la #include)
-- Pointers (address-of, derefence and dereference-assign)
-- Transparent array dereference
-- For-in loops with '..' and '..=' operator. Reversible.
-
-Right now this is an LLVM project and it will be for a while. Trying not to tangle the code to much to that.
+Right now this is an LLVM project and it will be for a while. Trying not to tie the code to much to that.
 Potentially this README can look a lot different in a couple of months if this becomes a serious project.
 
 # TODO
@@ -55,6 +34,8 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Constants with eager eval, usable everywhere 
 - [x] Array programming (element-wise operations), only Array x Array
 - [x] Function pointers / Functions as values
+- [ ] Type alias, `typedef` like syntax
+- [ ] Memory allocation (new())
 - [-] API and code cleanups after a first working pass
 - [ ] Scalar x Array operations (splat)
 - [ ] Tagged Unions

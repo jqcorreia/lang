@@ -4,10 +4,16 @@ Expr_Array_Literal :: struct {
 	elements: []^Expr,
 }
 
+Expr_Array_Type :: struct {
+	size: ^Expr,
+	elem: ^Expr,
+}
+
 Expr_Index :: struct {
 	array: ^Expr,
 	index: ^Expr,
 }
+
 
 expr_index_parse :: proc(left: ^Expr, index: ^Expr) -> ^Expr {
 	ret := new(Expr)

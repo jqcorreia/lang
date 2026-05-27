@@ -252,6 +252,66 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 	}
 }
 
+// Reinterpret an expression as a type expression: the unification bridge.
+// Everything parses as an `Expr`; wherever a type is required we lower here.
+// Succeeds only for type-shaped expressions, so callers can report "value used
+// where a type is expected" on failure.
+expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
+	#partial switch d in e.data {
+	case Expr_Variable:
+		return Type_Expr_Name(d.value), true
+
+	case Expr_Unary:
+		if d.op != .Ampersand {
+			return nil, false
+		}
+		pointee := new(Type_Expr)
+		ok: bool
+		pointee^, ok = expr_to_type_expr(d.expr)
+		if !ok {
+			return nil, false
+		}
+		return Type_Expr_Pointer{pointee = pointee}, true
+
+	case Expr_Array_Type:
+		elem := new(Type_Expr)
+		ok: bool
+		elem^, ok = expr_to_type_expr(d.elem)
+		if !ok {
+			return nil, false
+		}
+		return Type_Expr_Array{size = d.size, elem = elem}, true
+
+	case Expr_Function:
+		// A non-nil body would make this a lambda value, not a type.
+		if d.body != nil {
+			return nil, false
+		}
+		params := make([]^Type_Expr, len(d.params))
+		for param, i in d.params {
+			pe := new(Type_Expr)
+			ok: bool
+			pe^, ok = expr_to_type_expr(param.type_expr)
+			if !ok {
+				return nil, false
+			}
+			params[i] = pe
+		}
+		ret := new(Type_Expr)
+		if d.ret_type_expr != nil {
+			ok: bool
+			ret^, ok = expr_to_type_expr(d.ret_type_expr)
+			if !ok {
+				return nil, false
+			}
+		} else {
+			ret^ = Type_Expr_Name("") // void
+		}
+		return Type_Expr_Function{params = params, return_type = ret}, true
+	}
+	return nil, false
+}
+
 resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^Type {
 	switch te in type_expr {
 	case Type_Expr_Name:

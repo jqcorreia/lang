@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Symbol :: struct {
 	name:        string,
 	kind:        Symbol_Kind,
@@ -18,6 +16,7 @@ Symbol_Kind :: enum {
 	Type,
 	Param,
 	Field,
+	Type_Alias,
 }
 
 Symbol_Table :: map[string]^Symbol

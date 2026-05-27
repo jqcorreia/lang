@@ -18,21 +18,28 @@ const_parse :: proc(p: ^Parser) -> Ast_Const_Decl {
 
 const_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	data := &node.data.(Ast_Const_Decl)
-	existing, ok := resolve_symbol(cur_scope, data.name)
-	if !ok {
-		sym := make_symbol(.Constant)
-		sym.name = data.name
-		cur_scope.symbols[data.name] = sym
-		data.symbol = sym
-	} else {
+	if existing, ok := resolve_symbol(cur_scope, data.name); ok {
 		error_span(node.span, "Re-declaration of constant '%s'", data.name)
 		data.symbol = existing
+		return
 	}
+
+	kind: Symbol_Kind = .Constant
+	if _, is_type := expr_to_type_expr(data.expr); is_type {
+		kind = .Type_Alias
+	}
+
+	sym := make_symbol(kind)
+	sym.name = data.name
+	sym.decl = node
+	cur_scope.symbols[data.name] = sym
+	data.symbol = sym
 }
 
 const_eval :: proc(node: ^Ast_Node, scope: ^Scope) {
 	data, is_const := node.data.(Ast_Const_Decl)
 	if !is_const do return
+	if data.symbol.kind == .Type_Alias do return
 	value, ok := const_eval_expr(data.expr, scope, node.span)
 	if !ok do return
 	data.symbol.const_value = value

@@ -11,6 +11,12 @@ Ast_Function :: struct {
 	external:      bool,
 }
 
+Expr_Function :: struct {
+	params:        []Param,
+	ret_type_expr: ^Expr,
+	body:          ^Ast_Block,
+}
+
 Expr_Call :: struct {
 	callee: ^Expr,
 	args:   []^Expr,
@@ -48,7 +54,7 @@ function_decl_params_parse :: proc(p: ^Parser) -> []Param {
 			param_name := current(p).lexeme
 			advance(p)
 			expect(p, .Colon)
-			type_expr := parse_type_expr(p)
+			type_expr := parse_expression(p, 0)
 			append(&params, Param{name = param_name, type_expr = type_expr})
 
 		case .Ellipsis:
@@ -163,7 +169,13 @@ function_signature_resolve :: proc(node: ^Ast_Function, scope: ^Scope, span: Spa
 			append(&type.params, variadic_type)
 			continue
 		}
-		param_type := resolve_type_expr(&param.type_expr, scope, span)
+		param_te, ok := expr_to_type_expr(param.type_expr)
+		if !ok {
+			error_span(span, "Invalid type expression for parameter '%s'", param.name)
+			append(&type.params, &error_type)
+			continue
+		}
+		param_type := resolve_type_expr(&param_te, scope, span)
 		append(&type.params, param_type)
 	}
 	ret_type := resolve_type_expr(&node.ret_type_expr, scope, span)

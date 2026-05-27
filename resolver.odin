@@ -9,6 +9,10 @@ error_type := Type {
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Const_Decl:
+		if data.symbol.kind == .Type_Alias {
+			te, _ := expr_to_type_expr(data.expr)
+			data.symbol.type = resolve_type_expr(&te, node.scope, node.span)
+		}
 	case Ast_Break:
 	case Ast_Import:
 	case Ast_Block:
@@ -144,6 +148,18 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 
 	case Expr_Array_Literal:
 		return array_expr_array_literal_resolve(expr, scope, span)
+
+	case Expr_Array_Type, Expr_Function:
+		// A type appearing in value position. Lower to a type expression and resolve it
+		te, ok := expr_to_type_expr(expr)
+		if !ok {
+			error_span(span, "Invalid type expression")
+			expr.type = &error_type
+			return &error_type
+		}
+		t := resolve_type_expr(&te, scope, span)
+		expr.type = t
+		return t
 
 	case Expr_Implicit_Variant:
 		return enum_implicit_variant_resolve(expr, scope, span)

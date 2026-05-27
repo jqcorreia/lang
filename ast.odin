@@ -71,7 +71,7 @@ Ast_Var_Decl :: struct {
 
 Param :: struct {
 	name:            string,
-	type_expr:       Type_Expr,
+	type_expr:       ^Expr,
 	symbol:          ^Symbol,
 	variadic_marker: bool,
 }
@@ -131,6 +131,8 @@ Expr_Data :: union {
 	Expr_Index,
 	Expr_Range,
 	Expr_Cast,
+	Expr_Array_Type,
+	Expr_Function,
 }
 
 Expr_Null :: struct {}

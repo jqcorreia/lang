@@ -441,6 +441,18 @@ expr_bool_literal :: proc(kind: Token_Kind) -> ^Expr {
 
 	return ret
 }
+// Whether a token can begin a type-shaped operand. Used to disambiguate
+// `[N]T` (array type) from `[a]` (array literal): after the closing `]`, a
+// token that starts an operand can only mean an element type, since the value
+// grammar has no juxtaposition.
+operand_starts_type :: proc(k: Token_Kind) -> bool {
+	#partial switch k {
+	case .Identifier, .Ampersand, .LBracket, .Func_Keyword:
+		return true
+	}
+	return false
+}
+
 precedence :: proc(op: Token_Kind) -> int {
 	#partial switch op {
 	case .LParen:
@@ -523,23 +535,77 @@ parse_expression :: proc(
 		right := parse_expression(p, rbp, allow_struct_literal)
 		left = expr_unary(t.kind, right)
 	case .LBracket:
+		skip_newlines(p)
+
+		// Empty array literal
+		if current(p).kind == .RBracket {
+			advance(p)
+			left = new(Expr)
+			left.data = Expr_Array_Literal{}
+			break
+		}
+
+		// Parse first value
+		first := parse_expression(p, 0)
+
+		// If we detect it's a type then use the first value as size
+		// parse the expression that will be used as array type
+		if current(p).kind == .RBracket && operand_starts_type(peek(p).kind) {
+			advance(p) // consume `]`
+			elem := parse_expression(p, 0)
+			left = new(Expr)
+			left.data = Expr_Array_Type {
+				elem = elem,
+				size = first,
+			}
+			break
+		}
+
+		// Normal array literal case, notice we already have the first value
 		elements: [dynamic]^Expr
-		for current(p).kind != .RBracket {
+		append(&elements, first)
+
+		for current(p).kind == .Comma {
+			advance(p)
 			skip_newlines(p)
 			if current(p).kind == .RBracket do break // Skip newlines can land on rbracket
 			append(&elements, parse_expression(p, 0))
-			if current(p).kind == .Comma do advance(p)
 		}
+
+		skip_newlines(p) // allow a newline before the closing bracket
 		expect(p, .RBracket)
 		left = new(Expr)
 		left.data = Expr_Array_Literal {
 			elements = elements[:],
 		}
 	case .Period:
-		// Implicit enum variant selector: `.VariantName`. The expected enum
-		// type is supplied later from context (var decl LHS, call arg, etc.).
+		// Expressions starting with period must be an implicit variant of an enum
 		name := expect(p, .Identifier).value.(string)
 		left = expr_implicit_variant(name)
+	case .Func_Keyword:
+		//Note(quadrado): For now just parse a function expression to be used as a type
+		// Body is empty until we implement lambdas/function-as-values
+		expect(p, .LParen)
+		params: [dynamic]Param
+		for current(p).kind != .RParen {
+			pe := parse_expression(p, 0)
+			append(&params, Param{type_expr = pe})
+			if current(p).kind == .Comma do advance(p)
+		}
+		expect(p, .RParen)
+
+		ret: ^Expr // nil == void
+		if current(p).kind == .RightArrow {
+			advance(p)
+			ret = parse_expression(p, 0)
+		}
+
+		left = new(Expr)
+		left.data = Expr_Function {
+			params        = params[:],
+			ret_type_expr = ret,
+			body          = nil,
+		}
 	case:
 		fatal_token(current(p), "Invalid token in expression")
 	}
