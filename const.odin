@@ -25,7 +25,7 @@ const_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	}
 
 	kind: Symbol_Kind = .Constant
-	if _, is_type := expr_to_type_expr(data.expr); is_type {
+	if const_decl_is_alias(data.expr, cur_scope) {
 		kind = .Type_Alias
 	}
 
@@ -34,6 +34,19 @@ const_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	sym.decl = node
 	cur_scope.symbols[data.name] = sym
 	data.symbol = sym
+}
+
+// A bare identifier is ambiguous with a constant alias, so it counts only when
+// it already names a type. Other type-shaped expressions are always aliases.
+const_decl_is_alias :: proc(expr: ^Expr, scope: ^Scope) -> bool {
+	if _, ok := expr_to_type_expr(expr); !ok {
+		return false
+	}
+	if v, is_var := expr.data.(Expr_Variable); is_var {
+		sym, found := resolve_symbol(scope, v.value)
+		return found && (sym.kind == .Type || sym.kind == .Type_Alias)
+	}
+	return true
 }
 
 const_eval :: proc(node: ^Ast_Node, scope: ^Scope) {
