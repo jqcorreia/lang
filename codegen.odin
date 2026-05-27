@@ -251,7 +251,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			vec := array_binary_emit_vector(gen, &e, expr.type, scope, span)
 			slot := build_entry_alloca(gen, get_llvm_type(gen, expr.type), "arrbin")
 			BuildStore(gen.builder, vec, slot)
-			return slot
+			return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), slot, "arrbinval")
 		}
 		left := emit_value(gen, e.left, scope, span)
 		right := emit_value(gen, e.right, scope, span)

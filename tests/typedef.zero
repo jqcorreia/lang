@@ -1,5 +1,12 @@
+import "std:c"
+
 vec :: [2]u32
 
-fn main() {
+fn add(v1: vec, v2: vec) -> vec {
+    return v1 + v2
+}
 
+fn main() {
+    t := add([10,20], [20,30])
+    printf("%f %f\n", t[0], t[1])
 }
