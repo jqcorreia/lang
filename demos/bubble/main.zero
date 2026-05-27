@@ -12,13 +12,13 @@ SHOOT_SPEED :: 100
 
 background_color := Color{ r= 100, g= 100, b= 0, a= 255 }
 bubble_color : [8]Color = [
-    Color { r = 230, g = 30,  b = 30,  a = 255 } // red
-    Color { r = 30,  g = 80,  b = 240, a = 255 } // blue
-    Color { r = 40,  g = 200, b = 60,  a = 255 } // green
-    Color { r = 250, g = 220, b = 30,  a = 255 } // yellow
-    Color { r = 40,  g = 220, b = 230, a = 255 } // cyan
-    Color { r = 230, g = 40,  b = 200, a = 255 } // magenta
-    Color { r = 250, g = 130, b = 30,  a = 255 } // orange
+    Color { r = 230, g = 30,  b = 30,  a = 255 }, // red
+    Color { r = 30,  g = 80,  b = 240, a = 255 },// blue
+    Color { r = 40,  g = 200, b = 60,  a = 255 }, // green
+    Color { r = 250, g = 220, b = 30,  a = 255 }, // yellow
+    Color { r = 40,  g = 220, b = 230, a = 255 }, // cyan
+    Color { r = 230, g = 40,  b = 200, a = 255 }, // magenta
+    Color { r = 250, g = 130, b = 30,  a = 255 },  // orange
     Color { r = 150, g = 40,  b = 220, a = 255 } // purple
 ]
 
