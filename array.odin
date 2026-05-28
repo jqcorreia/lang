@@ -184,7 +184,6 @@ array_binary_emit_vector :: proc(
 	span: Span,
 ) -> ValueRef {
 
-	fmt.println("......", e.left.type.kind, e.right.type.kind)
 	gen_vec :: proc(
 		gen: ^Generator,
 		expr: ^Expr,
