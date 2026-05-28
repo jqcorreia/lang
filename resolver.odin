@@ -260,7 +260,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		right := resolve_expr_type(e.right, scope, span)
 
 		// In case of arrays and scalar we can't follow the unification path
-		if (is_array(left) && is_scalar(right)) || (is_array(right) && is_scalar(right)) {
+		if (is_array(left) && is_scalar(right)) || (is_array(right) && is_scalar(left)) {
 			// Decide which is the scalar which is the array
 			scalar := is_scalar(left) ? left : right
 			array := is_array(left) ? left : right

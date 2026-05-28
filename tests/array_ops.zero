@@ -22,6 +22,6 @@ fn main() {
     fc = fa * 20
     printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
 
-    // fc = 20 * fa // Test the other way around
-    // printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
+    fc = 20 * fa // Test the other way around
+    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
 }
