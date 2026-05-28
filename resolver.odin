@@ -258,8 +258,9 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Binary:
 		left := resolve_expr_type(e.left, scope, span)
 		right := resolve_expr_type(e.right, scope, span)
+		fmt.println("before", left.kind, right.kind)
 		coerced_type := unify(left, right, scope)
-		fmt.println(left.kind, right.kind, coerced_type.kind)
+		fmt.println("after", left.kind, right.kind, coerced_type.kind)
 		if coerced_type == nil {
 			error_span(
 				span,
@@ -271,8 +272,10 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			expr.type = &error_type
 			return &error_type
 		}
-		set_expr_type(e.left, coerced_type, scope)
-		set_expr_type(e.right, coerced_type, scope)
+		fmt.println("before set expr", e.left.type.kind, e.right.type.kind, coerced_type.kind)
+		// set_expr_type(e.left, coerced_type, scope)
+		// set_expr_type(e.right, coerced_type, scope)
+		fmt.println("after set expr", e.left.type.kind, e.right.type.kind, coerced_type.kind)
 
 		is_logical := e.op == .DoublePipe || e.op == .DoubleAmpersand
 		if is_logical {

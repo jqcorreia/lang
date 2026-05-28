@@ -184,7 +184,7 @@ array_binary_emit_vector :: proc(
 	span: Span,
 ) -> ValueRef {
 
-	fmt.println(e.left.type.kind, e.right.type.kind)
+	fmt.println("......", e.left.type.kind, e.right.type.kind)
 	gen_vec :: proc(
 		gen: ^Generator,
 		expr: ^Expr,
@@ -202,6 +202,7 @@ array_binary_emit_vector :: proc(
 			vec = BuildLoad2(gen.builder, vec_type, addr, "lvec")
 		} else {
 			// It can only be a scalar
+			// Broadcast into a vector and return that vector
 
 		}
 
