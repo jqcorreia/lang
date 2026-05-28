@@ -115,7 +115,7 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return to
 	}
 
-	if to.kind == .Array {
+	if from.kind == .Array || to.kind == .Array {
 		return coerce_to_array(from, to, scope)
 	}
 

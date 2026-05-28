@@ -220,7 +220,6 @@ array_binary_emit_vector :: proc(
 				ConstNull(vec_type),
 				"",
 			)
-			fmt.println("HERE!!!!")
 		}
 
 		// @Note: this uses alignment of 1 in order to not care right now for array alignments
@@ -262,12 +261,18 @@ array_binary_emit_vector :: proc(
 
 coerce_to_array :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	if from.kind == .Array &&
+	   to.kind == .Array &&
 	   from.size == to.size &&
 	   coerce(from.elem_type, to.elem_type, scope) != nil {
 		return to
 	}
-	// 'from' is maybe a scalar, coerce it into the elem_type
-	coerced_scalar_type := coerce(from, to.elem_type, scope)
+
+	// Decide which is the scalar and the array
+	scalar := is_scalar(from) ? from : to
+	array := is_array(from) ? from : to
+
+	// Coerce from scalar to the array elem_type
+	coerced_scalar_type := coerce(scalar, array.elem_type, scope)
 	if coerced_scalar_type != nil do return coerced_scalar_type
 
 	// Different element size/type, return nil to flag error
