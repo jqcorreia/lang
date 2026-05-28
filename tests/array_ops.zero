@@ -19,5 +19,6 @@ fn main() {
     fc = fa - fb
     printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
 
-    fc = fa * 2
+    fc = fa * 20
+    printf("fc: [%f, %f, %f, %f]\n", fc[0], fc[1], fc[2], fc[3])
 }

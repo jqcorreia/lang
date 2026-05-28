@@ -203,6 +203,24 @@ array_binary_emit_vector :: proc(
 			// It can only be a scalar
 			// Broadcast into a vector and return that vector
 
+			// Insert the scalar value into first element
+			init := BuildInsertElement(
+				gen.builder,
+				GetUndef(vec_type),
+				emit_value(gen, expr, scope, span),
+				ConstInt(Int32Type(), 0, 0),
+				"",
+			)
+			// Shuffle vector uses a mask (ConstNull == vector of all zeros)
+			// This means that the element at index 0 of first vector will end in all the positions
+			vec = BuildShuffleVector(
+				gen.builder,
+				init,
+				GetUndef(vec_type),
+				ConstNull(vec_type),
+				"",
+			)
+			fmt.println("HERE!!!!")
 		}
 
 		// @Note: this uses alignment of 1 in order to not care right now for array alignments
@@ -248,9 +266,9 @@ coerce_to_array :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	   coerce(from.elem_type, to.elem_type, scope) != nil {
 		return to
 	}
-	// from is maybe a scalar, coerce it into the elem_type
+	// 'from' is maybe a scalar, coerce it into the elem_type
 	coerced_scalar_type := coerce(from, to.elem_type, scope)
-	if coerced_scalar_type != nil do return to
+	if coerced_scalar_type != nil do return coerced_scalar_type
 
 	// Different element size/type, return nil to flag error
 	return nil

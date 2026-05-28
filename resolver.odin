@@ -258,6 +258,26 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Binary:
 		left := resolve_expr_type(e.left, scope, span)
 		right := resolve_expr_type(e.right, scope, span)
+
+		// In case of arrays and scalar we can't follow the unification path
+		if (is_array(left) && is_scalar(right)) || (is_array(right) && is_scalar(right)) {
+			// Decide which is the scalar which is the array
+			scalar := is_scalar(left) ? left : right
+			array := is_array(left) ? left : right
+			scalar_expr := is_scalar(left) ? e.left : e.right
+			array_expr := is_array(left) ? e.left : e.right
+
+			// Coerce the scalar into the array type (or fail)
+			scalar_coerced_type := coerce(scalar, array, scope)
+
+			// Set the specific types
+			set_expr_type(scalar_expr, scalar_coerced_type, scope)
+			set_expr_type(array_expr, array, scope)
+
+			expr.type = array
+			return array
+		}
+
 		coerced_type := unify(left, right, scope)
 		if coerced_type == nil {
 			error_span(

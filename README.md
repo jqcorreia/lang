@@ -34,10 +34,10 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Constants with eager eval, usable everywhere 
 - [x] Array programming (element-wise operations), only Array x Array
 - [x] Function pointers / Functions as values
-- [ ] Type alias, `typedef` like syntax
-- [ ] Memory allocation (new())
+- [x] Scalar x Array operations (splat)
+- [x] Type alias, `typedef` like syntax
 - [-] API and code cleanups after a first working pass
-- [ ] Scalar x Array operations (splat)
+- [ ] Memory allocation (new())
 - [ ] Tagged Unions
 - [ ] Make sure that the available types are synched with the primitive types in codegen
 - [ ] Proper string with bound check and not null-terminated

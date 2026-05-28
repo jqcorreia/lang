@@ -414,3 +414,12 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 deref_type :: proc(ptr: ^Type) -> ^Type {
 	return ptr.pointee_type != nil ? ptr.pointee_type : ptr
 }
+
+
+is_array :: proc(type: ^Type) -> bool {
+	return type.kind == .Array
+}
+
+is_scalar :: proc(type: ^Type) -> bool {
+	return type.numeric_float || type.numeric_integer
+}
