@@ -143,6 +143,11 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		if e.op == .Star {
 			return emit_value(gen, e.expr, scope, span)
 		}
+	case Expr_Binary:
+		ptr := build_entry_alloca(gen, get_llvm_type(gen, expr.type), "")
+		emit_into(gen, expr, ptr, scope, span)
+
+		return ptr
 	}
 
 	fatal_span(span, "Not addressable expresion", expr)

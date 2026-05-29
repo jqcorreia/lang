@@ -144,7 +144,6 @@ array_expr_index_emit_address :: proc(
 	scope: ^Scope,
 	span: Span,
 ) -> ValueRef {
-
 	e := expr.data.(Expr_Index)
 	index_val := emit_value(gen, e.index, scope, span)
 	indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index_val}
