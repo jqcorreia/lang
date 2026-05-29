@@ -11,6 +11,7 @@ import "core:time"
 Options :: struct {
 	command: string `args:"pos=0,required"`,
 	file:    string `args:"pos=1"`,
+	target:  string `args:"name=target"`,
 }
 
 main :: proc() {

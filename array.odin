@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Expr_Array_Literal :: struct {
 	elements: []^Expr,
 }

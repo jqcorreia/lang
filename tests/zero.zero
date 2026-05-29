@@ -2,6 +2,7 @@
 
 import "std:c" // minimal libc bindings, import into top-level scope
 
+
 // Constants
 PI :: 3.1415
 
@@ -29,7 +30,6 @@ external "m" {
 
 // main is just main()
 fn main() {
-
     player := Object { pos = [10,20]  } // Arrays are json style
     // player = Object { [10,20] } // this also works, positional fields on struct literals
 
