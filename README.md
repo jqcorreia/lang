@@ -6,31 +6,7 @@ Aims to be explicit but to not sacrifice all the creature comforts of a modern l
 Right now this is an LLVM project and it will be for a while. Trying not to tie the code to much to that.
 Potentially this README can look a lot different in a couple of months if this becomes a serious project.
 
-# TODO
-- [x] Do not need forward declaration with symbol table pass and LLVM function declaration
-- [x] Basic type system
-- [x] Basic External functions system and cleanup the printf mess
-- [x] Implement a really dumb variadic marker
-- [x] User defined types (i.e structs)
-- [x] Global scope import mechanism
-- [x] Struct field accessor
-- [x] Implement support for arbitrary "_" character in numbers (e.g for thousands separator)
-- [x] Check types for function calls
-- [x] Implement float support
-- [x] Arrays with compile-time bound checked access
-- [x] Pointer types (address-of, dereference)
-- [x] For-in-range loops (exclusive `..` and inclusive `..=`)
-- [x] Proper globals
-- [x] Transparent array pointer dereference
-- [x] Transparent struct field access dereference
-- [x] Reversable ranges
-- [x] Boolean literals
-- [x] Enums (basic u64 incremental ones)
-- [x] Have the notion of addressable types 
-- [x] UFCS (Uniform Function Call Syntax), introducing 'methods'
-- [x] Enum with custom values (integers). Type-coerced on use site if need be.
-- [x] Untyped enum variants (odin-style .EnumVariant notation)
-- [x] Hexadecimal numericals support
+# Latest and upcoming work
 - [x] Constants with eager eval, usable everywhere 
 - [x] Array programming (element-wise operations), only Array x Array
 - [x] Function pointers / Functions as values
