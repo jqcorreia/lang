@@ -115,6 +115,8 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return to
 	}
 
+	// Since we support array x scalar operations we need to do coercion for arrays
+	// in a different way and try the coerce the scalar to the array elem type 
 	if from.kind == .Array || to.kind == .Array {
 		return coerce_to_array(from, to, scope)
 	}
