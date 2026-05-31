@@ -1,6 +1,6 @@
-calc*
 zero
 build/
 debug
 out
 test.txt
+*.o

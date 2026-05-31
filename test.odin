@@ -9,7 +9,6 @@ SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {
-	compiler_init()
 
 	handle, _ := os.open(TEST_FOLDER)
 	fis, _ := os.read_dir(handle, -1, context.temp_allocator)
@@ -18,7 +17,8 @@ run_tests :: proc(t: ^testing.T) {
 	// Cleanup primitive types and generic compiler info that does not
 	// end up in an arena.
 	defer {
-		delete(compiler.current_filepath)
+		delete(compiler.filepath)
+		delete(compiler.filepath_dir)
 		delete(compiler.exe_dir)
 
 		for _, t in compiler.types do free(t)
@@ -26,6 +26,7 @@ run_tests :: proc(t: ^testing.T) {
 	}
 
 	for fi in fis {
+		compiler_init(fi.fullpath)
 		skip := false
 		for name in SKIP_TESTS {
 			if fi.name == name {
@@ -46,7 +47,7 @@ run_tests :: proc(t: ^testing.T) {
 		}
 
 		fmt.println(fi.name)
-		build_ok := build(string(source), fi.fullpath)
+		build_ok := build()
 		if !build_ok {
 			for err in compiler.errors {
 				fmt.printf("[%s] %s\n", fi.name, err.message)

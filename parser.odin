@@ -47,6 +47,24 @@ expect :: proc(p: ^Parser, kind: Token_Kind, loc := #caller_location) -> Token {
 	return advance(p)
 }
 
+resolve_import_path :: proc(raw: string) -> (resolved_path: string) {
+	// Resolve import path:
+	// "std:c"         -> <exe_dir>/std/c.zero  (compiler-relative, ":" as collection separator)
+	// "vendor/raylib" -> <source_dir>/vendor/raylib.zero (source-relative)
+	if colon_idx := strings.index(raw, ":"); colon_idx >= 0 {
+		collection := raw[:colon_idx]
+		rest := raw[colon_idx + 1:]
+		resolved_path, _ = filepath.join({compiler.exe_dir, collection, rest}, context.allocator)
+	} else {
+		resolved_path, _ = filepath.join({compiler.filepath_dir, raw}, context.allocator)
+	}
+	if !strings.ends_with(resolved_path, ".zero") {
+		resolved_path = fmt.tprintf("%s.zero", resolved_path)
+	}
+
+	return
+}
+
 parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 	stmts: [dynamic]^Ast_Node
 	for {
@@ -68,26 +86,7 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 			import_node := import_stmt.data.(Ast_Import)
 			raw_path := import_node.path
 
-			// Resolve import path:
-			//   "std:c"         -> <exe_dir>/std/c.zero  (compiler-relative, ":" as collection separator)
-			//   "vendor/raylib" -> <source_dir>/vendor/raylib.zero (source-relative)
-			resolved_path: string
-			if colon_idx := strings.index(raw_path, ":"); colon_idx >= 0 {
-				collection := raw_path[:colon_idx]
-				rest := raw_path[colon_idx + 1:]
-				resolved_path, _ = filepath.join(
-					{compiler.exe_dir, collection, rest},
-					context.allocator,
-				)
-			} else {
-				resolved_path, _ = filepath.join(
-					{compiler.current_filepath, raw_path},
-					context.allocator,
-				)
-			}
-			if !strings.ends_with(resolved_path, ".zero") {
-				resolved_path = fmt.tprintf("%s.zero", resolved_path)
-			}
+			resolved_path := resolve_import_path(raw_path)
 			contents :=
 				os.read_entire_file(resolved_path, context.allocator) or_else panic(
 					fmt.tprintf("Import not found: %s", resolved_path),

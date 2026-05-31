@@ -5,9 +5,15 @@ import "core:fmt"
 import "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
+import "core:strings"
+import "core:sys/posix"
+import "core:time"
 
 Compiler :: struct {
-	current_filepath:     string, // Directory of the source file being compiled
+	filepath:             string,
+	filepath_dir:         string,
+	object_filepath:      string,
+	out_file:             string,
 	exe_dir:              string, // Directory of the compiler executable
 	line_starts:          map[string][dynamic]int,
 	sources:              map[string]string,
@@ -18,6 +24,7 @@ Compiler :: struct {
 	errors:               [dynamic]Compiler_Error,
 	external_linker_libs: [dynamic]string,
 	arena:                virtual.Arena,
+	target:               string,
 }
 
 Compiler_Error :: struct {
@@ -32,7 +39,26 @@ Loop :: struct {
 
 compiler := Compiler{}
 
-compiler_init :: proc() {
+compiler_init :: proc(path: string, _target: string = "") {
+	target: string
+	if _target == "" {
+		#partial switch ODIN_OS {
+		case .Linux:
+			target = "linux"
+		case .Windows:
+			target = "Windows"
+		}
+	} else {
+		target = _target
+	}
+
+	compiler.filepath = path
+	compiler.filepath_dir = filepath.dir(path)
+
+	compiler.object_filepath = fmt.tprintf("%s.o", filepath.stem(compiler.filepath))
+	compiler.out_file = filepath.stem(compiler.filepath)
+
+	compiler.target = target
 	compiler.exe_dir = filepath.dir(string(os.args[0]))
 	err := virtual.arena_init_growing(&compiler.arena)
 	assert(err == .None)
@@ -47,8 +73,11 @@ compiler_reset :: proc() {
 	compiler.external_linker_libs = {}
 }
 
-compile :: proc(source: string, filename: string) -> (stmts: []^Ast_Node, ok: bool) {
+compile :: proc() -> (stmts: []^Ast_Node, ok: bool) {
 	compiler_reset()
+
+	source :=
+		os.read_entire_file(compiler.filepath, context.allocator) or_else panic("No file found")
 
 	// Auto-include the runtime, resolved relative to the executable
 	runtime_path, _ := filepath.join(
@@ -68,14 +97,14 @@ compile :: proc(source: string, filename: string) -> (stmts: []^Ast_Node, ok: bo
 
 	// Reset line_starts so they reflect user source only (for error reporting)
 	compiler.line_starts = {}
-	tokens := lex(source, filename)
+	tokens := lex(string(source), compiler.filepath)
 	when ODIN_DEBUG {
 		tokens_print(tokens)
 	}
 
 	parser := Parser {
 		tokens   = tokens,
-		filename = filename,
+		filename = compiler.filepath,
 	}
 	user_stmts := parse_program(&parser)
 
@@ -98,17 +127,47 @@ compile :: proc(source: string, filename: string) -> (stmts: []^Ast_Node, ok: bo
 	return
 }
 
-build :: proc(source: string, filename: string) -> (ok: bool) {
+build :: proc() -> (ok: bool) {
 	// Reset the compiler arena
 	free_all(virtual.arena_allocator(&compiler.arena))
 	context.allocator = virtual.arena_allocator(&compiler.arena)
 
-	stmts: []^Ast_Node
-	stmts, ok = compile(source, filename)
-	if !ok {
-		return
+	// Primitive, dumb timing
+	start_time := time.now()
+
+	stmts, compile_ok := compile()
+	if !compile_ok {
+		fmt.printf("Compilation failed with %d errors:\n", len(compiler.errors))
+		for error in compiler.errors {
+			print_error_pretty(error)
+		}
+		os.exit(1)
 	}
-	ok = generate(stmts)
+	generate_ok := generate(stmts)
+	if !generate_ok {
+		fmt.printf("Compilation failed with %d errors:\n", len(compiler.errors))
+		for error in compiler.errors {
+			print_error_pretty(error)
+		}
+		os.exit(1)
+	}
+
+	if compiler.target == "linux" {
+		linker_libs := strings.builder_make()
+
+		for lib in compiler.external_linker_libs {
+			fmt.sbprintf(&linker_libs, "-l%s ", lib)
+		}
+		build_command := fmt.tprintf(
+			"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o %s %s-lc -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/crtn.o",
+			compiler.out_file,
+			compiler.object_filepath,
+			strings.to_string(linker_libs),
+		)
+		fmt.println("Using final build command:", build_command)
+		posix.system(strings.clone_to_cstring(build_command))
+	}
+	fmt.println("--- Built in", time.diff(start_time, time.now()), "---")
 	return
 }
 

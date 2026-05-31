@@ -2,6 +2,7 @@ package main
 
 import "core:container/queue"
 import "core:fmt"
+import "core:path/filepath"
 import "core:strings"
 
 Generator :: struct {
@@ -725,7 +726,15 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 		fmt.println(error)
 		return false
 	}
-	if TargetMachineEmitToFile(tm, module, "calc.o", .ObjectFile, &error) > 0 {
+
+	if TargetMachineEmitToFile(
+		   tm,
+		   module,
+		   strings.clone_to_cstring(compiler.object_filepath),
+		   .ObjectFile,
+		   &error,
+	   ) >
+	   0 {
 		fmt.println(error)
 		return false
 	}

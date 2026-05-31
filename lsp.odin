@@ -4,7 +4,6 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:io"
 import "core:os"
-import "core:path/filepath"
 import "core:strconv"
 import "core:strings"
 
@@ -98,13 +97,11 @@ json_value_to_string :: proc(v: json.Value) -> string {
 }
 
 // Diagnostics
-
 lsp_publish_diagnostics :: proc(uri: string, source: string) {
-	compiler_init()
 	// Extract file path from file:// URI and set source directory for import resolution
 	file_path := strings.has_prefix(uri, "file://") ? uri[len("file://"):] : uri
-	compiler.current_filepath = filepath.dir(file_path)
-	_, _ = compile(source, file_path)
+	compiler_init(file_path)
+	_, _ = compile()
 
 	diagnostics_sb := strings.builder_make()
 	strings.write_string(&diagnostics_sb, "[")
