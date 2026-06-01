@@ -702,7 +702,16 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 	InitializeX86TargetMC()
 	InitializeX86AsmPrinter()
 
-	triple := GetDefaultTargetTriple()
+	// Select the target triple. For cross-compilation we set it explicitly
+	// rather than using the host default, so LLVM emits the right object
+	// format (COFF) and calling convention (Microsoft x64) for the target.
+	triple: cstring
+	switch compiler.target {
+	case "windows":
+		triple = "x86_64-pc-windows-msvc"
+	case:
+		triple = GetDefaultTargetTriple()
+	}
 
 	target: TargetRef
 

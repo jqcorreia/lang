@@ -53,7 +53,7 @@ compiler_init :: proc(config: CompilerConfig) {
 		case .Linux:
 			target = "linux"
 		case .Windows:
-			target = "Windows"
+			target = "windows"
 		}
 	} else {
 		target = config.target
@@ -62,9 +62,13 @@ compiler_init :: proc(config: CompilerConfig) {
 	compiler.filepath = config.path
 	compiler.filepath_dir = filepath.dir(config.path)
 
+	// Target-native artifact extensions: COFF .obj / .exe on Windows,
+	// ELF .o / no-extension on Linux.
+	stem := filepath.stem(compiler.filepath)
+	obj_ext := target == "windows" ? "obj" : "o"
 	compiler.object_filepath =
-		config.object_filepath != "" ? config.object_filepath : fmt.tprintf("%s.o", filepath.stem(compiler.filepath))
-	compiler.out_file = filepath.stem(compiler.filepath)
+		config.object_filepath != "" ? config.object_filepath : fmt.tprintf("%s.%s", stem, obj_ext)
+	compiler.out_file = target == "windows" ? fmt.tprintf("%s.exe", stem) : stem
 	compiler.verify_only = config.verify_only
 
 	compiler.target = target
@@ -163,7 +167,8 @@ build :: proc() -> (ok: bool) {
 	}
 
 	if !compiler.verify_only {
-		if compiler.target == "linux" {
+		switch compiler.target {
+		case "linux":
 			linker_libs := strings.builder_make()
 
 			for lib in compiler.external_linker_libs {
@@ -172,6 +177,38 @@ build :: proc() -> (ok: bool) {
 			build_command := fmt.tprintf(
 				"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o %s %s-lc -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/crtn.o",
 				compiler.out_file,
+				compiler.object_filepath,
+				strings.to_string(linker_libs),
+			)
+			fmt.println("Using final build command:", build_command)
+			posix.system(strings.clone_to_cstring(build_command))
+		case "windows":
+			// Cross-link a native Windows console exe with lld-link against the
+			// MSVC CRT + Windows SDK import libs. ZERO_WINSDK points at an xwin
+			// splat root (containing crt/ and sdk/).
+			win_sdk := os.get_env("ZERO_WINSDK", context.allocator)
+			if win_sdk == "" {
+				fmt.println(
+					"error: ZERO_WINSDK is not set; cannot locate Windows CRT/SDK import libs.",
+				)
+				return false
+			}
+
+			linker_libs := strings.builder_make()
+			for lib in compiler.external_linker_libs {
+				// "c" is the POSIX libc placeholder; on Windows the C runtime is
+				// provided by the libcmt/libucrt CRT libs linked explicitly below.
+				if lib == "c" {continue}
+				fmt.sbprintf(&linker_libs, "%s.lib ", lib)
+			}
+			build_command := fmt.tprintf(
+				"lld-link /nologo /subsystem:console /out:%s " +
+				"/libpath:%s/crt/lib/x86_64 /libpath:%s/sdk/lib/ucrt/x86_64 /libpath:%s/sdk/lib/um/x86_64 " +
+				"%s libcmt.lib libvcruntime.lib libucrt.lib legacy_stdio_definitions.lib kernel32.lib %s",
+				compiler.out_file,
+				win_sdk,
+				win_sdk,
+				win_sdk,
 				compiler.object_filepath,
 				strings.to_string(linker_libs),
 			)

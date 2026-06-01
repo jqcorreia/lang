@@ -17,7 +17,7 @@ main :: proc() {
 
 	flags.parse_or_exit(&opt, os.args, .Unix)
 
-	compiler_init(CompilerConfig{path = opt.file})
+	compiler_init(CompilerConfig{path = opt.file, target = opt.target})
 
 	switch opt.command {
 	case "lsp":

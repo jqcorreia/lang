@@ -4,3 +4,6 @@ debug
 out
 test.txt
 *.o
+*.obj
+*.exe
+.xwin*

@@ -386,11 +386,11 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 		return 2
 	case .Int32, .Uint32:
 		return 4
-	case .Int64, .Uint64:
+	case .Int64, .Uint64, .Untyped_Int:
 		return 8
 	case .Float32:
 		return 4
-	case .Float64:
+	case .Float64, .Untyped_Float:
 		return 8
 	case .Pointer, .CString:
 		return 8

@@ -526,9 +526,16 @@ function_call_emit_sysv :: proc(
 
 		if is_variadic {
 			val := emit_value(gen, a, scope, span)
-			// C variadic ABI: float args must be promoted to double.
-			if a.type != nil && a.type.numeric_float && a.type.kind != .Float64 {
+			// C variadic ABI
+			// Floats are promoted to double (f64)
+			// Integers (or bools) are promoted to i32
+			if a.type.numeric_float && a.type.kind != .Float64 {
 				val = BuildFPExt(gen.builder, val, DoubleTypeInContext(gen.ctx), "fpext")
+			}
+			if (a.type.numeric_integer || a.type.kind == .Bool) && get_type_byte_size(a.type) < 4 {
+				i32_t := Int32TypeInContext(gen.ctx)
+				val =
+					a.type.signed ? BuildSExt(gen.builder, val, i32_t, "") : BuildZExt(gen.builder, val, i32_t, "")
 			}
 			append(&args, val)
 			continue

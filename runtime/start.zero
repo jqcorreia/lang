@@ -26,7 +26,7 @@ external "c" {
     fn exit(code: i32)
     // fn signal(signum: i32, handler: &u8) -> &u8
     // fn write(fd: i32, buf: cstr, count: u64) -> i64
-    fn srandom(seed: i32)
+    fn srand(seed: i32) // C-standard seed; portable across glibc and Windows UCRT (POSIX srandom is Linux-only)
     fn time(t: &i64) -> i32
 }
 
@@ -51,5 +51,5 @@ fn __zero_pow(b: i64, e: i64) -> i64 {
 }
 
 fn __zero_init_random_seed() {
-    srandom(time(nil)) // Until we have time calling function or proper seed-setting logic
+    srand(time(nil)) // Until we have time calling function or proper seed-setting logic
 }
