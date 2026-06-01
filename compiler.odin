@@ -71,7 +71,6 @@ compiler_init :: proc(config: CompilerConfig) {
 	compiler.exe_dir = filepath.dir(string(os.args[0]))
 	err := virtual.arena_init_growing(&compiler.arena)
 	assert(err == .None)
-	setup_native_types(&compiler) // Initialize the native type pointers
 }
 
 compiler_reset :: proc() {
@@ -84,6 +83,8 @@ compiler_reset :: proc() {
 
 compile :: proc() -> (stmts: []^Ast_Node, ok: bool) {
 	compiler_reset()
+
+	setup_native_types(&compiler) // Initialize the native type pointers
 
 	source :=
 		os.read_entire_file(compiler.filepath, context.allocator) or_else panic("No file found")

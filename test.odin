@@ -20,7 +20,6 @@ run_tests :: proc(t: ^testing.T) {
 		delete(compiler.filepath_dir)
 		delete(compiler.exe_dir)
 
-		for _, t in compiler.types do free(t)
 		delete(compiler.types)
 	}
 
