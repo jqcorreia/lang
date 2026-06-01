@@ -163,7 +163,7 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 		advance(p)
 		data^ = parse_if(p)^
 	case:
-		unimplemented(fmt.tprintf("Unexpected token: %s", token_serialize(t)))
+		fatal_token(t, fmt.tprintf("Unexpected token: %s", token_serialize(t)))
 	}
 	span.end = current(p).span.end
 	ast_node.span = span

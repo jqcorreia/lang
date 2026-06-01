@@ -4,6 +4,18 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 
+ANSI_RED :: "\e[1;31m"
+ANSI_BLUE :: "\e[1;34m"
+ANSI_YELLOW :: "\e[1;33m"
+ANSI_BOLD :: "\e[1m"
+ANSI_RESET :: "\e[0m"
+
+compiler_bug :: proc(span: Span, format: string, args: ..any) {
+	error := error_string(span, format, args)
+	fmt.printf("%sCOMPILER BUG%s%s: %s%s\n", ANSI_RED, ANSI_RESET, ANSI_BOLD, error, ANSI_RESET)
+	os.exit(1)
+}
+
 fatal_token :: proc(token: Token, format: string, args: ..any) {
 	fatal_span(token.span, format, ..args)
 }
@@ -33,12 +45,8 @@ error_string :: proc(span: Span, format: string, args: ..any) -> string {
 	return fmt.tprintf("%s: %s", loc, msg)
 }
 
+// LLM implementation of a rust-like compiler error printout
 print_error_pretty :: proc(err: Compiler_Error) {
-	ANSI_RED :: "\e[1;31m"
-	ANSI_BLUE :: "\e[1;34m"
-	ANSI_YELLOW :: "\e[1;33m"
-	ANSI_BOLD :: "\e[1m"
-	ANSI_RESET :: "\e[0m"
 
 	line, col := span_to_location(err.span)
 

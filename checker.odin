@@ -62,7 +62,7 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	case Ast_Import:
 		check_import(c, &data, node.scope, node.span)
 	case:
-		unimplemented(fmt.tprint("Unimplemented check", node))
+		compiler_bug(node.span, "Unimplemented check")
 	}
 }
 

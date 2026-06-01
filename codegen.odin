@@ -85,7 +85,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	case Ast_Break:
 		emit_break(gen, &data, node.scope, node.span)
 	case:
-		unimplemented(fmt.tprint("Unimplement emit statement", node))
+		compiler_bug(node.span, "Unimplement emit statement")
 	}
 }
 
@@ -152,7 +152,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 	}
 
 	fatal_span(span, "Not addressable expresion", expr)
-	// unimplemented(fmt.tprintf("Not addressable expression %v", expr))
+
 	return nil
 }
 
@@ -337,7 +337,9 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			return BuildAnd(gen.builder, left, right, "and")
 		}
 	}
-	unimplemented(fmt.tprintf("Expression %v emit not implemented", expr))
+
+	compiler_bug(expr.span, "Expression %v emit not implemented")
+	return nil
 }
 
 emit_assigment :: proc(gen: ^Generator, s: ^Ast_Var_Assign, scope: ^Scope, span: Span) {

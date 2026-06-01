@@ -241,7 +241,7 @@ traverse_ast :: proc(
 	case Ast_Const_Decl:
 		func(ast, userdata)
 	case:
-		unimplemented(fmt.tprint("Unimplement traverse statement", ast))
+		compiler_bug(ast.span, "Unimplement traverse statement")
 	}
 }
 traverse_block :: proc(

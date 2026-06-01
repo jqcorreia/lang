@@ -110,7 +110,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 		}
 
 	case:
-		unimplemented(fmt.tprintf("Unimplemented resolve for node %v", node))
+		compiler_bug(node.span, "Unimplemented resolve for node %v")
 	}
 }
 
@@ -332,7 +332,9 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		expr.type = coerced_type
 		return coerced_type
 	}
-	unimplemented("You should not be here at all")
+	compiler_bug(expr.span, "You should not be here at all")
+
+	return nil
 }
 
 resolve_block_types :: proc(block: ^Ast_Block) {
