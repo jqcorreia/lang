@@ -100,7 +100,7 @@ json_value_to_string :: proc(v: json.Value) -> string {
 lsp_publish_diagnostics :: proc(uri: string, source: string) {
 	// Extract file path from file:// URI and set source directory for import resolution
 	file_path := strings.has_prefix(uri, "file://") ? uri[len("file://"):] : uri
-	compiler_init(file_path)
+	compiler_init(CompilerConfig{path = file_path})
 	_, _ = compile()
 
 	diagnostics_sb := strings.builder_make()

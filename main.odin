@@ -22,7 +22,7 @@ main :: proc() {
 		return
 	}
 
-	compiler_init(opt.file)
+	compiler_init(CompilerConfig{path = opt.file})
 
 	switch opt.command {
 	case "lsp":
@@ -31,9 +31,9 @@ main :: proc() {
 	case "check":
 		compile()
 	case "build":
-		build()
+		if !build() do os.exit(1)
 	case "run":
-		build()
+		if !build() do os.exit(1)
 		posix.system(strings.clone_to_cstring(fmt.tprintf("./%s", compiler.out_file)))
 	}
 

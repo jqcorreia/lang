@@ -727,16 +727,18 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 		return false
 	}
 
-	if TargetMachineEmitToFile(
-		   tm,
-		   module,
-		   strings.clone_to_cstring(compiler.object_filepath),
-		   .ObjectFile,
-		   &error,
-	   ) >
-	   0 {
-		fmt.println(error)
-		return false
+	if !compiler.verify_only {
+		if TargetMachineEmitToFile(
+			   tm,
+			   module,
+			   strings.clone_to_cstring(compiler.object_filepath),
+			   .ObjectFile,
+			   &error,
+		   ) >
+		   0 {
+			fmt.println(error)
+			return false
+		}
 	}
 	return true
 }

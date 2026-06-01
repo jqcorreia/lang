@@ -9,7 +9,6 @@ SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {
-
 	handle, _ := os.open(TEST_FOLDER)
 	fis, _ := os.read_dir(handle, -1, context.temp_allocator)
 	os.close(handle)
@@ -26,7 +25,8 @@ run_tests :: proc(t: ^testing.T) {
 	}
 
 	for fi in fis {
-		compiler_init(fi.fullpath)
+
+		compiler_init({path = fi.fullpath, verify_only = true})
 		skip := false
 		for name in SKIP_TESTS {
 			if fi.name == name {

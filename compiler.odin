@@ -25,6 +25,7 @@ Compiler :: struct {
 	external_linker_libs: [dynamic]string,
 	arena:                virtual.Arena,
 	target:               string,
+	verify_only:          bool,
 }
 
 Compiler_Error :: struct {
@@ -33,15 +34,21 @@ Compiler_Error :: struct {
 	message: string,
 }
 
+CompilerConfig :: struct {
+	path:            string,
+	target:          string,
+	object_filepath: string,
+	verify_only:     bool,
+}
 Loop :: struct {
 	break_block: BasicBlockRef,
 }
 
 compiler := Compiler{}
 
-compiler_init :: proc(path: string, _target: string = "") {
+compiler_init :: proc(config: CompilerConfig) {
 	target: string
-	if _target == "" {
+	if config.target == "" {
 		#partial switch ODIN_OS {
 		case .Linux:
 			target = "linux"
@@ -49,14 +56,16 @@ compiler_init :: proc(path: string, _target: string = "") {
 			target = "Windows"
 		}
 	} else {
-		target = _target
+		target = config.target
 	}
 
-	compiler.filepath = path
-	compiler.filepath_dir = filepath.dir(path)
+	compiler.filepath = config.path
+	compiler.filepath_dir = filepath.dir(config.path)
 
-	compiler.object_filepath = fmt.tprintf("%s.o", filepath.stem(compiler.filepath))
+	compiler.object_filepath =
+		config.object_filepath != "" ? config.object_filepath : fmt.tprintf("%s.o", filepath.stem(compiler.filepath))
 	compiler.out_file = filepath.stem(compiler.filepath)
+	compiler.verify_only = config.verify_only
 
 	compiler.target = target
 	compiler.exe_dir = filepath.dir(string(os.args[0]))
@@ -141,7 +150,7 @@ build :: proc() -> (ok: bool) {
 		for error in compiler.errors {
 			print_error_pretty(error)
 		}
-		os.exit(1)
+		return false
 	}
 	generate_ok := generate(stmts)
 	if !generate_ok {
@@ -149,26 +158,28 @@ build :: proc() -> (ok: bool) {
 		for error in compiler.errors {
 			print_error_pretty(error)
 		}
-		os.exit(1)
+		return false
 	}
 
-	if compiler.target == "linux" {
-		linker_libs := strings.builder_make()
+	if !compiler.verify_only {
+		if compiler.target == "linux" {
+			linker_libs := strings.builder_make()
 
-		for lib in compiler.external_linker_libs {
-			fmt.sbprintf(&linker_libs, "-l%s ", lib)
+			for lib in compiler.external_linker_libs {
+				fmt.sbprintf(&linker_libs, "-l%s ", lib)
+			}
+			build_command := fmt.tprintf(
+				"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o %s %s-lc -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/crtn.o",
+				compiler.out_file,
+				compiler.object_filepath,
+				strings.to_string(linker_libs),
+			)
+			fmt.println("Using final build command:", build_command)
+			posix.system(strings.clone_to_cstring(build_command))
 		}
-		build_command := fmt.tprintf(
-			"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o %s %s-lc -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/crtn.o",
-			compiler.out_file,
-			compiler.object_filepath,
-			strings.to_string(linker_libs),
-		)
-		fmt.println("Using final build command:", build_command)
-		posix.system(strings.clone_to_cstring(build_command))
+		fmt.println("--- Built in", time.diff(start_time, time.now()), "---")
 	}
-	fmt.println("--- Built in", time.diff(start_time, time.now()), "---")
-	return
+	return true
 }
 
 // Order top-level statements by processing priority:
