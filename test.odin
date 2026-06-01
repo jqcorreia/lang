@@ -13,19 +13,7 @@ run_tests :: proc(t: ^testing.T) {
 	fis, _ := os.read_dir(handle, -1, context.temp_allocator)
 	os.close(handle)
 
-	// Cleanup primitive types and generic compiler info that does not
-	// end up in an arena.
-	defer {
-		delete(compiler.filepath)
-		delete(compiler.filepath_dir)
-		delete(compiler.exe_dir)
-
-		delete(compiler.types)
-	}
-
 	for fi in fis {
-
-		compiler_init({path = fi.fullpath, verify_only = true})
 		skip := false
 		for name in SKIP_TESTS {
 			if fi.name == name {
@@ -38,6 +26,7 @@ run_tests :: proc(t: ^testing.T) {
 			continue
 		}
 
+		compiler_init({path = fi.fullpath, verify_only = true})
 		source := os.read_entire_file(fi.fullpath, context.temp_allocator) or_else nil
 		if source == nil {
 			fmt.printf("[%s] could not read file\n", fi.name)
@@ -53,6 +42,9 @@ run_tests :: proc(t: ^testing.T) {
 			}
 		}
 		testing.expectf(t, build_ok, "[%s] compilation failed", fi.name)
+		delete(compiler.filepath_dir)
+		delete(compiler.exe_dir)
 	}
+
 	free_all(context.temp_allocator)
 }

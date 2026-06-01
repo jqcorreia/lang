@@ -17,11 +17,6 @@ main :: proc() {
 
 	flags.parse_or_exit(&opt, os.args, .Unix)
 
-	if opt.command == "lsp" {
-		lsp_run()
-		return
-	}
-
 	compiler_init(CompilerConfig{path = opt.file})
 
 	switch opt.command {
