@@ -225,6 +225,14 @@ setup_native_types :: proc(compiler: ^Compiler) {
 	i8_t.kind = .Int8
 	compiler.types["i8"] = i8_t
 
+	u32_t := new(Type)
+	u32_t.kind = .Uint32
+	compiler.types["u32"] = u32_t
+
+	u64_t := new(Type)
+	u64_t.kind = .Uint64
+	compiler.types["u64"] = u64_t
+
 	i16_t := new(Type)
 	i16_t.kind = .Int16
 	compiler.types["i16"] = i16_t
@@ -236,14 +244,6 @@ setup_native_types :: proc(compiler: ^Compiler) {
 	i64_t := new(Type)
 	i64_t.kind = .Int64
 	compiler.types["i64"] = i64_t
-
-	u32_t := new(Type)
-	u32_t.kind = .Uint32
-	compiler.types["u32"] = u32_t
-
-	u64_t := new(Type)
-	u64_t.kind = .Uint64
-	compiler.types["u64"] = u64_t
 
 	bool_t := new(Type)
 	bool_t.kind = .Bool

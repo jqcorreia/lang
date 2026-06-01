@@ -9,8 +9,11 @@ fatal_token :: proc(token: Token, format: string, args: ..any) {
 }
 
 fatal_span :: proc(span: Span, format: string, args: ..any) {
-	error := error_string(span, format, ..args)
-	fmt.println(error)
+	ce := Compiler_Error {
+		span    = span,
+		message = fmt.tprintf(format, ..args),
+	}
+	print_error_pretty(ce)
 	os.exit(1)
 }
 
@@ -113,7 +116,7 @@ digit_count :: proc(n: int) -> int {
 	v := n
 	if v <= 0 {return 1}
 	count := 0
-	for v > 0 {count += 1; v /= 10}
+	for v > 0 {count += 1;v /= 10}
 	return count
 }
 
