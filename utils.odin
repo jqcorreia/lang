@@ -248,8 +248,7 @@ scope_string :: proc(scope: ^Scope) -> string {
 
 
 unexpected_token :: proc(token: Token, loc := #caller_location) {
-	fmt.println(loc)
-	unimplemented(fmt.tprintf("Unexpected token: '%s'", token.lexeme))
+	fatal_token(token, "Unexpected token: '%s'", token.lexeme)
 }
 
 one_char_span :: proc(lexer: Lexer) -> Span {
