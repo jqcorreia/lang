@@ -24,19 +24,20 @@
 
 external "c" {
     fn exit(code: i32)
-    // fn signal(signum: i32, handler: &u8) -> &u8
-    // fn write(fd: i32, buf: cstr, count: u64) -> i64
+    fn signal(signum: i32, handler: &u8) -> &u8
+    fn write(fd: i32, buf: cstr, count: u64) -> i64
     fn srand(seed: i32) // C-standard seed; portable across glibc and Windows UCRT (POSIX srandom is Linux-only)
     fn time(t: &i64) -> i32
+    fn malloc(size: i64) -> i64 // Not the proper malloc declaration since we don't have void* pointers yet
 }
 
-// fn segfault_handler(sig: i32) {
-//     write(2, "Segmentation fault\n", 19)
-//     exit(139)
-// }
+fn segfault_handler(sig: i32) {
+    write(2, "Segmentation fault\n", 19)
+    exit(139)
+}
 
 fn _zero_main() {
-    // signal(11, &segfault_handler)
+    signal(11, &segfault_handler)
     __zero_init_random_seed()
     main()
     exit(0)
