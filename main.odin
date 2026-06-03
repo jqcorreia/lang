@@ -10,6 +10,7 @@ Options :: struct {
 	command: string `args:"pos=0,required"`,
 	file:    string `args:"pos=1"`,
 	target:  string `args:"name=target"`,
+	out:     string `args:"name=out"`,
 }
 
 main :: proc() {
@@ -17,7 +18,7 @@ main :: proc() {
 
 	flags.parse_or_exit(&opt, os.args, .Unix)
 
-	compiler_init(CompilerConfig{path = opt.file, target = opt.target})
+	compiler_init(CompilerConfig{path = opt.file, target = opt.target, output_file = opt.out})
 
 	switch opt.command {
 	case "lsp":

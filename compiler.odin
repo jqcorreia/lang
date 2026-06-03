@@ -39,6 +39,7 @@ CompilerConfig :: struct {
 	target:          string,
 	object_filepath: string,
 	verify_only:     bool,
+	output_file:     string,
 }
 Loop :: struct {
 	break_block: BasicBlockRef,
@@ -66,9 +67,13 @@ compiler_init :: proc(config: CompilerConfig) {
 	// ELF .o / no-extension on Linux.
 	stem := filepath.stem(compiler.filepath)
 	obj_ext := target == "windows" ? "obj" : "o"
+
 	compiler.object_filepath =
 		config.object_filepath != "" ? config.object_filepath : fmt.tprintf("%s.%s", stem, obj_ext)
-	compiler.out_file = target == "windows" ? fmt.tprintf("%s.exe", stem) : stem
+
+	compiler.out_file =
+		config.output_file == "" ? (target == "windows" ? fmt.tprintf("%s.exe", stem) : stem) : config.output_file
+
 	compiler.verify_only = config.verify_only
 
 	compiler.target = target

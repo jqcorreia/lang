@@ -12,6 +12,7 @@ Generator :: struct {
 	module:          ModuleRef,
 	primitive_types: map[^Type]TypeRef,
 	empty_str_ptr:   ValueRef,
+	data_layout:     TargetDataRef,
 }
 
 
@@ -419,7 +420,20 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 				BuildStore(gen.builder, emit_value(gen, s.expr, scope, span), ptr)
 			}
 		} else {
-			BuildStore(gen.builder, make_zero_value(gen, sym.type), ptr)
+			if sym.type.kind == .Array || sym.type.kind == .Struct {
+				size := StoreSizeOfType(gen.data_layout, compiler_type)
+				align := ABIAlignmentOfType(gen.data_layout, compiler_type)
+
+				BuildMemSet(
+					gen.builder,
+					ptr,
+					ConstInt(Int8TypeInContext(gen.ctx), 0, 0),
+					ConstInt(Int64TypeInContext(gen.ctx), size, 0),
+					align,
+				)
+			} else {
+				BuildStore(gen.builder, make_zero_value(gen, sym.type), ptr)
+			}
 		}
 	} else {
 		llvm_type := get_llvm_type(gen, sym.type)
@@ -431,18 +445,6 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 		}
 		gen.values[sym] = ptr
 	}
-}
-
-emit_memcpy :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Span) {
-	// NOTE: THis is incomplete but saved for future reference!!
-
-	// data_layout := GetModuleDataLayout(gen.module)
-
-	// align := ABIAlignmentOfType(data_layout, compiler_type)
-	// size := ABISizeOfType(data_layout, compiler_type)
-	// i64_size := ConstInt(Int64Type(), size, 0)
-	// addr := emit_address(gen, s.expr, scope, span)
-	// BuildMemCpy(gen.builder, ptr, align, addr, align, i64_size)
 }
 
 emit_return :: proc(gen: ^Generator, s: ^Ast_Return, scope: ^Scope, span: Span) {
@@ -660,42 +662,6 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 	module := ModuleCreateWithNameInContext("calc", ctx)
 	builder := CreateBuilderInContext(ctx)
 
-	generator := Generator {
-		ctx     = ctx,
-		module  = module,
-		builder = builder,
-	}
-	setup_codegen(&generator)
-
-	emit_struct_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
-		if snode, ok := node.data.(Ast_Struct_Decl); ok {
-			gen := cast(^Generator)userdata
-			struct_emit_decl(gen, &snode, node.scope, node.span)
-		}
-	}
-	emit_function_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
-		if fnode, ok := node.data.(Ast_Function); ok {
-			// Skip external functions, they are emitted lazily on first call
-			if fnode.external {return}
-			gen := cast(^Generator)userdata
-			function_decl_emit_sysv(gen, &fnode, node.scope, node.span)
-		}
-	}
-
-	// Emit first things first
-	// - Structs
-	// - Functions
-	traverse_block(stmts, emit_struct_decls, &generator)
-	traverse_block(stmts, emit_function_decls, &generator)
-
-	for stmt in stmts {
-		emit_stmt(&generator, stmt)
-	}
-
-	when ODIN_DEBUG {
-		DumpModule(module)
-	}
-
 	InitializeX86Target()
 	InitializeX86TargetInfo()
 	InitializeX86TargetMC()
@@ -731,7 +697,46 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 		.CodeModelDefault,
 	)
 
-	SetModuleDataLayout(module, CreateTargetDataLayout(tm))
+	data_layout := CreateTargetDataLayout(tm)
+	SetModuleDataLayout(module, data_layout)
+	generator := Generator {
+		ctx         = ctx,
+		module      = module,
+		builder     = builder,
+		data_layout = data_layout,
+	}
+
+	setup_codegen(&generator)
+
+	emit_struct_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
+		if snode, ok := node.data.(Ast_Struct_Decl); ok {
+			gen := cast(^Generator)userdata
+			struct_emit_decl(gen, &snode, node.scope, node.span)
+		}
+	}
+	emit_function_decls := proc(node: ^Ast_Node, userdata: rawptr = nil) {
+		if fnode, ok := node.data.(Ast_Function); ok {
+			// Skip external functions, they are emitted lazily on first call
+			if fnode.external {return}
+			gen := cast(^Generator)userdata
+			function_decl_emit_sysv(gen, &fnode, node.scope, node.span)
+		}
+	}
+
+	// Emit first things first
+	// - Structs
+	// - Functions
+	traverse_block(stmts, emit_struct_decls, &generator)
+	traverse_block(stmts, emit_function_decls, &generator)
+
+	for stmt in stmts {
+		emit_stmt(&generator, stmt)
+	}
+
+	when ODIN_DEBUG {
+		DumpModule(module)
+	}
+
 	if VerifyModule(module, .AbortProcessAction, &error) > 0 {
 		fmt.println(error)
 		return false
