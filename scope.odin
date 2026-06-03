@@ -44,6 +44,7 @@ create_global_scope :: proc() -> ^Scope {
 	scope := new(Scope)
 	scope.kind = .Global
 	create_primitive_types(scope)
+	heap_create_new_func(scope)
 	return scope
 }
 

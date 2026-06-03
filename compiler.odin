@@ -41,6 +41,7 @@ CompilerConfig :: struct {
 	verify_only:     bool,
 	output_file:     string,
 }
+
 Loop :: struct {
 	break_block: BasicBlockRef,
 }
