@@ -2,7 +2,6 @@ package main
 
 import "core:container/queue"
 import "core:fmt"
-import "core:path/filepath"
 import "core:strings"
 
 Generator :: struct {
