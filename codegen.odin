@@ -21,7 +21,7 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 		elem_type := get_llvm_type(gen, type.elem_type)
 		return ArrayType2(elem_type, type.size)
 	}
-	if type.kind == .Pointer {
+	if type.kind == .Pointer || type.kind == .RawPointer {
 		return PointerTypeInContext(gen.ctx, 0)
 	}
 	// Untyped integers default to i64 at codegen
