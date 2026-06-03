@@ -19,6 +19,10 @@ Type :: struct {
 	variadic:        bool,
 }
 
+error_type := Type {
+	kind = .Error,
+}
+
 Struct_Field :: struct {
 	name:  string,
 	type:  ^Type,
@@ -116,7 +120,7 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	}
 
 	// Since we support array x scalar operations we need to do coercion for arrays
-	// in a different way and try the coerce the scalar to the array elem type 
+	// in a different way and try the coerce the scalar to the array elem type
 	if from.kind == .Array || to.kind == .Array {
 		return coerce_to_array(from, to, scope)
 	}

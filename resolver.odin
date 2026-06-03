@@ -2,10 +2,6 @@ package main
 
 import "core:fmt"
 
-error_type := Type {
-	kind = .Error,
-}
-
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Const_Decl:

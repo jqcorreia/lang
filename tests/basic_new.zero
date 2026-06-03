@@ -1,0 +1,8 @@
+import "std:c"
+
+fn main() {
+    a := new(i32)
+    *a = 100
+
+    printf("%d\n", *a)
+}

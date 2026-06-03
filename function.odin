@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:strings"
 
 Ast_Function :: struct {
@@ -262,6 +263,9 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			expr.type = &error_type
 			return &error_type
 		}
+		if sym.name == "new" && sym.kind == .Function {
+			return heap_new_resolve(sym, expr, scope)
+		}
 
 		// If the symbol exists, but is of kind .Type then this a cast
 		if sym.kind == .Type {
@@ -497,6 +501,9 @@ function_call_emit_sysv :: proc(
 		sym, ok := resolve_symbol(scope, fn_name)
 		if !ok {
 			fatal_span(span, "Unresolved function %s in function call", fn_name)
+		}
+		if sym.name == "new" {
+			return heap_new_emit(gen, e, scope, span)
 		}
 		if sym.kind == .Function {
 			indirect = false
