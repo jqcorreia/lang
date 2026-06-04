@@ -179,7 +179,7 @@ check_return :: proc(c: ^Checker, s: ^Ast_Return, scope: ^Scope, span: Span) {
 			span,
 			"Return type mismatch in '%s': expected '%s', got '%s'",
 			c.current_function.name,
-			fn_type.kind,
+			fn_type.return_type.kind,
 			s.expr.type.kind,
 		)
 	}

@@ -35,7 +35,6 @@ skip_newlines :: proc(p: ^Parser) {
 
 expect :: proc(p: ^Parser, kind: Token_Kind, loc := #caller_location) -> Token {
 	if current(p).kind != kind {
-		fmt.println(loc)
 		fatal_token(
 			current(p),
 			"Expected %v, got %v with lexeme '%s'",

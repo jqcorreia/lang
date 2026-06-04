@@ -270,7 +270,7 @@ struct_emit_into :: proc(
 		// We need to guard against a struct literal with no args
 		positional := len(e.args_pos) > 0 && e.positional
 
-		//Note: this is wonky af, rides on the fact that e.args is a map and a naked get will return nil
+		// Note: this is wonky af, rides on the fact that e.args is a map and a naked get will return nil
 		// This needs to change for something more robust, probably walk the args instead of walking the fields
 		arg :=
 			positional && field.index < len(e.args_pos) ? e.args_pos[field.index] : e.args[field.name]

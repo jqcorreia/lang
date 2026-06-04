@@ -12,10 +12,11 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Function pointers / Functions as values
 - [x] Scalar x Array operations (splat)
 - [x] Type alias, `typedef` like syntax
-- [-] API and code cleanups after a first working pass
-- [ ] Primitive memory managemet (new(), free())
+- [x] API and code cleanups after a first working pass
+- [x] Primitive memory managemet (new(), free())
+- [ ] Issue warning for return of local addresses
+- [ ] Error on untyped constant overflow when coerced to a smaller type (currently wraps silently, e.g. `5000000000` into an `i32`)
 - [ ] Tagged Unions
-- [ ] Make sure that the available types are synched with the primitive types in codegen
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Make `external` blocks its own AST node kind, in order to have linking rules and prefixes
 - [ ] Make sure that lexer is UTF-8 compliant

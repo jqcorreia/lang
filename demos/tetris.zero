@@ -114,8 +114,8 @@ fn can_move(grid: Grid, nx: i32, ny: i32, block: Block) -> bool {
     in_h_bounds := nx + min_x >= 0 && (nx + max_x) < grid.w 
     in_v_bounds := ny + min_y >= 0 && (ny + max_y) < grid.h 
 
-    free := !overlap(grid, Block { x = nx, y = ny, data = block.data, w = block.w, h = block.h, color = block.color })
-    return in_h_bounds && in_v_bounds && free
+    is_free := !overlap(grid, Block { x = nx, y = ny, data = block.data, w = block.w, h = block.h, color = block.color })
+    return in_h_bounds && in_v_bounds && is_free
 }
 
 fn grid_cell(grid: Grid, x: i32, y: i32) -> Cell {

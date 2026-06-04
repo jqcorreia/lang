@@ -250,7 +250,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 		if sym.kind != .Variable do return
 
 		// Only if the symbol is untyped and the target type is not untyped_*
-		if !is_untyped(sym.type) || is_untyped(type) do return
+		if sym.type.kind != .Array || !is_untyped(sym.type) || is_untyped(type) do return
 		if sym.decl == nil do return
 
 		decl, decl_ok := sym.decl.data.(Ast_Var_Decl)

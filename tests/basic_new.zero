@@ -1,8 +1,50 @@
 import "std:c"
 
+struct S {
+    x: i32
+    y: i32
+    u: i32
+    v: i32
+}
+
+fn good() -> &S {
+    s := new(S)
+
+    s.x = 2
+    s.y = 2000
+
+    return s
+}
+
+fn bad() -> &S {
+    s := S { 24, 45 }
+    return &s
+}
+
+fn stomp() -> i32 {
+    a := 1111
+    b := 2222
+    c := 3333
+    d := 4444
+    return a + b + c + d
+}
+
 fn main() {
     a := new(i32)
     *a = 100
 
     printf("%d\n", *a)
+    free(a)
+
+    s := new(S)
+    s.x = 200
+    s.y = 42
+    printf("x = %d, y = %d\n", s.x, s.y)
+
+    b := good()
+    printf("x = %d, y = %d\n", b.x, b.y)
+
+    bp := bad()
+    stomp()
+    printf("x = %d, y = %d\n", bp.x, bp.y)
 }

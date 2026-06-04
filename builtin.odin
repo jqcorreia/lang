@@ -15,7 +15,6 @@ heap_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
 	call := expr.data.(Expr_Call)
 	name := call.args[0].data.(Expr_Variable).value
 
-	fmt.println(name)
 	type_sym, ok := resolve_symbol(scope, name)
 
 	if !ok || type_sym.kind != .Type {

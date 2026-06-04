@@ -38,16 +38,15 @@ resolve_types :: proc(node: ^Ast_Node) {
 				return
 			}
 			resolved_type = initializer_expr_type
-			if initializer_expr_type.kind == .Untyped_Int {
-				i64_sym, _ := resolve_symbol(node.scope, "i64")
-				resolved_type = i64_sym.type
-			} else if initializer_expr_type.kind == .Untyped_Float {
-				f64_sym, _ := resolve_symbol(node.scope, "f64")
-				resolved_type = f64_sym.type
-			}
+			// if initializer_expr_type.kind == .Untyped_Int {
+			// 	i64_sym, _ := resolve_symbol(node.scope, "i64")
+			// 	resolved_type = i64_sym.type
+			// } else if initializer_expr_type.kind == .Untyped_Float {
+			// 	f64_sym, _ := resolve_symbol(node.scope, "f64")
+			// 	resolved_type = f64_sym.type
+			// }
 		} else {
-			var_type := resolve_type_expr(&data.type_expr, node.scope, node.span)
-			resolved_type = var_type
+			resolved_type = resolve_type_expr(&data.type_expr, node.scope, node.span)
 		}
 
 		// Deal with type coercion
