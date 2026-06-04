@@ -157,6 +157,12 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return to
 	}
 
+	// Validate coercion of all "pointers" to raw pointer
+	if (from.kind == .Pointer || from.kind == .CString || from.kind == .Nil) &&
+	   to.kind == .RawPointer {
+		return to
+	}
+
 	// Check for exact enum type since 2 different enums and not coersable
 	if from.kind == .Enum && to.kind == .Enum {
 		if from == to {

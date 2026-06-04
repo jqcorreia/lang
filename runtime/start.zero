@@ -28,7 +28,8 @@ external "c" {
     fn write(fd: i32, buf: cstr, count: u64) -> i64
     fn srand(seed: i32) // C-standard seed; portable across glibc and Windows UCRT (POSIX srandom is Linux-only)
     fn time(t: &i64) -> i32
-    fn malloc(size: i64) -> rawptr // Not the proper malloc declaration since we don't have void* pointers yet
+    fn malloc(size: i64) -> rawptr 
+    fn free(ptr: rawptr)
 }
 
 fn segfault_handler(sig: i32) {
