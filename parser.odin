@@ -86,10 +86,8 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 			raw_path := import_node.path
 
 			resolved_path := resolve_import_path(raw_path)
-			contents :=
-				os.read_entire_file(resolved_path, context.allocator) or_else panic(
-					fmt.tprintf("Import not found: %s", resolved_path),
-				)
+			contents, err := os.read_entire_file(resolved_path, context.allocator)
+			if err != nil do fatal_span(t.span, fmt.tprintf("Import not found: %s", resolved_path))
 			import_tokens := lex(string(contents), resolved_path)
 			import_parser := Parser {
 				tokens   = import_tokens,
@@ -510,7 +508,7 @@ parse_expression :: proc(
 		case f64:
 			left = expr_float_literal(v)
 		case:
-			panic("Number token can't have other types than int or f64")
+			fatal_span(span, "Number token can't have other types than int or f64")
 		}
 	case .True_Keyword, .False_Keyword:
 		left = expr_bool_literal(t.kind)

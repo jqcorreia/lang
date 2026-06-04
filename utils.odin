@@ -12,8 +12,15 @@ ANSI_RESET :: "\e[0m"
 
 compiler_bug :: proc(span: Span, format: string, args: ..any) {
 	error := error_string(span, format, args)
-	fmt.printf("%sCOMPILER BUG%s%s: %s%s\n", ANSI_RED, ANSI_RESET, ANSI_BOLD, error, ANSI_RESET)
-	os.exit(1)
+	message := fmt.tprintf(
+		"%sCOMPILER BUG%s%s: %s%s\n",
+		ANSI_RED,
+		ANSI_RESET,
+		ANSI_BOLD,
+		error,
+		ANSI_RESET,
+	)
+	append(&compiler.errors, Compiler_Error{span = span, message = message})
 }
 
 fatal_token :: proc(token: Token, format: string, args: ..any) {
@@ -25,8 +32,7 @@ fatal_span :: proc(span: Span, format: string, args: ..any) {
 		span    = span,
 		message = fmt.tprintf(format, ..args),
 	}
-	print_error_pretty(ce)
-	os.exit(1)
+	append(&compiler.errors, ce)
 }
 
 error_token :: proc(token: Token, format: string, args: ..any) {
@@ -50,8 +56,24 @@ print_error_pretty :: proc(err: Compiler_Error) {
 
 	line, col := span_to_location(err.span)
 
-	fmt.printf("%serror%s%s: %s%s\n", ANSI_RED, ANSI_RESET, ANSI_BOLD, err.message, ANSI_RESET)
-	fmt.printf("  %s-->%s %s:%d:%d\n", ANSI_BLUE, ANSI_RESET, err.span.filename, line, col)
+	fmt.fprintf(
+		os.stderr,
+		"%serror%s%s: %s%s\n",
+		ANSI_RED,
+		ANSI_RESET,
+		ANSI_BOLD,
+		err.message,
+		ANSI_RESET,
+	)
+	fmt.fprintf(
+		os.stderr,
+		"  %s-->%s %s:%d:%d\n",
+		ANSI_BLUE,
+		ANSI_RESET,
+		err.span.filename,
+		line,
+		col,
+	)
 
 	source, has_source := compiler.sources[err.span.filename]
 	starts := compiler.line_starts[err.span.filename]
@@ -69,7 +91,7 @@ print_error_pretty :: proc(err: Compiler_Error) {
 	gutter_w := digit_count(last)
 	gutter_pad := strings.repeat(" ", gutter_w, context.allocator)
 
-	fmt.printf("%s %s|%s\n", gutter_pad, ANSI_BLUE, ANSI_RESET)
+	fmt.fprintf(os.stderr, "%s %s|%s\n", gutter_pad, ANSI_BLUE, ANSI_RESET)
 	for n in first ..= last {
 		content := source_line(source, starts, n)
 		num_str := fmt.tprintf("%d", n)
@@ -105,7 +127,7 @@ print_error_pretty :: proc(err: Compiler_Error) {
 			)
 		}
 	}
-	fmt.println()
+	fmt.fprintln(os.stderr)
 }
 
 source_line :: proc(source: string, starts: [dynamic]int, line_n: int) -> string {
@@ -124,7 +146,7 @@ digit_count :: proc(n: int) -> int {
 	v := n
 	if v <= 0 {return 1}
 	count := 0
-	for v > 0 {count += 1;v /= 10}
+	for v > 0 {count += 1; v /= 10}
 	return count
 }
 

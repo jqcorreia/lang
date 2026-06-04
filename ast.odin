@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Ast_Module :: []^Ast_Node
 
 Ast_Node :: struct {
@@ -11,6 +9,7 @@ Ast_Node :: struct {
 }
 
 Ast_Data :: union {
+	Ast_Error,
 	Ast_Expr,
 	Ast_Const_Decl,
 	Ast_Var_Decl,
@@ -49,6 +48,8 @@ Type_Expr_Function :: struct {
 	params:      []^Type_Expr,
 	return_type: ^Type_Expr,
 }
+
+Ast_Error :: struct {}
 
 Ast_Expr :: struct {
 	expr: ^Expr,

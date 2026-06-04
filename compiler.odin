@@ -126,6 +126,7 @@ compile :: proc() -> (stmts: []^Ast_Node, ok: bool) {
 		tokens   = tokens,
 		filename = compiler.filepath,
 	}
+
 	user_stmts := parse_program(&parser)
 
 	// Runtime first, then user code
