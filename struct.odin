@@ -270,7 +270,10 @@ struct_emit_into :: proc(
 		// We need to guard against a struct literal with no args
 		positional := len(e.args_pos) > 0 && e.positional
 
-		arg := positional ? e.args_pos[field.index] : e.args[field.name]
+		//Note: this is wonky af, rides on the fact that e.args is a map and a naked get will return nil
+		// This needs to change for something more robust, probably walk the args instead of walking the fields
+		arg :=
+			positional && field.index < len(e.args_pos) ? e.args_pos[field.index] : e.args[field.name]
 		if arg == nil {
 			// In case of non defined field, zero initialize the literal
 			BuildStore(gen.builder, make_zero_value(gen, field.type), field_ptr)
