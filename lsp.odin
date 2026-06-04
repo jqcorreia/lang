@@ -169,7 +169,8 @@ LSP_INITIALIZE_RESULT :: `{
 	"capabilities": {
 		"textDocumentSync": {
 			"openClose": true,
-			"change": 1
+			"change": 1,
+			"save": true
 		}
 	},
 	"serverInfo": {
@@ -221,16 +222,14 @@ lsp_run :: proc() {
 			lsp_publish_diagnostics(uri, text)
 
 		case "textDocument/didChange":
+		// Diagnostics are computed on save only; nothing to do on change.
+
+		case "textDocument/didSave":
 			params := root["params"].(json.Object) or_continue
 			text_doc := params["textDocument"].(json.Object) or_continue
 			uri := text_doc["uri"].(json.String) or_continue
-			// With textDocumentSync.change = 1 (Full), the entire content is sent
-			changes := params["contentChanges"].(json.Array) or_continue
-			if len(changes) > 0 {
-				change := changes[0].(json.Object) or_continue
-				text := change["text"].(json.String) or_continue
-				lsp_publish_diagnostics(uri, text)
-			}
+			// Recompile the freshly-saved file from disk.
+			lsp_publish_diagnostics(uri, "")
 
 		case "textDocument/didClose":
 			// Clear diagnostics

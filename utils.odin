@@ -23,8 +23,10 @@ compiler_bug :: proc(span: Span, format: string, args: ..any) {
 	append(&compiler.errors, Compiler_Error{span = span, message = message})
 }
 
-fatal_token :: proc(token: Token, format: string, args: ..any) {
+fatal_token :: proc(p: ^Parser, token: Token, format: string, args: ..any) {
+	p.error_occured = true
 	fatal_span(token.span, format, ..args)
+	synchronize(p)
 }
 
 fatal_span :: proc(span: Span, format: string, args: ..any) {
@@ -277,8 +279,8 @@ scope_string :: proc(scope: ^Scope) -> string {
 }
 
 
-unexpected_token :: proc(token: Token, loc := #caller_location) {
-	fatal_token(token, "Unexpected token: '%s'", token.lexeme)
+unexpected_token :: proc(p: ^Parser, token: Token, loc := #caller_location) {
+	fatal_token(p, token, "Unexpected token: '%s'", token.lexeme)
 }
 
 one_char_span :: proc(lexer: Lexer) -> Span {

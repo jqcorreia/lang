@@ -30,7 +30,7 @@ struct_decl_parse :: proc(p: ^Parser) -> ^Ast_Struct_Decl {
 
 	expect(p, .LBrace)
 
-	for current(p).kind != .RBrace {
+	for keep_parsing_block(p) {
 		// Ignore empty lines
 		if current(p).kind == .NewLine {
 			advance(p)
@@ -82,7 +82,7 @@ struct_literal_fields_parse :: proc(p: ^Parser, struct_expr: ^Expr_Struct_Litera
 				struct_expr.args[field_name] = parse_expression(p, 0)
 			case .Comma:
 				if peek(p).kind == .RBrace {
-					unexpected_token(peek(p))
+					unexpected_token(p, peek(p))
 				}
 				advance(p)
 			case .RBrace:
@@ -91,7 +91,7 @@ struct_literal_fields_parse :: proc(p: ^Parser, struct_expr: ^Expr_Struct_Litera
 			case .NewLine:
 				advance(p)
 			case:
-				unexpected_token(current(p))
+				unexpected_token(p, current(p))
 			}
 		}
 	} else {
@@ -99,7 +99,7 @@ struct_literal_fields_parse :: proc(p: ^Parser, struct_expr: ^Expr_Struct_Litera
 			#partial switch current(p).kind {
 			case .Comma:
 				if peek(p).kind == .RBrace {
-					unexpected_token(peek(p))
+					unexpected_token(p, peek(p))
 				}
 				advance(p)
 			case .RBrace:

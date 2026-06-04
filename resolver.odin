@@ -38,6 +38,9 @@ resolve_types :: proc(node: ^Ast_Node) {
 				return
 			}
 			resolved_type = initializer_expr_type
+			// Note: for now keeps this here as a reminder but
+			// assigning a forced concrete type shouldn't happen here.
+
 			// if initializer_expr_type.kind == .Untyped_Int {
 			// 	i64_sym, _ := resolve_symbol(node.scope, "i64")
 			// 	resolved_type = i64_sym.type
@@ -162,7 +165,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Variable:
 		sym, ok := resolve_symbol(scope, e.value)
 		if !ok {
-			error_span(span, "Undefined variable '%s'", e.value)
+			error_span(expr.span, "Undefined variable '%s'", e.value)
 			expr.type = &error_type
 			return &error_type
 		}

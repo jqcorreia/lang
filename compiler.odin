@@ -129,6 +129,10 @@ compile :: proc() -> (stmts: []^Ast_Node, ok: bool) {
 
 	user_stmts := parse_program(&parser)
 
+	if len(compiler.errors) > 0 {
+		return user_stmts, false
+	}
+
 	// Runtime first, then user code
 	all_stmts: [dynamic]^Ast_Node
 	for s in runtime_stmts do append(&all_stmts, s)

@@ -49,7 +49,7 @@ function_decl_params_parse :: proc(p: ^Parser) -> []Param {
 	params: [dynamic]Param
 	done := false
 	expect(p, .LParen)
-	for !done {
+	for !done && current(p).kind != .EOF && !p.error_occured {
 		#partial switch current(p).kind {
 		case .Identifier:
 			param_name := current(p).lexeme
@@ -63,14 +63,14 @@ function_decl_params_parse :: proc(p: ^Parser) -> []Param {
 			advance(p)
 		case .Comma:
 			if peek(p).kind == .RParen {
-				unexpected_token(peek(p))
+				unexpected_token(p, peek(p))
 			}
 			advance(p)
 		case .RParen:
 			advance(p)
 			done = true
 		case:
-			unexpected_token(current(p))
+			unexpected_token(p, current(p))
 		}
 	}
 
@@ -103,7 +103,7 @@ function_external_block_parse :: proc(p: ^Parser, lib_name: string) -> ^Ast_Bloc
 
 	expect(p, .LBrace)
 
-	for current(p).kind != .RBrace {
+	for keep_parsing_block(p) {
 		// Ignore empty lines
 		if current(p).kind == .NewLine {
 			advance(p)

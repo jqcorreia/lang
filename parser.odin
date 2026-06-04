@@ -6,24 +6,32 @@ import "core:path/filepath"
 import "core:strings"
 
 Parser :: struct {
-	tokens:   []Token,
-	pos:      int,
-	filename: string,
+	tokens:        []Token,
+	pos:           int,
+	filename:      string,
+	error_occured: bool,
 }
 
 
 current :: proc(p: ^Parser) -> Token {
+	if p.pos >= len(p.tokens) do return p.tokens[len(p.tokens) - 1]
 	return p.tokens[p.pos]
 }
 
 peek :: proc(p: ^Parser, n: int = 1) -> Token {
-	return p.tokens[p.pos + n]
+	i := p.pos + n
+	if i >= len(p.tokens) do return p.tokens[len(p.tokens) - 1]
+	return p.tokens[i]
 }
 
 advance :: proc(p: ^Parser) -> Token {
-	t := p.tokens[p.pos]
-	p.pos += 1
+	t := current(p)
+	if p.pos < len(p.tokens) do p.pos += 1
 	return t
+}
+
+keep_parsing_block :: proc(p: ^Parser) -> bool {
+	return current(p).kind != .RBrace && current(p).kind != .EOF && !p.error_occured
 }
 
 skip_newlines :: proc(p: ^Parser) {
@@ -36,14 +44,43 @@ skip_newlines :: proc(p: ^Parser) {
 expect :: proc(p: ^Parser, kind: Token_Kind, loc := #caller_location) -> Token {
 	if current(p).kind != kind {
 		fatal_token(
+			p,
 			current(p),
 			"Expected %v, got %v with lexeme '%s'",
 			kind,
 			current(p).kind,
 			current(p).lexeme,
 		)
+		p.error_occured = true
 	}
 	return advance(p)
+}
+
+synchronize :: proc(p: ^Parser) {
+	for {
+		#partial switch current(p).kind {
+		case .EOF:
+			return
+		case .NewLine:
+			advance(p) // consume terminator, next statement starts clean
+			return
+		case .RBrace:
+			return // don't eat it, the enclosing block needs to close
+		case .Func_Keyword,
+		     .Struct_Keyword,
+		     .Enum_Keyword,
+		     .Import_Keyword,
+		     .External_Keyword,
+		     .For_Keyword,
+		     .If_Keyword,
+		     .Return_Keyword,
+		     .Break_Keyword,
+		     .Continue_Keyword:
+			return // a new statement clearly begins here
+		case:
+			advance(p) // discard junk and keep scanning
+		}
+	}
 }
 
 resolve_import_path :: proc(raw: string) -> (resolved_path: string) {
@@ -67,6 +104,9 @@ resolve_import_path :: proc(raw: string) -> (resolved_path: string) {
 parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 	stmts: [dynamic]^Ast_Node
 	for {
+		// Early return when parsing error occurs
+		if p.error_occured do return stmts[:]
+
 		t := current(p)
 		if t.kind == .EOF do break
 
@@ -160,8 +200,9 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 		advance(p)
 		data^ = parse_if(p)^
 	case:
-		fatal_token(t, fmt.tprintf("Unexpected token: %s", token_serialize(t)))
+		fatal_token(p, t, fmt.tprintf("Unexpected token: %s", token_serialize(t)))
 	}
+
 	span.end = current(p).span.end
 	ast_node.span = span
 	return ast_node
@@ -169,6 +210,7 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 
 
 parse_identifier :: proc(p: ^Parser) -> Ast_Data {
+	if p.error_occured do return Ast_Error{}
 	switch {
 	case peek(p).kind == .Equal:
 		// --- Assignment ---
@@ -271,9 +313,9 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 
 	case:
 		next_token := peek(p)
-		fatal_token(next_token, "Unexpected token %s", next_token.kind)
+		fatal_token(p, next_token, "Unexpected token %s", next_token.kind)
+		return Ast_Error{}
 	}
-	panic("Should be unreachable")
 }
 
 parse_deref :: proc(p: ^Parser) -> Ast_Data {
@@ -337,7 +379,7 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 
 		return Type_Expr_Function{params = params[:], return_type = ret}
 	case:
-		fatal_token(current(p), "Unexpected token in type expression")
+		fatal_token(p, current(p), "Unexpected token in type expression")
 	}
 	return Type_Expr{}
 }
@@ -492,6 +534,7 @@ parse_expression :: proc(
 	min_lbp: int = 0,
 	allow_struct_literal: bool = true,
 ) -> ^Expr {
+	if p.error_occured do return nil
 	t := advance(p)
 	span := Span {
 		start    = t.span.start,
@@ -603,8 +646,10 @@ parse_expression :: proc(
 			body          = nil,
 		}
 	case:
-		fatal_token(current(p), "Invalid token in expression")
+		fatal_token(p, current(p), "Invalid token in expression")
 	}
+
+	if left == nil do return nil
 
 	for {
 		op := current(p)
@@ -691,7 +736,7 @@ parse_block :: proc(p: ^Parser) -> ^Ast_Block {
 
 	expect(p, .LBrace)
 
-	for current(p).kind != .RBrace {
+	for keep_parsing_block(p) {
 		// Ignore empty lines
 		if current(p).kind == .NewLine {
 			advance(p)

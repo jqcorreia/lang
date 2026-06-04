@@ -29,7 +29,7 @@ enum_decl_parse :: proc(p: ^Parser) -> ^Ast_Enum_Decl {
 
 	expect(p, .LBrace)
 
-	for current(p).kind != .RBrace {
+	for keep_parsing_block(p) {
 		// Ignore empty lines
 		if current(p).kind == .NewLine {
 			advance(p)

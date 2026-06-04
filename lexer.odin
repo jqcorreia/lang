@@ -138,11 +138,14 @@ Keyword_Map: map[string]Token_Kind = {
 }
 
 lex_current :: proc(lexer: ^Lexer) -> u8 {
+	if lexer.pos >= len(lexer.input) do return 0
 	return lexer.input[lexer.pos]
 }
 
 lex_peek :: proc(lexer: ^Lexer, n: int = 1) -> u8 {
-	return lexer.input[lexer.pos + n]
+	i := lexer.pos + n
+	if i >= len(lexer.input) do return 0
+	return lexer.input[i]
 }
 
 lex_number :: proc(lexer: ^Lexer, tokens: ^[dynamic]Token) {
