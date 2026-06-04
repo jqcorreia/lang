@@ -13,10 +13,31 @@ Options :: struct {
 	out:     string `args:"name=out"`,
 }
 
+supported_commands :: []string{"lsp", "check", "build", "run"}
+
+validate_opt :: proc(opt: Options) {
+	valid_cmd := false
+	for cmd in supported_commands {
+		if cmd == opt.command {
+			valid_cmd = true
+		}
+	}
+	if !valid_cmd {
+		fmt.println("Invalid command")
+		os.exit(1)
+	}
+
+	if opt.file == "" {
+		fmt.println("No file provided")
+		os.exit(1)
+	}
+}
+
 main :: proc() {
 	opt: Options
-
 	flags.parse_or_exit(&opt, os.args, .Unix)
+
+	validate_opt(opt)
 
 	compiler_init(CompilerConfig{path = opt.file, target = opt.target, output_file = opt.out})
 
