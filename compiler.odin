@@ -78,7 +78,9 @@ compiler_init :: proc(config: CompilerConfig) {
 	compiler.verify_only = config.verify_only
 
 	compiler.target = target
-	compiler.exe_dir = filepath.dir(string(os.args[0]))
+	exe_dir, exe_dir_err := os.get_executable_directory(context.allocator)
+	assert(exe_dir_err == nil, "Could not determine compiler executable directory")
+	compiler.exe_dir = exe_dir
 	err := virtual.arena_init_growing(&compiler.arena)
 	assert(err == .None)
 }

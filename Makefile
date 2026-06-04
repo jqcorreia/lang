@@ -3,4 +3,6 @@ test:
 
 install:
 	odin build . -out:zero 
-	mv zero ~/.local/bin
+	mkdir -p ~/.local/lib/zero
+	cp -r runtime std vendor zero ~/.local/lib/zero
+	ln -sf ~/.local/lib/zero/zero ~/.local/bin/zero
