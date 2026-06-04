@@ -27,7 +27,7 @@ validate_opt :: proc(opt: Options) {
 		os.exit(1)
 	}
 
-	if opt.file == "" && opt.command != "lsp" {
+	if opt.file == "" {
 		fmt.println("No file provided")
 		os.exit(1)
 	}
@@ -37,12 +37,13 @@ main :: proc() {
 	opt: Options
 	flags.parse_or_exit(&opt, os.args, .Unix)
 
-	validate_opt(opt)
-
 	if opt.command == "lsp" {
 		lsp_run()
 		return
 	}
+
+	validate_opt(opt)
+
 
 	compiler_init(CompilerConfig{path = opt.file, target = opt.target, output_file = opt.out})
 
