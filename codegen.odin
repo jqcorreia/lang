@@ -83,6 +83,8 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 		flow_return_emit(gen, &data, node.scope, node.span)
 	case Ast_If:
 		flow_if_emit(gen, &data, node.scope, node.span)
+	case Ast_Match:
+		flow_match_emit(gen, &data, node.scope, node.span)
 	case Ast_For:
 		flow_for_emit(gen, &data, node.scope, node.span)
 	case Ast_Break:

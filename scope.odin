@@ -1,4 +1,5 @@
 package main
+import "core:fmt"
 
 Symbol :: struct {
 	name:        string,
@@ -81,6 +82,11 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 		if data.else_block != nil {
 			new_scope_else := make_scope(.Block, parent = cur_scope)
 			get_block_symbols(data.else_block, new_scope_else)
+		}
+	case Ast_Match:
+		for &clause in data.clauses {
+			new_scope_else := make_scope(.Block, parent = cur_scope)
+			get_block_symbols(clause.block, new_scope_else)
 		}
 	case Ast_For:
 		new_scope := make_scope(.Loop, parent = cur_scope)

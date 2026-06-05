@@ -76,6 +76,8 @@ resolve_types :: proc(node: ^Ast_Node) {
 		data.expr.type = resolve_expr_type(data.expr, node.scope, node.span)
 	case Ast_If:
 		flow_if_resolve(node)
+	case Ast_Match:
+		flow_match_resolve(node)
 	case Ast_For:
 		flow_for_resolve(node)
 	case Ast_Return:

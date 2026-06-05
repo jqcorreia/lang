@@ -1,6 +1,7 @@
 package main
 
 import "core:container/queue"
+import "core:fmt"
 
 Ast_If :: struct {
 	cond:       ^Expr,
@@ -15,11 +16,98 @@ Ast_For :: struct {
 	range:    ^Expr, // nil if unconditional loop
 }
 
+Ast_Match :: struct {
+	expr:    ^Expr,
+	clauses: [dynamic]Ast_Match_Clause,
+}
+
 Ast_Break :: struct {}
 Ast_Continue :: struct {}
 
 Ast_Return :: struct {
 	expr: ^Expr,
+}
+
+Ast_Match_Clause :: struct {
+	expr:  ^Expr,
+	block: ^Ast_Block,
+}
+
+flow_match_parse :: proc(p: ^Parser) -> ^Ast_Match {
+	st := new(Ast_Match)
+
+	st.expr = parse_expression(p, 0, false)
+	expect(p, .LBrace)
+
+	for keep_parsing_block(p) {
+		// // Ignore empty lines
+		if current(p).kind == .NewLine {
+			advance(p)
+			continue
+		}
+
+		clause_expr := parse_expression(p, 0)
+		expect(p, .FatRightArrow)
+
+		fmt.println(clause_expr)
+		block := parse_block(p)
+		append(&st.clauses, Ast_Match_Clause{expr = clause_expr, block = block})
+	}
+	advance(p)
+
+	if current(p).kind == .NewLine {
+		advance(p)
+	}
+	return st
+}
+
+flow_match_resolve :: proc(node: ^Ast_Node) {
+	data := node.data.(Ast_Match)
+	expr_type := resolve_expr_type(data.expr, node.scope, node.span)
+
+	if expr_type == nil {
+		data.expr.type = &error_type
+		return
+	}
+	for &clause in data.clauses {
+		clause_type := resolve_expr_type(clause.expr, node.scope, node.span)
+		coerced_type := coerce(clause_type, expr_type, node.scope)
+
+		if coerced_type == nil {
+			error_span(clause.expr.span, "Invalid value type in clause")
+			clause.expr.type = &error_type
+			return
+		}
+		clause.expr.type = coerced_type
+	}
+}
+
+flow_match_check :: proc(c: ^Checker, node: ^Ast_Node) {
+}
+
+flow_match_emit :: proc(gen: ^Generator, s: ^Ast_Match, scope: ^Scope, span: Span) {
+	entry := GetBasicBlockParent(GetInsertBlock(gen.builder))
+
+	match_val := emit_value(gen, s.expr, scope, span)
+
+	else_bb := AppendBasicBlock(entry, "else")
+	merge_bb := AppendBasicBlock(entry, "merge")
+
+	sw := BuildSwitch(gen.builder, match_val, else_bb, u32(len(s.clauses)))
+	for clause in s.clauses {
+		bb := AppendBasicBlock(entry, "")
+		PositionBuilderAtEnd(gen.builder, bb)
+		emit_block(gen, clause.block)
+		AddCase(sw, emit_value(gen, clause.expr, scope, span), bb)
+		BuildBr(gen.builder, merge_bb)
+	}
+
+	{
+		PositionBuilderAtEnd(gen.builder, else_bb)
+		BuildBr(gen.builder, merge_bb)
+	}
+
+	PositionBuilderAtEnd(gen.builder, merge_bb)
 }
 
 flow_if_parse :: proc(p: ^Parser) -> ^Ast_If {

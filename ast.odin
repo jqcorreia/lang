@@ -19,6 +19,7 @@ Ast_Data :: union {
 	Ast_Block,
 	Ast_If,
 	Ast_For,
+	Ast_Match,
 	Ast_Break,
 	Ast_Continue,
 	Ast_Struct_Decl,
@@ -200,6 +201,13 @@ traverse_ast :: proc(
 		}
 		if node.else_block != nil {
 			for child in node.else_block.statements {
+				traverse_ast(child, func, userdata)
+			}
+		}
+	case Ast_Match:
+		func(ast, userdata)
+		for clause in node.clauses {
+			for child in clause.block.statements {
 				traverse_ast(child, func, userdata)
 			}
 		}

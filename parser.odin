@@ -190,6 +190,9 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	case t.kind == .If_Keyword:
 		advance(p)
 		data^ = flow_if_parse(p)^
+	case t.kind == .Match_Keyword:
+		advance(p)
+		data^ = flow_match_parse(p)^
 	case:
 		fatal_token(p, t, fmt.tprintf("Unexpected token: %s", token_serialize(t)))
 	}

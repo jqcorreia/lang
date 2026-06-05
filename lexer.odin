@@ -43,6 +43,7 @@ Token_Kind :: enum {
 	DoubleAmpersand,
 	ColonEqual,
 	RightArrow,
+	FatRightArrow,
 	True_Keyword,
 	False_Keyword,
 	Func_Keyword,
@@ -58,6 +59,7 @@ Token_Kind :: enum {
 	External_Keyword,
 	In_Keyword,
 	Nil_Keyword,
+	Match_Keyword,
 	EOF,
 }
 
@@ -135,6 +137,7 @@ Keyword_Map: map[string]Token_Kind = {
 	"true"     = .True_Keyword,
 	"false"    = .False_Keyword,
 	"nil"      = .Nil_Keyword,
+	"match"    = .Match_Keyword,
 }
 
 lex_current :: proc(lexer: ^Lexer) -> u8 {
@@ -387,6 +390,13 @@ lex :: proc(input: string, filename: string) -> []Token {
 					Token{kind = .DoubleEqual, lexeme = "==", span = two_char_span(lexer)},
 				)
 				lexer.pos += 2
+			} else if lex_peek(&lexer) == '>' {
+				append(
+					&tokens,
+					Token{kind = .FatRightArrow, lexeme = "=>", span = two_char_span(lexer)},
+				)
+				lexer.pos += 2
+
 			} else {
 				append(&tokens, Token{kind = .Equal, lexeme = "=", span = one_char_span(lexer)})
 				lexer.pos += 1
