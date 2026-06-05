@@ -1,0 +1,23 @@
+import "std:c"
+
+fn main() {
+    x := 0
+    for {
+        if x == 2 {
+            x = x + 1
+            continue
+        }
+        printf("%d\n", x)
+        x = x + 1
+        if x == 10 {
+            break
+        }
+    }
+
+    for i in 0..10 {
+        if i == 2 {
+            continue
+        }
+        printf("%d\n", i)
+    }
+}

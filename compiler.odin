@@ -42,10 +42,6 @@ CompilerConfig :: struct {
 	output_file:     string,
 }
 
-Loop :: struct {
-	break_block: BasicBlockRef,
-}
-
 compiler := Compiler{}
 
 compiler_init :: proc(config: CompilerConfig) {

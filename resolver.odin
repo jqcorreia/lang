@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
@@ -9,7 +8,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 			te, _ := expr_to_type_expr(data.expr)
 			data.symbol.type = resolve_type_expr(&te, node.scope, node.span)
 		}
-	case Ast_Break:
+	case Ast_Break, Ast_Continue:
 	case Ast_Import:
 	case Ast_Block:
 		for n in data.statements {

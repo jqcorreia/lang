@@ -22,7 +22,7 @@ run_tests :: proc(t: ^testing.T) {
 			}
 		}
 		if skip {
-			fmt.printf("[%s] skipped\n", fi.name)
+			fmt.printf("%s - skipped\n", fi.name)
 			continue
 		}
 
@@ -34,13 +34,13 @@ run_tests :: proc(t: ^testing.T) {
 			continue
 		}
 
-		fmt.println(fi.name)
 		build_ok := build()
 		if !build_ok {
 			for err in compiler.errors {
 				fmt.printf("[%s] %s\n", fi.name, err.message)
 			}
 		}
+		fmt.printf("%s - ok\n", fi.name)
 		testing.expectf(t, build_ok, "[%s] compilation failed", fi.name)
 		delete(compiler.filepath_dir)
 		delete(compiler.exe_dir)

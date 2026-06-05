@@ -148,7 +148,7 @@ digit_count :: proc(n: int) -> int {
 	v := n
 	if v <= 0 {return 1}
 	count := 0
-	for v > 0 {count += 1; v /= 10}
+	for v > 0 {count += 1;v /= 10}
 	return count
 }
 

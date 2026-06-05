@@ -15,6 +15,10 @@ Generator :: struct {
 	data_layout:     TargetDataRef,
 }
 
+Loop :: struct {
+	break_block:    BasicBlockRef,
+	continue_block: BasicBlockRef,
+}
 
 get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	if type.kind == .Array {
@@ -84,8 +88,10 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 		emit_for_loop(gen, &data, node.scope, node.span)
 	case Ast_Break:
 		emit_break(gen, &data, node.scope, node.span)
+	case Ast_Continue:
+		flow_continue_emit(gen, &data, node.scope, node.span)
 	case:
-		compiler_bug(node.span, "Unimplement emit statement")
+		compiler_bug(node.span, "Unimplemented emit statement")
 	}
 }
 
@@ -522,7 +528,7 @@ emit_for_loop_unconditional :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope,
 	after_bb := AppendBasicBlock(function, "after")
 
 	BuildBr(gen.builder, loop_bb)
-	queue.push_front(&compiler.loops, Loop{break_block = after_bb})
+	queue.push_front(&compiler.loops, Loop{break_block = after_bb, continue_block = loop_bb})
 	PositionBuilderAtEnd(gen.builder, loop_bb)
 	emit_block(gen, s.body)
 
@@ -558,7 +564,11 @@ emit_for_loop :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
 	// Create the basic blocks
 	cond_bb := AppendBasicBlock(function, "for_cond")
 	loop_bb := AppendBasicBlock(function, "for_body")
+	inc_bb := AppendBasicBlock(function, "for_inc")
 	after_bb := AppendBasicBlock(function, "for_after")
+
+	// Push the loop with break and continue blocks
+	queue.push_front(&compiler.loops, Loop{break_block = after_bb, continue_block = inc_bb})
 
 	BuildBr(gen.builder, cond_bb)
 
@@ -581,20 +591,22 @@ emit_for_loop :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
 	BuildCondBr(gen.builder, cmp, loop_bb, after_bb)
 
 	// Position builder and emit the body of the loop
-	queue.push_front(&compiler.loops, Loop{break_block = after_bb})
 	PositionBuilderAtEnd(gen.builder, loop_bb)
 	emit_block(gen, s.body)
 
 	// Check for termination
 	// If not terminated yet, advance iterator and branch to condition block again
 	if GetBasicBlockTerminator(GetInsertBlock(gen.builder)) == nil {
-		cur := BuildLoad2(gen.builder, iter_type, iter_ptr, "iter")
-		inc := BuildAdd(gen.builder, cur, ConstInt(iter_type, 1, 0), "inc")
-		dec := BuildSub(gen.builder, cur, ConstInt(iter_type, 1, 0), "dec")
-		next := BuildSelect(gen.builder, is_forward, inc, dec, "next")
-		BuildStore(gen.builder, next, iter_ptr)
-		BuildBr(gen.builder, cond_bb)
+		BuildBr(gen.builder, inc_bb)
 	}
+
+	PositionBuilderAtEnd(gen.builder, inc_bb)
+	cur := BuildLoad2(gen.builder, iter_type, iter_ptr, "iter")
+	inc := BuildAdd(gen.builder, cur, ConstInt(iter_type, 1, 0), "inc")
+	dec := BuildSub(gen.builder, cur, ConstInt(iter_type, 1, 0), "dec")
+	next := BuildSelect(gen.builder, is_forward, inc, dec, "next")
+	BuildStore(gen.builder, next, iter_ptr)
+	BuildBr(gen.builder, cond_bb)
 
 	queue.pop_front(&compiler.loops)
 	PositionBuilderAtEnd(gen.builder, after_bb)
@@ -731,6 +743,10 @@ generate :: proc(stmts: []^Ast_Node) -> bool {
 
 	for stmt in stmts {
 		emit_stmt(&generator, stmt)
+	}
+
+	if len(compiler.errors) > 0 {
+		return false
 	}
 
 	when ODIN_DEBUG {

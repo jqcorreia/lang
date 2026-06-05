@@ -229,7 +229,7 @@ traverse_ast :: proc(
 		for child in node.body.statements {
 			traverse_ast(child, func, userdata)
 		}
-	case Ast_Break:
+	case Ast_Break, Ast_Continue:
 		func(ast, userdata)
 	case Ast_Block:
 		for child in node.statements {
