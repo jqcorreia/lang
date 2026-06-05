@@ -1,5 +1,4 @@
 package main
-import "core:fmt"
 
 Symbol :: struct {
 	name:        string,
