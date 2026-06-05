@@ -49,7 +49,6 @@ flow_match_parse :: proc(p: ^Parser) -> ^Ast_Match {
 		clause_expr := parse_expression(p, 0)
 		expect(p, .FatRightArrow)
 
-		fmt.println(clause_expr)
 		block := parse_block(p)
 		append(&st.clauses, Ast_Match_Clause{expr = clause_expr, block = block})
 	}
