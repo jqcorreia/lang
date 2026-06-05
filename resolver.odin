@@ -68,44 +68,18 @@ resolve_types :: proc(node: ^Ast_Node) {
 
 	case Ast_Struct_Decl:
 		struct_decl_resolve(node)
-
 	case Ast_Enum_Decl:
 		enum_resolve(node)
-
 	case Ast_Function:
 		function_resolve(node)
-
 	case Ast_Expr:
 		data.expr.type = resolve_expr_type(data.expr, node.scope, node.span)
-
 	case Ast_If:
-		resolve_expr_type(data.cond, node.scope, node.span)
-		resolve_block_types(data.then_block)
-		if data.else_block != nil {
-			resolve_block_types(data.else_block)
-		}
+		flow_if_resolve(node)
 	case Ast_For:
-		if data.range != nil {
-			resolve_expr_type(data.range, node.scope, node.span)
-			range := data.range.data.(Expr_Range)
-			data.symbol.type = range.start.type
-		}
-		resolve_block_types(data.body)
-
+		flow_for_resolve(node)
 	case Ast_Return:
-		if data.expr != nil {
-			expr_type := resolve_expr_type(data.expr, node.scope, node.span)
-			sym := get_scope_function(node.scope)
-			if sym != nil && sym.type != nil && sym.type.kind != .Error {
-				coerced_type := coerce(expr_type, sym.type.return_type, node.scope)
-				if coerced_type != nil {
-					set_expr_type(data.expr, coerced_type, node.scope)
-				}
-				// On coercion failure, leave data.expr.type as the natural type
-				// so the checker can report expected vs got
-			}
-		}
-
+		flow_return_resolve(node)
 	case:
 		compiler_bug(node.span, "Unimplemented resolve for node %v")
 	}

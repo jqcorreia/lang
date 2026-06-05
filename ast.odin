@@ -83,16 +83,6 @@ Ast_Block :: struct {
 	is_external_functions: bool,
 }
 
-Ast_Return :: struct {
-	expr: ^Expr,
-}
-
-Ast_If :: struct {
-	cond:       ^Expr,
-	then_block: ^Ast_Block,
-	else_block: ^Ast_Block, // nil if no else
-}
-
 Ast_Import :: struct {
 	path:       string,
 	identifier: string,

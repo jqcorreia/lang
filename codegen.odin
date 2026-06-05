@@ -1,6 +1,5 @@
 package main
 
-import "core:container/queue"
 import "core:fmt"
 import "core:strings"
 
@@ -81,11 +80,11 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 			function_body_emit_sysv(gen, &data, node.scope, node.span)
 		}
 	case Ast_Return:
-		emit_return(gen, &data, node.scope, node.span)
+		flow_return_emit(gen, &data, node.scope, node.span)
 	case Ast_If:
-		emit_if(gen, &data, node.scope, node.span)
+		flow_if_emit(gen, &data, node.scope, node.span)
 	case Ast_For:
-		emit_for_loop(gen, &data, node.scope, node.span)
+		flow_for_emit(gen, &data, node.scope, node.span)
 	case Ast_Break:
 		flow_break_emit(gen, &data, node.scope, node.span)
 	case Ast_Continue:
@@ -453,16 +452,6 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 	}
 }
 
-emit_return :: proc(gen: ^Generator, s: ^Ast_Return, scope: ^Scope, span: Span) {
-	data := s
-	if data.expr != nil {
-		BuildRet(gen.builder, emit_value(gen, data.expr, scope, span))
-	} else {
-		BuildRetVoid(gen.builder)
-	}
-}
-
-
 emit_block :: proc(gen: ^Generator, block: ^Ast_Block) {
 	for bst in block.statements {
 		emit_stmt(gen, bst)
@@ -472,145 +461,6 @@ emit_block :: proc(gen: ^Generator, block: ^Ast_Block) {
 	}
 }
 
-emit_if :: proc(gen: ^Generator, s: ^Ast_If, scope: ^Scope, span: Span) {
-	if_stmt := s
-	cond_val := emit_value(gen, if_stmt.cond, scope, span)
-
-	cond_bool: ValueRef
-	cond_val_type := TypeOf(cond_val)
-
-	// If the expression eval result is a i1 (one bit integer) then use it directly
-	// Otherwise emit a comparison to zero and the cond_bool
-	if GetTypeKind(cond_val_type) == .IntegerTypeKind && GetIntTypeWidth(cond_val_type) == 1 {
-		cond_bool = cond_val
-	} else {
-		zero := ConstInt(Int32Type(), 0, 0)
-		cond_bool = BuildICmp(gen.builder, .IntNE, cond_val, zero, "ifcond")
-	}
-
-	function := GetBasicBlockParent(GetInsertBlock(gen.builder))
-
-	then_bb := AppendBasicBlock(function, "then")
-	merge_bb := AppendBasicBlock(function, "ifcont")
-
-	else_bb: BasicBlockRef
-	if if_stmt.else_block != nil {
-		else_bb = AppendBasicBlock(function, "else")
-		BuildCondBr(gen.builder, cond_bool, then_bb, else_bb)
-	} else {
-		BuildCondBr(gen.builder, cond_bool, then_bb, merge_bb)
-	}
-
-	PositionBuilderAtEnd(gen.builder, then_bb)
-	emit_block(gen, if_stmt.then_block)
-
-	bb := GetInsertBlock(gen.builder)
-	if GetBasicBlockTerminator(bb) == nil {
-		BuildBr(gen.builder, merge_bb)
-	}
-
-	if if_stmt.else_block != nil {
-		PositionBuilderAtEnd(gen.builder, else_bb)
-		emit_block(gen, if_stmt.else_block)
-
-		bb = GetInsertBlock(gen.builder)
-		if GetBasicBlockTerminator(bb) == nil {
-			BuildBr(gen.builder, merge_bb)
-		}
-	}
-	PositionBuilderAtEnd(gen.builder, merge_bb)
-}
-
-emit_for_loop_unconditional :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
-	function := GetBasicBlockParent(GetInsertBlock(gen.builder))
-
-	loop_bb := AppendBasicBlock(function, "loop")
-	after_bb := AppendBasicBlock(function, "after")
-
-	BuildBr(gen.builder, loop_bb)
-	queue.push_front(&compiler.loops, Loop{break_block = after_bb, continue_block = loop_bb})
-	PositionBuilderAtEnd(gen.builder, loop_bb)
-	emit_block(gen, s.body)
-
-	if GetBasicBlockTerminator(GetInsertBlock(gen.builder)) == nil {
-		BuildBr(gen.builder, loop_bb)
-	}
-
-	queue.pop_front(&compiler.loops)
-	PositionBuilderAtEnd(gen.builder, after_bb)
-}
-
-emit_for_loop :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
-	if s.range == nil {
-		emit_for_loop_unconditional(gen, s, scope, span)
-		return
-	}
-
-	function := GetBasicBlockParent(GetInsertBlock(gen.builder))
-	range := s.range.data.(Expr_Range)
-	iter_type := get_llvm_type(gen, s.symbol.type)
-
-	// Emit start and end once in the entry block so they are available across all BBs
-	// Determine loop direction at runtime: is start <= end?
-	start_val := emit_value(gen, range.start, scope, span)
-	end_val := emit_value(gen, range.end, scope, span)
-	is_forward := BuildICmp(gen.builder, .IntSLE, start_val, end_val, "is_fwd")
-
-	// Store the initial value of the range
-	iter_ptr := build_entry_alloca(gen, iter_type, strings.clone_to_cstring(s.iterator))
-	BuildStore(gen.builder, start_val, iter_ptr)
-	gen.values[s.symbol] = iter_ptr
-
-	// Create the basic blocks
-	cond_bb := AppendBasicBlock(function, "for_cond")
-	loop_bb := AppendBasicBlock(function, "for_body")
-	inc_bb := AppendBasicBlock(function, "for_inc")
-	after_bb := AppendBasicBlock(function, "for_after")
-
-	// Push the loop with break and continue blocks
-	queue.push_front(&compiler.loops, Loop{break_block = after_bb, continue_block = inc_bb})
-
-	BuildBr(gen.builder, cond_bb)
-
-	// Conditional part of the loop
-	// Check for current iterator value and check for end case (either inclusive or exclusive)
-	// Set the conditional branching at the end to either the loop body or exit the loop
-	PositionBuilderAtEnd(gen.builder, cond_bb)
-	iter_val := BuildLoad2(gen.builder, iter_type, iter_ptr, "iter")
-	cmp: ValueRef
-	if range.inclusive {
-		fwd_cmp := BuildICmp(gen.builder, .IntSLE, iter_val, end_val, "fwd_cond")
-		bwd_cmp := BuildICmp(gen.builder, .IntSGE, iter_val, end_val, "bwd_cond")
-		cmp = BuildSelect(gen.builder, is_forward, fwd_cmp, bwd_cmp, "cond")
-	} else {
-		fwd_cmp := BuildICmp(gen.builder, .IntSLT, iter_val, end_val, "fwd_cond")
-		bwd_cmp := BuildICmp(gen.builder, .IntSGT, iter_val, end_val, "bwd_cond")
-		cmp = BuildSelect(gen.builder, is_forward, fwd_cmp, bwd_cmp, "cond")
-	}
-
-	BuildCondBr(gen.builder, cmp, loop_bb, after_bb)
-
-	// Position builder and emit the body of the loop
-	PositionBuilderAtEnd(gen.builder, loop_bb)
-	emit_block(gen, s.body)
-
-	// Check for termination
-	// If not terminated yet, advance iterator and branch to condition block again
-	if GetBasicBlockTerminator(GetInsertBlock(gen.builder)) == nil {
-		BuildBr(gen.builder, inc_bb)
-	}
-
-	PositionBuilderAtEnd(gen.builder, inc_bb)
-	cur := BuildLoad2(gen.builder, iter_type, iter_ptr, "iter")
-	inc := BuildAdd(gen.builder, cur, ConstInt(iter_type, 1, 0), "inc")
-	dec := BuildSub(gen.builder, cur, ConstInt(iter_type, 1, 0), "dec")
-	next := BuildSelect(gen.builder, is_forward, inc, dec, "next")
-	BuildStore(gen.builder, next, iter_ptr)
-	BuildBr(gen.builder, cond_bb)
-
-	queue.pop_front(&compiler.loops)
-	PositionBuilderAtEnd(gen.builder, after_bb)
-}
 
 setup_codegen :: proc(gen: ^Generator) {
 	// Primitive types

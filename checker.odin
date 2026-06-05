@@ -46,15 +46,11 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	case Ast_Enum_Decl:
 		enum_decl_check(c, &data, node.scope, node.span)
 	case Ast_Return:
-		check_return(c, &data, node.scope, node.span)
+		flow_return_check(c, &data, node.scope, node.span)
 	case Ast_If:
-		check_expr(c, data.cond, node.scope, node.span)
-		check_if(c, &data, node.span)
+		flow_if_check(c, node)
 	case Ast_For:
-		if data.range != nil {
-			check_expr(c, data.range, node.scope, node.span)
-		}
-		check_for_loop(c, &data, node.span)
+		flow_for_check(c, node, node.span)
 	case Ast_Break:
 		flow_break_check(c, &data, node.scope, node.span)
 	case Ast_Continue:
@@ -156,48 +152,10 @@ check_assignment :: proc(c: ^Checker, s: ^Ast_Var_Assign, scope: ^Scope, span: S
 }
 
 
-check_return :: proc(c: ^Checker, s: ^Ast_Return, scope: ^Scope, span: Span) {
-	if c.current_function == nil {
-		error_span(span, "Return statement outside of function")
-		return
-	}
-	if s.expr == nil {
-		return
-	}
-	check_expr(c, s.expr, scope, span)
-	if s.expr.type.kind == .Error {
-		return
-	}
-	fn_type := c.current_function.type
-	if fn_type == nil || fn_type.kind == .Error {
-		return
-	}
-	if coerce(s.expr.type, fn_type.return_type, scope) == nil {
-		error_span(
-			span,
-			"Return type mismatch in '%s': expected '%s', got '%s'",
-			c.current_function.name,
-			fn_type.return_type.kind,
-			s.expr.type.kind,
-		)
-	}
-}
-
 check_block :: proc(c: ^Checker, block: ^Ast_Block, span: Span) {
 	for node in block.statements {
 		check_stmt(c, node)
 	}
-}
-
-check_if :: proc(c: ^Checker, s: ^Ast_If, span: Span) {
-	check_block(c, s.then_block, span)
-	if s.else_block != nil {
-		check_block(c, s.else_block, span)
-	}
-}
-
-check_for_loop :: proc(c: ^Checker, s: ^Ast_For, span: Span) {
-	check_block(c, s.body, span)
 }
 
 

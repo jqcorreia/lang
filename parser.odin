@@ -178,7 +178,7 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 		data^ = enum_decl_parse(p)^
 	case t.kind == .For_Keyword:
 		advance(p)
-		data^ = parse_for_loop(p)^
+		data^ = flow_for_parse(p)^
 	case t.kind == .Break_Keyword:
 		advance(p)
 		data^ = flow_break_parse(p)^
@@ -186,19 +186,10 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 		advance(p)
 		data^ = flow_continue_parse(p)^
 	case t.kind == .Return_Keyword:
-		advance(p)
-		expr: ^Expr
-		if current(p).kind != .NewLine {
-			expr = parse_expression(p, 0)
-		}
-		expect(p, .NewLine)
-
-		data^ = Ast_Return {
-			expr = expr,
-		}
+		data^ = flow_return_parse(p)^
 	case t.kind == .If_Keyword:
 		advance(p)
-		data^ = parse_if(p)^
+		data^ = flow_if_parse(p)^
 	case:
 		fatal_token(p, t, fmt.tprintf("Unexpected token: %s", token_serialize(t)))
 	}
@@ -758,36 +749,6 @@ parse_block :: proc(p: ^Parser) -> ^Ast_Block {
 	return sb
 }
 
-parse_if :: proc(p: ^Parser) -> ^Ast_If {
-	cond := parse_expression(p, 0, false)
-	then_block := parse_block(p)
-	else_block: ^Ast_Block = nil
-
-	if current(p).kind == .Else_Keyword {
-		advance(p)
-		else_block = parse_block(p)
-	}
-
-	stmt_if := new(Ast_If)
-	stmt_if.cond = cond
-	stmt_if.then_block = then_block
-	stmt_if.else_block = else_block
-
-	return stmt_if
-}
-
-parse_for_loop :: proc(p: ^Parser) -> ^Ast_For {
-	stmt := new(Ast_For)
-
-	if current(p).kind == .Identifier && peek(p).kind == .In_Keyword {
-		stmt.iterator = advance(p).value.(string) // consume iterator name
-		advance(p) // consume 'in'
-		stmt.range = parse_expression(p, 0, false)
-	}
-
-	stmt.body = parse_block(p)
-	return stmt
-}
 
 parse_import :: proc(p: ^Parser) -> ^Ast_Import {
 	stmt := new(Ast_Import)
