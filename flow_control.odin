@@ -70,7 +70,7 @@ flow_match_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 }
 
 flow_for_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
-	data := node.data.(Ast_For)
+	data := &node.data.(Ast_For)
 	new_scope := make_scope(.Loop, parent = scope)
 	if data.iterator != "" {
 		sym := make_symbol(.Variable)
