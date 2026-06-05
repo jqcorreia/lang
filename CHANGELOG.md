@@ -1,3 +1,8 @@
+# v0.0.5
+## Changes
+- Function pointers
+- Manual memory allocation, new() and free()
+
 # v0.0.4
 ## Changes
 - Codebase reorganize into "features" (struct, function, enum, etc....)
@@ -13,8 +18,6 @@
 - Support primtive type casting e.g: `a: i32 = i32(123.666)`
 - Constants. This was way more complex than we antecipated, since we do eager const eval and that implies a mini interpreter
 
-## Future work for v0.0.5
+## Future work for v0.0.6
 - Array swizzling
-- Function pointers
-- Manual memory allocation
 
