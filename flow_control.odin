@@ -79,10 +79,18 @@ flow_match_resolve :: proc(node: ^Ast_Node) {
 			return
 		}
 		clause.expr.type = coerced_type
+
+		resolve_block_types(clause.block)
 	}
 }
 
 flow_match_check :: proc(c: ^Checker, node: ^Ast_Node) {
+	data := node.data.(Ast_Match)
+	check_expr(c, data.expr, node.scope, node.span)
+	for &clause in data.clauses {
+		check_expr(c, clause.expr, node.scope, node.span)
+		check_block(c, clause.block, node.span)
+	}
 }
 
 flow_match_emit :: proc(gen: ^Generator, s: ^Ast_Match, scope: ^Scope, span: Span) {

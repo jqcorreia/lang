@@ -51,7 +51,7 @@ create_global_scope :: proc() -> ^Scope {
 
 bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	node.scope = cur_scope
-	#partial switch &data in node.data {
+	switch &data in node.data {
 	case Ast_Block:
 		for s in data.statements {
 			bind_scopes(s, cur_scope)
@@ -97,6 +97,7 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 			data.symbol = sym
 		}
 		get_block_symbols(data.body, new_scope)
+	case Ast_Error, Ast_Expr, Ast_Var_Assign, Ast_Return, Ast_Break, Ast_Continue, Ast_Import:
 	}
 }
 

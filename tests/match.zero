@@ -1,8 +1,14 @@
 import "std:c"
 
+enum Number {
+    One
+    Two
+}
+
 fn main() {
     a := 100
 
+    // Normal match
     match a {
         100 => { 
             printf("One Hundred\n") 
@@ -19,4 +25,13 @@ fn main() {
             }
         }
     }
+
+    n := Number.One
+    match n {
+        .One => {
+            b := 42
+            printf("ONE BUT IN BIG and a forty two: %d\n", b) 
+        }
+    }
+
 }
