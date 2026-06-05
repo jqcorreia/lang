@@ -386,6 +386,8 @@ make_const_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueRe
 		}
 	case Expr_Float_Literal:
 		return ConstReal(llvm_type, e.value)
+	case Expr_Bool_Literal:
+		return ConstInt(llvm_type, e.value ? 1 : 0, 0)
 	case Expr_String_Literal:
 		return make_global_string_ptr(gen, e.value)
 	case Expr_Struct_Literal:

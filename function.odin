@@ -260,6 +260,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Variable:
 		sym, ok := resolve_symbol(scope, data.value)
 		if !ok {
+			error_span(expr.span, "Undefined function '%s''", data.value)
 			expr.type = &error_type
 			return &error_type
 		}
@@ -498,10 +499,10 @@ function_call_emit_sysv :: proc(
 	#partial switch data in e.callee.data {
 	case Expr_Variable:
 		fn_name := data.value
-		sym, ok := resolve_symbol(scope, fn_name)
-		if !ok {
-			fatal_span(span, "Unresolved function %s in function call", fn_name)
-		}
+		sym, _ := resolve_symbol(scope, fn_name)
+
+		assert(sym != nil)
+
 		if sym.name == "new" {
 			return heap_new_emit(gen, e, scope, span)
 		}
