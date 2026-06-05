@@ -7,10 +7,11 @@ import "core:strings"
 import "core:sys/posix"
 
 Options :: struct {
-	command: string `args:"pos=0,required"`,
-	file:    string `args:"pos=1"`,
-	target:  string `args:"name=target"`,
-	out:     string `args:"name=out"`,
+	command:      string `args:"pos=0,required"`,
+	file:         string `args:"pos=1"`,
+	target:       string `args:"name=target"`,
+	out:          string `args:"name=out"`,
+	print_tokens: bool `args:"name=print-tokens"`,
 }
 
 supported_commands :: []string{"lsp", "check", "build", "run"}
@@ -45,7 +46,14 @@ main :: proc() {
 	validate_opt(opt)
 
 
-	compiler_init(CompilerConfig{path = opt.file, target = opt.target, output_file = opt.out})
+	compiler_init(
+		CompilerConfig {
+			path = opt.file,
+			target = opt.target,
+			output_file = opt.out,
+			print_tokens = opt.print_tokens,
+		},
+	)
 
 	switch opt.command {
 	case "check":

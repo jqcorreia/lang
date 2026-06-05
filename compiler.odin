@@ -26,6 +26,7 @@ Compiler :: struct {
 	arena:                virtual.Arena,
 	target:               string,
 	verify_only:          bool,
+	config:               CompilerConfig,
 }
 
 Compiler_Error :: struct {
@@ -40,6 +41,7 @@ CompilerConfig :: struct {
 	object_filepath: string,
 	verify_only:     bool,
 	output_file:     string,
+	print_tokens:    bool,
 }
 
 compiler := Compiler{}
@@ -79,6 +81,8 @@ compiler_init :: proc(config: CompilerConfig) {
 	compiler.exe_dir = exe_dir
 	err := virtual.arena_init_growing(&compiler.arena)
 	assert(err == .None)
+
+	compiler.config = config
 }
 
 compiler_reset :: proc() {
@@ -114,7 +118,10 @@ compile :: proc() -> (stmts: []^Ast_Node, ok: bool) {
 	// Reset line_starts so they reflect user source only (for error reporting)
 	compiler.line_starts = {}
 	tokens := lex(string(source), compiler.filepath)
-	when ODIN_DEBUG {
+
+	// Token print is not on debug anymore since it's not that useful
+	// Just use a compiler flag
+	if compiler.config.print_tokens {
 		tokens_print(tokens)
 	}
 
