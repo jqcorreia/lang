@@ -53,8 +53,6 @@ heap_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) 
 
 	arg := ConstInt(Int64TypeInContext(gen.ctx), u64(size), 0)
 	call := BuildCall2(gen.builder, fn_type, fn, &arg, 1, "")
+
 	return call
-
-
-	// return BuildIntToPtr(gen.builder, call, PointerTypeInContext(gen.ctx, 0), "")
 }
