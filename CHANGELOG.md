@@ -20,4 +20,6 @@
 
 ## Future work for v0.0.6
 - Array swizzling
+- Struct untyped literals
+- Missing 'continue' construct
 
