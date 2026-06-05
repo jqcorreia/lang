@@ -2,8 +2,9 @@ package main
 
 // Note(quadrado): we need a way to abstract and simplify the declaration of builtins that can't be
 // declared in the language runtime.
-
-import "core:fmt"
+add_builtins :: proc(scope: ^Scope) {
+	heap_create_new_func(scope)
+}
 
 heap_create_new_func :: proc(scope: ^Scope) {
 	new_fn := make_symbol(.Function)

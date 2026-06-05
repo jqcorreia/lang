@@ -45,7 +45,7 @@ create_global_scope :: proc() -> ^Scope {
 	scope := new(Scope)
 	scope.kind = .Global
 	create_primitive_types(scope)
-	heap_create_new_func(scope)
+	add_builtins(scope)
 	return scope
 }
 
@@ -77,26 +77,11 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	case Ast_Function:
 		function_bind(node, cur_scope)
 	case Ast_If:
-		new_scope_then := make_scope(.Block, parent = cur_scope)
-		get_block_symbols(data.then_block, new_scope_then)
-		if data.else_block != nil {
-			new_scope_else := make_scope(.Block, parent = cur_scope)
-			get_block_symbols(data.else_block, new_scope_else)
-		}
+		flow_if_bind(node, cur_scope)
 	case Ast_Match:
-		for &clause in data.clauses {
-			new_scope_else := make_scope(.Block, parent = cur_scope)
-			get_block_symbols(clause.block, new_scope_else)
-		}
+		flow_match_bind(node, cur_scope)
 	case Ast_For:
-		new_scope := make_scope(.Loop, parent = cur_scope)
-		if data.iterator != "" {
-			sym := make_symbol(.Variable)
-			sym.name = data.iterator
-			new_scope.symbols[data.iterator] = sym
-			data.symbol = sym
-		}
-		get_block_symbols(data.body, new_scope)
+		flow_for_bind(node, cur_scope)
 	case Ast_Error, Ast_Expr, Ast_Var_Assign, Ast_Return, Ast_Break, Ast_Continue, Ast_Import:
 	}
 }

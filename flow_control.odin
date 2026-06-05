@@ -61,6 +61,36 @@ flow_match_parse :: proc(p: ^Parser) -> ^Ast_Match {
 	return st
 }
 
+flow_match_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
+	data := node.data.(Ast_Match)
+	for &clause in data.clauses {
+		new_scope_else := make_scope(.Block, parent = scope)
+		get_block_symbols(clause.block, new_scope_else)
+	}
+}
+
+flow_for_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
+	data := node.data.(Ast_For)
+	new_scope := make_scope(.Loop, parent = scope)
+	if data.iterator != "" {
+		sym := make_symbol(.Variable)
+		sym.name = data.iterator
+		new_scope.symbols[data.iterator] = sym
+		data.symbol = sym
+	}
+	get_block_symbols(data.body, new_scope)
+}
+
+flow_if_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
+	data := node.data.(Ast_If)
+	new_scope_then := make_scope(.Block, parent = scope)
+	get_block_symbols(data.then_block, new_scope_then)
+	if data.else_block != nil {
+		new_scope_else := make_scope(.Block, parent = scope)
+		get_block_symbols(data.else_block, new_scope_else)
+	}
+}
+
 flow_match_resolve :: proc(node: ^Ast_Node) {
 	data := node.data.(Ast_Match)
 	expr_type := resolve_expr_type(data.expr, node.scope, node.span)
