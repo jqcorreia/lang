@@ -87,7 +87,7 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	case Ast_For:
 		emit_for_loop(gen, &data, node.scope, node.span)
 	case Ast_Break:
-		emit_break(gen, &data, node.scope, node.span)
+		flow_break_emit(gen, &data, node.scope, node.span)
 	case Ast_Continue:
 		flow_continue_emit(gen, &data, node.scope, node.span)
 	case:
@@ -610,17 +610,6 @@ emit_for_loop :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
 
 	queue.pop_front(&compiler.loops)
 	PositionBuilderAtEnd(gen.builder, after_bb)
-}
-
-emit_break :: proc(gen: ^Generator, s: ^Ast_Break, scope: ^Scope, span: Span) {
-	loop := queue.front(&compiler.loops)
-
-	BuildBr(gen.builder, loop.break_block)
-
-	// Move gen.builder away from terminated block
-	fn := GetBasicBlockParent(GetInsertBlock(gen.builder))
-	dead := AppendBasicBlock(fn, "after_break")
-	PositionBuilderAtEnd(gen.builder, dead)
 }
 
 setup_codegen :: proc(gen: ^Generator) {

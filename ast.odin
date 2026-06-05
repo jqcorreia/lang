@@ -93,21 +93,10 @@ Ast_If :: struct {
 	else_block: ^Ast_Block, // nil if no else
 }
 
-Ast_For :: struct {
-	body:     ^Ast_Block,
-	iterator: string, // empty if unconditional loop
-	symbol:   ^Symbol, // nil if unconditional loop, bound in scope phase
-	range:    ^Expr, // nil if unconditional loop
-}
-
-Ast_Break :: struct {}
-Ast_Continue :: struct {}
-
 Ast_Import :: struct {
 	path:       string,
 	identifier: string,
 }
-
 
 Expr :: struct {
 	data: Expr_Data,

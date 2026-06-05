@@ -181,7 +181,7 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 		data^ = parse_for_loop(p)^
 	case t.kind == .Break_Keyword:
 		advance(p)
-		data^ = parse_break(p)^
+		data^ = flow_break_parse(p)^
 	case t.kind == .Continue_Keyword:
 		advance(p)
 		data^ = flow_continue_parse(p)^
@@ -788,14 +788,6 @@ parse_for_loop :: proc(p: ^Parser) -> ^Ast_For {
 	stmt.body = parse_block(p)
 	return stmt
 }
-
-parse_break :: proc(p: ^Parser) -> ^Ast_Break {
-	stmt := new(Ast_Break)
-
-	expect(p, .NewLine)
-	return stmt
-}
-
 
 parse_import :: proc(p: ^Parser) -> ^Ast_Import {
 	stmt := new(Ast_Import)

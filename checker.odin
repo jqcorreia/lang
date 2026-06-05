@@ -56,9 +56,9 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 		}
 		check_for_loop(c, &data, node.span)
 	case Ast_Break:
-		check_break(c, &data, node.scope, node.span)
+		flow_break_check(c, &data, node.scope, node.span)
 	case Ast_Continue:
-		check_continue(c, &data, node.scope, node.span)
+		flow_continue_check(c, &data, node.scope, node.span)
 	case Ast_Import:
 		check_import(c, &data, node.scope, node.span)
 	case:
@@ -200,29 +200,6 @@ check_for_loop :: proc(c: ^Checker, s: ^Ast_For, span: Span) {
 	check_block(c, s.body, span)
 }
 
-check_break :: proc(c: ^Checker, s: ^Ast_Break, scope: ^Scope, span: Span) {
-	sc := scope
-	for {
-		if sc.kind == .Loop {
-			return
-		}
-		if sc.parent == nil do break
-		sc = sc.parent
-	}
-	error_span(span, "Break statement outside of loop")
-}
-
-check_continue :: proc(c: ^Checker, s: ^Ast_Continue, scope: ^Scope, span: Span) {
-	sc := scope
-	for {
-		if sc.kind == .Loop {
-			return
-		}
-		if sc.parent == nil do break
-		sc = sc.parent
-	}
-	error_span(span, "Continue statement outside of loop")
-}
 
 check_import :: proc(c: ^Checker, node: ^Ast_Import, scope: ^Scope, span: Span) {
 	if scope.kind != .Global {
