@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 
 Checker :: struct {
 	current_function: ^Symbol,
@@ -12,6 +11,16 @@ check :: proc(c: ^Checker, nodes: []^Ast_Node) {
 	global_scope = create_global_scope()
 	for node in nodes {
 		bind_scopes(node, global_scope)
+	}
+
+	// Resolve type aliases, this needs to happen after bind in order to be able
+	// to alias already ocurring symbols
+	for node in nodes {
+		if const, ok := node.data.(Ast_Const_Decl); ok {
+			if const_decl_is_alias(const.expr, node.scope) {
+				const.symbol.kind = .Type_Alias
+			}
+		}
 	}
 	for node in nodes {
 		if fn, ok := node.data.(Ast_Function); ok {

@@ -1,6 +1,12 @@
 import "std:c"
 
+struct Foo {
+    a: i32
+}
+
 vec :: [2]u32
+
+f_alias :: Foo
 
 fn add(v1: vec, v2: vec) -> vec {
     return v1 + v2
