@@ -26,7 +26,7 @@ Potentially this README can look a lot different in a couple of months if this b
 # Try it
 ```
 odin build .
-./zero run tests/basic.zero 
+./zero run demos/bubble/main.zero 
 ```
 
 # Testing

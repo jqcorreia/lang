@@ -1,7 +1,6 @@
 package main
 
 import "core:container/queue"
-import "core:fmt"
 
 Ast_If :: struct {
 	cond:       ^Expr,
