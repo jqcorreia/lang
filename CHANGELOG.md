@@ -1,3 +1,21 @@
+<a name="v0.0.6"></a>
+### v0.0.6 (2026-06-07)
+
+
+#### Features
+
+*   Basic switch/match ([7e3adeda](7e3adeda))
+*   Implement 'continue' keyword. ([c6254e5c](c6254e5c))
+*   validate CLI options. ([ba12c02c](ba12c02c))
+
+#### Bug Fixes
+
+*   allow type aliases to be based on custom types. ([5bbcbc92](5bbcbc92))
+*   return nil if there are more fields than positional arguments. ([5e3dc1ca](5e3dc1ca))
+*   Do a memset for aggregate types. ([889c5f27](889c5f27))
+
+
+
 # v0.0.5
 ## Changes
 - Function pointers
@@ -17,9 +35,4 @@
 - Support for basic array-array numeric operations
 - Support primtive type casting e.g: `a: i32 = i32(123.666)`
 - Constants. This was way more complex than we antecipated, since we do eager const eval and that implies a mini interpreter
-
-## Future work for v0.0.6
-- Array swizzling
-- Struct untyped literals
-- Missing 'continue' construct
 

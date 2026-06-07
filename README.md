@@ -14,6 +14,9 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Type alias, `typedef` like syntax
 - [x] API and code cleanups after a first working pass
 - [x] Primitive memory managemet (new(), free())
+- [x] Missing 'continue' construct
+- [ ] Array swizzling
+- [ ] Struct untyped literals
 - [ ] Issue warning for return of local addresses
 - [ ] Error on untyped constant overflow when coerced to a smaller type (currently wraps silently, e.g. `5000000000` into an `i32`)
 - [ ] Tagged Unions
