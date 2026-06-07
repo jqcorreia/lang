@@ -12,6 +12,7 @@ Options :: struct {
 	target:       string `args:"name=target"`,
 	out:          string `args:"name=out"`,
 	print_tokens: bool `args:"name=print-tokens"`,
+	backend:      string `args:"name=backend"`,
 }
 
 supported_commands :: []string{"lsp", "check", "build", "run"}
@@ -52,6 +53,7 @@ main :: proc() {
 			target = opt.target,
 			output_file = opt.out,
 			print_tokens = opt.print_tokens,
+			backend = opt.backend == "" || opt.backend == "llvm" ? .LLVM : .Custom,
 		},
 	)
 

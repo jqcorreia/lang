@@ -42,6 +42,12 @@ CompilerConfig :: struct {
 	verify_only:     bool,
 	output_file:     string,
 	print_tokens:    bool,
+	backend:         Backend_Type,
+}
+
+Backend_Type :: enum {
+	LLVM,
+	Custom,
 }
 
 compiler := Compiler{}
@@ -189,7 +195,7 @@ build :: proc() -> (ok: bool) {
 				fmt.sbprintf(&linker_libs, "-l%s ", lib)
 			}
 			build_command := fmt.tprintf(
-				"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o %s %s-lc -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/crtn.o",
+				"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o /usr/lib/crtn.o %s %s -lc -dynamic-linker /lib64/ld-linux-x86-64.so.2",
 				compiler.out_file,
 				compiler.object_filepath,
 				strings.to_string(linker_libs),
