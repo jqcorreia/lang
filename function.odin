@@ -240,7 +240,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 				fn_type = sym.type
 
 				// This change allows the codegen to see this as a regular function, which it should be
-				e.callee.data = Expr_Variable {
+				e.callee.data = Expr_Identifier {
 					value = data.member,
 				}
 			} else {
@@ -257,7 +257,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			}
 		}
 
-	case Expr_Variable:
+	case Expr_Identifier:
 		sym, ok := resolve_symbol(scope, data.value)
 		if !ok {
 			error_span(expr.span, "Undefined function '%s''", data.value)
@@ -365,7 +365,7 @@ function_call_check :: proc(
 ) {
 	func_name: string
 	#partial switch data in e.callee.data {
-	case Expr_Variable:
+	case Expr_Identifier:
 		func_name = data.value
 	case Expr_Member:
 		func_name = data.member
@@ -497,7 +497,7 @@ function_call_emit_sysv :: proc(
 	fn_type: ^Type
 
 	#partial switch data in e.callee.data {
-	case Expr_Variable:
+	case Expr_Identifier:
 		fn_name := data.value
 		sym, _ := resolve_symbol(scope, fn_name)
 

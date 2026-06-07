@@ -14,7 +14,7 @@ heap_create_new_func :: proc(scope: ^Scope) {
 
 heap_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
 	call := expr.data.(Expr_Call)
-	name := call.args[0].data.(Expr_Variable).value
+	name := call.args[0].data.(Expr_Identifier).value
 
 	type_sym, ok := resolve_symbol(scope, name)
 
@@ -33,7 +33,7 @@ heap_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
 }
 
 heap_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
-	name := e.args[0].data.(Expr_Variable).value
+	name := e.args[0].data.(Expr_Identifier).value
 
 	sym, ok := resolve_symbol(scope, name)
 

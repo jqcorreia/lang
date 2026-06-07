@@ -127,7 +127,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 	case Expr_Struct_Literal:
 		return struct_emit_address(gen, expr, scope, span)
 
-	case Expr_Variable:
+	case Expr_Identifier:
 		sym, ok := resolve_symbol(scope, e.value)
 		if !ok {
 			fatal_span(span, "Symbol not found on expr emit: %s", e.value)
@@ -214,7 +214,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		return function_call_emit_sysv(gen, e, scope, span)
 	case Expr_Cast:
 		return cast_emit_value(gen, expr, scope, span)
-	case Expr_Variable:
+	case Expr_Identifier:
 		sym, _ := resolve_symbol(scope, e.value)
 		if sym.kind == .Constant {
 			type := get_llvm_type(gen, expr.type)

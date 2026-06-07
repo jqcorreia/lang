@@ -105,7 +105,7 @@ Expr_Data :: union {
 	Expr_Array_Literal,
 	Expr_Unary,
 	Expr_Binary,
-	Expr_Variable,
+	Expr_Identifier,
 	Expr_Call,
 	Expr_Member,
 	Expr_Implicit_Variant,
@@ -145,7 +145,7 @@ Expr_Binary :: struct {
 	right: ^Expr,
 }
 
-Expr_Variable :: struct {
+Expr_Identifier :: struct {
 	value: string,
 }
 

@@ -39,7 +39,7 @@ const_decl_is_alias :: proc(expr: ^Expr, scope: ^Scope) -> bool {
 	// In case of being a type expression check if it's an identifier and
 	// resolve to a symbol
 	// By now all the symbols should be in place from the binding pass
-	if v, is_var := expr.data.(Expr_Variable); is_var {
+	if v, is_var := expr.data.(Expr_Identifier); is_var {
 		sym, found := resolve_symbol(scope, v.value)
 		return found && (sym.kind == .Type || sym.kind == .Type_Alias)
 	}
@@ -71,7 +71,7 @@ const_eval_expr :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> (Const_Value,
 	case Expr_Float_Literal:
 		return e.value, true
 
-	case Expr_Variable:
+	case Expr_Identifier:
 		sym, ok := resolve_symbol(scope, e.value)
 		if !ok || sym.kind != .Constant {
 			error_span(span, "'%s' is not a constant", e.value)

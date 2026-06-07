@@ -6,12 +6,12 @@
 
 *   Basic switch/match ([7e3adeda](7e3adeda))
 *   Implement 'continue' keyword. ([c6254e5c](c6254e5c))
-*   validate CLI options. ([ba12c02c](ba12c02c))
+*   Validate CLI options. ([ba12c02c](ba12c02c))
 
 #### Bug Fixes
 
-*   allow type aliases to be based on custom types. ([5bbcbc92](5bbcbc92))
-*   return nil if there are more fields than positional arguments. ([5e3dc1ca](5e3dc1ca))
+*   Allow type aliases to be based on custom types. ([5bbcbc92](5bbcbc92))
+*   Return nil if there are more fields than positional arguments. ([5e3dc1ca](5e3dc1ca))
 *   Do a memset for aggregate types. ([889c5f27](889c5f27))
 
 

@@ -429,7 +429,7 @@ expr_binary :: proc(op: Token_Kind, left: ^Expr, right: ^Expr) -> ^Expr {
 
 expr_ident :: proc(value: string) -> ^Expr {
 	ret := new(Expr)
-	ret.data = Expr_Variable {
+	ret.data = Expr_Identifier {
 		value = value,
 	}
 

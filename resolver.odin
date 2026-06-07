@@ -137,7 +137,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Implicit_Variant:
 		return enum_implicit_variant_resolve(expr, scope, span)
 
-	case Expr_Variable:
+	case Expr_Identifier:
 		sym, ok := resolve_symbol(scope, e.value)
 		if !ok {
 			error_span(span, "Undefined variable '%s'", e.value)

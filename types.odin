@@ -238,7 +238,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 				if coerced != nil {elem.type = coerced}
 			}
 		}
-	case Expr_Variable:
+	case Expr_Identifier:
 		// Note: this is a mess and needs to be resolved with a better resolver....
 
 		// In this case we might need to change the symbol type itself
@@ -265,7 +265,7 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 // Reinterpret an expression as a type expression
 expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 	#partial switch d in e.data {
-	case Expr_Variable:
+	case Expr_Identifier:
 		return Type_Expr_Name(d.value), true
 
 	case Expr_Unary:
