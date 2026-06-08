@@ -37,9 +37,14 @@ fn segfault_handler(sig: i32) {
     exit(139)
 }
 
-fn _zero_main() {
+_argc: i64
+_argv: &cstr
+
+fn _zero_main(argc: i64, argv: &cstr) {
     signal(11, &segfault_handler)
     __zero_init_random_seed()
+    _argc = argc
+    _argv = argv
     main()
     exit(0)
 }
