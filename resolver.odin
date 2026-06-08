@@ -55,11 +55,14 @@ resolve_types :: proc(node: ^Ast_Node) {
 			// Keep natural types so the checker can report a meaningful mismatch
 			data.symbol.type = target_type
 			data.expr.type = initializer_expr_type
+			return
 		}
 
 		// Set the symbol final type
 		data.symbol.type = coerced_type
 
+		// Take into account that we need to keep the array size for Slice initialization
+		// and we don't want to put that information in the type itself. To be revisited later
 		if coerced_type.kind == .Slice && initializer_expr_type.kind == .Array {
 			// Leave the expression type as an Array so we can refer to it in codegen
 			backing := new(Type)

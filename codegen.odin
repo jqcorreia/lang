@@ -414,46 +414,54 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 	if sym == nil {
 		fatal_span(span, "Symbol %s is not bound!", s.name)
 	}
-	if !is_global {
-		ptr, exists := gen.values[sym]
 
-		if exists do fatal_span(span, "Variable aliasing detected. Fatal error for now")
-
-		compiler_type := get_llvm_type(gen, sym.type)
-		ptr = build_entry_alloca(gen, compiler_type, "")
-		gen.values[sym] = ptr
-		if s.expr != nil {
-			if sym.type.kind == .Struct || sym.type.kind == .Array {
-				emit_into(gen, s.expr, ptr, scope, span)
-			} else {
-				BuildStore(gen.builder, emit_value(gen, s.expr, scope, span), ptr)
-			}
-		} else {
-			if sym.type.kind == .Array || sym.type.kind == .Struct {
-				size := StoreSizeOfType(gen.data_layout, compiler_type)
-				align := ABIAlignmentOfType(gen.data_layout, compiler_type)
-
-				BuildMemSet(
-					gen.builder,
-					ptr,
-					ConstInt(Int8TypeInContext(gen.ctx), 0, 0),
-					ConstInt(Int64TypeInContext(gen.ctx), size, 0),
-					align,
-				)
-			} else {
-				BuildStore(gen.builder, make_zero_value(gen, sym.type), ptr)
-			}
-		}
-	} else {
-		llvm_type := get_llvm_type(gen, sym.type)
-		ptr := AddGlobal(gen.module, llvm_type, strings.clone_to_cstring(s.name))
-		if s.expr != nil {
-			SetInitializer(ptr, make_const_value(gen, s.expr, scope))
-		} else {
-			SetInitializer(ptr, make_zero_value(gen, sym.type))
-		}
-		gen.values[sym] = ptr
+	if is_global {
+		make_global(gen, sym, s, scope)
+		return
 	}
+
+	// Create pointer 
+	ptr, exists := gen.values[sym]
+	if exists do fatal_span(span, "Variable aliasing detected. Fatal error for now")
+
+	// Create alloca
+	compiler_type := get_llvm_type(gen, sym.type)
+	ptr = build_entry_alloca(gen, compiler_type, "")
+	gen.values[sym] = ptr
+
+	#partial switch sym.type.kind {
+	case .Struct, .Array:
+		if s.expr != nil {
+			emit_into(gen, s.expr, ptr, scope, span)
+		} else {
+			// If no expression do a memset op, potentially optimized by LLVM
+			size := StoreSizeOfType(gen.data_layout, compiler_type)
+			align := ABIAlignmentOfType(gen.data_layout, compiler_type)
+
+			BuildMemSet(
+				gen.builder,
+				ptr,
+				ConstInt(Int8TypeInContext(gen.ctx), 0, 0),
+				ConstInt(Int64TypeInContext(gen.ctx), size, 0),
+				align,
+			)
+		}
+	case:
+		val :=
+			s.expr != nil ? emit_value(gen, s.expr, scope, span) : make_zero_value(gen, sym.type)
+		BuildStore(gen.builder, val, ptr)
+	}
+}
+
+make_global :: proc(gen: ^Generator, sym: ^Symbol, s: ^Ast_Var_Decl, scope: ^Scope) {
+	llvm_type := get_llvm_type(gen, sym.type)
+	ptr := AddGlobal(gen.module, llvm_type, strings.clone_to_cstring(s.name))
+	if s.expr != nil {
+		SetInitializer(ptr, make_const_value(gen, s.expr, scope))
+	} else {
+		SetInitializer(ptr, make_zero_value(gen, sym.type))
+	}
+	gen.values[sym] = ptr
 }
 
 emit_block :: proc(gen: ^Generator, block: ^Ast_Block) {
