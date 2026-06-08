@@ -43,6 +43,7 @@ Type_Kind :: enum {
 	Undefined,
 	Error,
 	Void,
+	Any,
 	Bool,
 	Untyped_Int,
 	Untyped_Float,
@@ -102,9 +103,9 @@ create_primitive_types :: proc(scope: ^Scope) {
 	create_type(.Float16, "f16", scope, signed = true, numeric_float = true)
 	create_type(.Float32, "f32", scope, signed = true, numeric_float = true)
 	create_type(.Float64, "f64", scope, signed = true, numeric_float = true)
-
 	create_type(.CString, "cstr", scope)
 	create_type(.RawPointer, "rawptr", scope)
+	create_type(.Any, "anytype", scope)
 }
 
 // coerce: directional. Can a `from` value be used where a `to` is expected?

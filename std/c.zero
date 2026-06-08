@@ -1,6 +1,6 @@
 external "c" {
-    fn sprintf(dest: cstr, format: cstr, ...) -> i32
-    fn printf(format: cstr, ...) -> i32
+    fn sprintf(dest: cstr, format: cstr, args: ...anytype) -> i32
+    fn printf(format: cstr, args: ...anytype) -> i32
     fn fopen(filename: cstr, mode: cstr) -> &FILE
     fn fputc(char: i32, file: &FILE) -> i32
     fn fputs(string: cstr, file: &FILE) -> u64
