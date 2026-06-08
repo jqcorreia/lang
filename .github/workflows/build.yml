@@ -48,7 +48,7 @@ jobs:
         run: |
           mkdir -p zero-${{ matrix.target }}
           cp zero zero-${{ matrix.target }}/
-          cp -r runtime std vendor zero-${{ matrix.target }}/
+          cp -r runtime std vendor demos tests zero-${{ matrix.target }}/
           tar czf zero-${{ matrix.target }}.tar.gz zero-${{ matrix.target }}
 
       - name: Upload artifact
