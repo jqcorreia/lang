@@ -120,7 +120,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		return struct_literal_resolve(expr, scope, span)
 
 	case Expr_Array_Literal:
-		return array_expr_array_literal_resolve(expr, scope, span)
+		return array_literal_resolve(expr, scope, span)
 
 	case Expr_Array_Type, Expr_Function:
 		// A type appearing in value position. Lower to a type expression and resolve it

@@ -63,6 +63,7 @@ Type_Kind :: enum {
 	Struct,
 	Enum,
 	Array,
+	Slice,
 	Pointer,
 	Function,
 	RawPointer,
@@ -351,6 +352,18 @@ resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^
 		type := new(Type)
 		type.kind = .Array
 		type.size = u64(iv)
+		type.elem_type = elem_type
+
+		return type
+
+	case Type_Expr_Slice:
+		elem_type := resolve_type_expr(te.elem, scope, span)
+		if elem_type == &error_type {
+			return &error_type
+		}
+
+		type := new(Type)
+		type.kind = .Slice
 		type.elem_type = elem_type
 
 		return type

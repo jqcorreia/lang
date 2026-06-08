@@ -30,6 +30,7 @@ Ast_Data :: union {
 Type_Expr :: union {
 	Type_Expr_Name,
 	Type_Expr_Array,
+	Type_Expr_Slice,
 	Type_Expr_Pointer,
 	Type_Expr_Function,
 }
@@ -38,6 +39,10 @@ Type_Expr_Name :: string
 
 Type_Expr_Array :: struct {
 	size: ^Expr,
+	elem: ^Type_Expr,
+}
+
+Type_Expr_Slice :: struct {
 	elem: ^Type_Expr,
 }
 

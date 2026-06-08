@@ -338,6 +338,17 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 		return advance(p).value.(string)
 	case .LBracket:
 		advance(p)
+		if current(p).kind == .RBracket {
+			// Slice
+			expect(p, .RBracket)
+			elem_expr := new(Type_Expr)
+			elem_expr^ = parse_type_expr(p)
+			expr := Type_Expr_Slice {
+				elem = elem_expr,
+			}
+			return expr
+		}
+
 		size_expr := parse_expression(p, 0)
 		expect(p, .RBracket)
 		elem_expr := new(Type_Expr)

@@ -25,7 +25,7 @@ expr_index_parse :: proc(left: ^Expr, index: ^Expr) -> ^Expr {
 	return ret
 }
 
-array_expr_array_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
+array_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	e := expr.data.(Expr_Array_Literal)
 	elem_type: ^Type
 	for &elem in e.elements {
