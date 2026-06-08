@@ -37,20 +37,13 @@ resolve_types :: proc(node: ^Ast_Node) {
 				return
 			}
 			resolved_type = initializer_expr_type
-			// Note: for now keeps this here as a reminder but
-			// assigning a forced concrete type shouldn't happen here.
-
-			// if initializer_expr_type.kind == .Untyped_Int {
-			// 	i64_sym, _ := resolve_symbol(node.scope, "i64")
-			// 	resolved_type = i64_sym.type
-			// } else if initializer_expr_type.kind == .Untyped_Float {
-			// 	f64_sym, _ := resolve_symbol(node.scope, "f64")
-			// 	resolved_type = f64_sym.type
-			// }
 		} else {
 			resolved_type = resolve_type_expr(&data.type_expr, node.scope, node.span)
 		}
 
+		if resolved_type.kind == .Slice && initializer_expr_type.kind == .Array {
+
+		}
 		// Deal with type coercion
 		if data.expr != nil {
 			coerced_type := coerce(initializer_expr_type, resolved_type, node.scope)
