@@ -62,15 +62,10 @@ function_decl_params_parse :: proc(p: ^Parser) -> []Param {
 					&params,
 					Param{name = param_name, type_expr = type_expr, variadic_marker = true},
 				)
-				// advance(p)
 			} else {
 				type_expr := parse_expression(p, 0)
 				append(&params, Param{name = param_name, type_expr = type_expr})
 			}
-
-		// case .Ellipsis:
-		// 	append(&params, Param{variadic_marker = true})
-		// 	advance(p)
 		case .Comma:
 			if peek(p).kind == .RParen {
 				unexpected_token(p, peek(p))
