@@ -15,6 +15,8 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] API and code cleanups after a first working pass
 - [x] Primitive memory managemet (new(), free())
 - [x] Missing 'continue' construct
+- [ ] support Slices
+- [ ] Properly support varargs.
 - [ ] Array swizzling
 - [ ] Struct untyped literals
 - [ ] Issue warning for return of local addresses
