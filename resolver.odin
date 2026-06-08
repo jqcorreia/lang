@@ -22,41 +22,53 @@ resolve_types :: proc(node: ^Ast_Node) {
 			set_expr_type(data.expr, coerced_type, node.scope)
 		}
 	case Ast_Var_Decl:
-		resolved_type: ^Type
+		target_type: ^Type
 		initializer_expr_type: ^Type
+		type_expr_type: ^Type
 
 		// Get the initializer expression type
 		if data.expr != nil {
 			initializer_expr_type = resolve_expr_type(data.expr, node.scope, node.span)
 		}
 
-		// Deal with both cases of having types defined or not
-		if data.type_expr == nil {
-			if initializer_expr_type == nil {
-				data.symbol.type = &error_type
-				return
-			}
-			resolved_type = initializer_expr_type
-		} else {
-			resolved_type = resolve_type_expr(&data.type_expr, node.scope, node.span)
+		// Resolve type expression effective type
+		if data.type_expr != nil {
+			type_expr_type = resolve_type_expr(&data.type_expr, node.scope, node.span)
 		}
 
-		if resolved_type.kind == .Slice && initializer_expr_type.kind == .Array {
-
+		if data.expr == nil && data.type_expr == nil {
+			error_span(node.span, "Could not infer type")
+			return
 		}
-		// Deal with type coercion
-		if data.expr != nil {
-			coerced_type := coerce(initializer_expr_type, resolved_type, node.scope)
-			if coerced_type != nil {
-				data.symbol.type = coerced_type
-				set_expr_type(data.expr, coerced_type, node.scope)
-			} else {
-				// Keep natural types so the checker can report a meaningful mismatch
-				data.symbol.type = resolved_type
-				data.expr.type = initializer_expr_type
-			}
+
+		if type_expr_type != nil && initializer_expr_type == nil {
+			// No initializer just set the symbol type and return
+			data.symbol.type = type_expr_type
+			return
+		}
+
+		// Inherit initializer type if type expression not present
+		target_type = data.type_expr == nil ? initializer_expr_type : type_expr_type
+		coerced_type := coerce(initializer_expr_type, target_type, node.scope)
+
+		if coerced_type == nil {
+			// Keep natural types so the checker can report a meaningful mismatch
+			data.symbol.type = target_type
+			data.expr.type = initializer_expr_type
+		}
+
+		// Set the symbol final type
+		data.symbol.type = coerced_type
+
+		if coerced_type.kind == .Slice && initializer_expr_type.kind == .Array {
+			// Leave the expression type as an Array so we can refer to it in codegen
+			backing := new(Type)
+			backing.kind = .Array
+			backing.elem_type = coerced_type.elem_type
+			backing.size = initializer_expr_type.size
+			set_expr_type(data.expr, backing, node.scope)
 		} else {
-			data.symbol.type = resolved_type
+			set_expr_type(data.expr, coerced_type, node.scope)
 		}
 
 	case Ast_Struct_Decl:
