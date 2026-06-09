@@ -1,4 +1,19 @@
+import "std:c"
+
+fn first(s: [3]u8) -> u8 {
+    return s[0]
+}
+
+fn second(s: []u8) -> u8 {
+    return s[1]
+}
 
 fn main() {
-    a : []u8 = [1,2,3]
+    a : []u8 = [32, 45]
+
+    b := a[1]
+    printf("%d %d\n", a[0], b)
+    printf("first: %d\n", first([42, 10, 1000]))
+    printf("second: %d\n", second([42, 10, 1000]))
 }
+

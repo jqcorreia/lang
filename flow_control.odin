@@ -425,15 +425,14 @@ flow_return_parse :: proc(p: ^Parser) -> ^Ast_Return {
 flow_return_resolve :: proc(node: ^Ast_Node) {
 	data := node.data.(Ast_Return)
 	if data.expr != nil {
-		expr_type := resolve_expr_type(data.expr, node.scope, node.span)
+		resolve_expr_type(data.expr, node.scope, node.span)
 		sym := get_scope_function(node.scope)
 		if sym != nil && sym.type != nil && sym.type.kind != .Error {
-			coerced_type := coerce(expr_type, sym.type.return_type, node.scope)
-			if coerced_type != nil {
-				set_expr_type(data.expr, coerced_type, node.scope)
+			coerced_type := coerce_expr(data.expr, sym.type.return_type, node.scope)
+
+			if coerced_type == nil {
+				error_span(data.expr.span, "Incompatible return value")
 			}
-			// On coercion failure, leave data.expr.type as the natural type
-			// so the checker can report expected vs got
 		}
 	}
 }

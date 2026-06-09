@@ -57,13 +57,13 @@ function_decl_params_parse :: proc(p: ^Parser) -> []Param {
 			expect(p, .Colon)
 			if current(p).kind == .Ellipsis {
 				advance(p)
-				type_expr := parse_expression(p, 0)
+				type_expr := parse_type_expr(p)
 				append(
 					&params,
 					Param{name = param_name, type_expr = type_expr, variadic_marker = true},
 				)
 			} else {
-				type_expr := parse_expression(p, 0)
+				type_expr := parse_type_expr(p)
 				append(&params, Param{name = param_name, type_expr = type_expr})
 			}
 		case .Comma:
@@ -86,9 +86,9 @@ function_ret_type_parse :: proc(p: ^Parser) -> Type_Expr {
 	if current(p).kind == .RightArrow {
 		advance(p)
 
-		type_token := parse_type_expr(p)
+		type_expr := parse_type_expr(p)
 
-		return type_token
+		return type_expr
 	}
 
 	return ""
@@ -98,7 +98,8 @@ function_external_block_parse :: proc(p: ^Parser, lib_name: string) -> ^Ast_Bloc
 	// Deduplicate linker libs
 	found := false
 	for lib in compiler.external_linker_libs {
-		if lib == lib_name {found = true
+		if lib == lib_name {
+			found = true
 			break
 		}
 	}
@@ -175,13 +176,12 @@ function_signature_resolve :: proc(node: ^Ast_Function, scope: ^Scope, span: Spa
 			append(&type.params, variadic_type)
 			continue
 		}
-		param_te, ok := expr_to_type_expr(param.type_expr)
-		if !ok {
-			error_span(span, "Invalid type expression for parameter '%s'", param.name)
-			append(&type.params, &error_type)
-			continue
-		}
-		param_type := resolve_type_expr(&param_te, scope, span)
+		// if !ok {
+		// 	error_span(span, "Invalid type expression for parameter '%s'", param.name)
+		// 	append(&type.params, &error_type)
+		// 	continue
+		// }
+		param_type := resolve_type_expr(&param.type_expr, scope, span)
 		append(&type.params, param_type)
 	}
 	ret_type := resolve_type_expr(&node.ret_type_expr, scope, span)
@@ -327,9 +327,9 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		}
 
 		if param != nil {
-			coerced_type := coerce(arg.type, param, scope)
-			if coerced_type != nil {
-				set_expr_type(arg, coerced_type, scope)
+			coerced_type := coerce_expr(arg, param, scope)
+			if coerced_type == nil {
+				error_span(arg.span, "Invalid parameter type")
 			}
 		}
 	}

@@ -267,6 +267,33 @@ set_expr_type :: proc(expr: ^Expr, type: ^Type, scope: ^Scope) {
 	}
 }
 
+// This function potentially mutates the expression to something that models
+// a cast or a type change down the line.
+// The normal cast would be to combine coerce + set_type_expr
+coerce_expr :: proc(expr: ^Expr, target: ^Type, scope: ^Scope) -> ^Type {
+	coerced_type := coerce(expr.type, target, scope)
+	if coerced_type == nil do return nil
+
+	if expr.type.kind == .Array && coerced_type.kind == .Slice {
+		backing := new(Type)
+		backing.kind = .Array
+		backing.elem_type = coerced_type.elem_type
+		backing.size = expr.type.size
+
+		inner := new(Expr)
+		inner^ = expr^
+		set_expr_type(inner, backing, scope)
+
+		expr.data = Expr_Array_To_Slice {
+			original = inner,
+		}
+		expr.type = coerced_type
+	}
+
+	set_expr_type(expr, coerced_type, scope)
+	return coerced_type
+}
+
 // Reinterpret an expression as a type expression
 expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 	#partial switch d in e.data {
@@ -303,7 +330,7 @@ expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 		for param, i in d.params {
 			pe := new(Type_Expr)
 			ok: bool
-			pe^, ok = expr_to_type_expr(param.type_expr)
+			pe^ = param.type_expr
 			if !ok {
 				return nil, false
 			}

@@ -15,14 +15,14 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] API and code cleanups after a first working pass
 - [x] Primitive memory managemet (new(), free())
 - [x] Missing 'continue' construct
-- [ ] support Slices
+- [ ] Slices support
 - [ ] Properly support varargs.
-- [ ] Array swizzling
+- [ ] Proper string with bound check and not null-terminated
 - [ ] Struct untyped literals
+- [ ] Array swizzling
 - [ ] Issue warning for return of local addresses
 - [ ] Error on untyped constant overflow when coerced to a smaller type (currently wraps silently, e.g. `5000000000` into an `i32`)
 - [ ] Tagged Unions
-- [ ] Proper string with bound check and not null-terminated
 - [ ] Make `external` blocks its own AST node kind, in order to have linking rules and prefixes
 - [ ] Make sure that lexer is UTF-8 compliant
 - [ ] Add check for cyclic import

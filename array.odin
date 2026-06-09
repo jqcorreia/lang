@@ -50,7 +50,7 @@ array_expr_index_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Typ
 	if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Array {
 		type = type.pointee_type
 	}
-	if type.kind != .Array {
+	if type.kind != .Array && type.kind != .Slice {
 		name, _ := get_type_name(scope, type)
 		error_span(span, "Cannot index non-array type '%s'", name)
 		expr.type = &error_type
@@ -71,12 +71,12 @@ array_expr_index_check :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Sp
 	if array_type.kind == .Pointer && array_type.pointee_type.kind == .Array {
 		array_type = array_type.pointee_type
 	}
-	if array_type.kind != .Array {
-		error_span(span, "'%s' is not an array", e.array.type.kind)
+	if array_type.kind != .Array && array_type.kind != .Slice {
+		error_span(span, "'%s' is not indexable", e.array.type.kind)
 	} else if !e.index.type.numeric_integer && e.index.type.kind != .Untyped_Int {
-		error_span(span, "Array index must be an integer, got '%s'", e.index.type.kind)
+		error_span(span, "Index must be an integer, got '%s'", e.index.type.kind)
 	} else if lit, ok := e.index.data.(Expr_Int_Literal); ok {
-		if u64(lit.value) >= array_type.size {
+		if u64(lit.value) >= array_type.size && array_type.kind == .Array {
 			error_span(
 				span,
 				"Index %d out of bounds for array of size %d",
@@ -257,11 +257,9 @@ array_binary_emit_vector :: proc(
 }
 
 coerce_to_array :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
-	if from.kind == .Array &&
-	   to.kind == .Array &&
-	   from.size == to.size &&
-	   coerce(from.elem_type, to.elem_type, scope) != nil {
-		return to
+	if from.kind == .Array && to.kind == .Array {
+		if from.size == to.size && coerce(from.elem_type, to.elem_type, scope) != nil do return to
+		else do return nil
 	}
 
 	// Decide which is the scalar and the array

@@ -43,7 +43,7 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 	if type.kind == .Function {
 		return PointerTypeInContext(gen.ctx, 0)
 	}
-	// Slices are structs {ptr, i64} 
+	// Slices are structs {ptr, i64}
 	// Field 0 is base pointer
 	// Field 1 is size
 	if type.kind == .Slice {
@@ -153,6 +153,22 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		}
 
 	case Expr_Index:
+		#partial switch e.array.type.kind {
+		case .Array:
+			return array_expr_index_emit_address(gen, expr, scope, span)
+		case .Slice:
+			index_val := emit_value(gen, e.index, scope, span)
+			elem_type := get_llvm_type(gen, e.array.type.elem_type)
+
+			struct_ptr := emit_address(gen, e.array, scope, span)
+			struct_ty := get_llvm_type(gen, e.array.type)
+
+			p0 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 0, "")
+			base := BuildLoad2(gen.builder, PointerTypeInContext(gen.ctx, 0), p0, "")
+
+			indices: []ValueRef = {index_val}
+			return BuildGEP2(gen.builder, elem_type, base, raw_data(indices), 1, "")
+		}
 		return array_expr_index_emit_address(gen, expr, scope, span)
 
 	case Expr_Unary:
@@ -217,7 +233,13 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 	case Expr_Implicit_Variant:
 		return enum_implicit_variant_emit_value(gen, expr)
 	case Expr_Index:
-		return array_expr_index_emit_value(gen, expr, scope, span)
+		#partial switch e.array.type.kind {
+		case .Array:
+			return array_expr_index_emit_value(gen, expr, scope, span)
+		case .Slice:
+			ptr := emit_address(gen, expr, scope, span)
+			return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), ptr, "")
+		}
 	case Expr_Call:
 		return function_call_emit_sysv(gen, e, scope, span)
 	case Expr_Cast:
@@ -428,7 +450,7 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 		return
 	}
 
-	// Create pointer 
+	// Create pointer
 	ptr, exists := gen.values[sym]
 	if exists do fatal_span(span, "Variable aliasing detected. Fatal error for now")
 
@@ -455,13 +477,12 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 			)
 		}
 	case .Slice:
-		// Create the backing array 
+		// Create the backing array
 		n := s.expr.type.size // recover the size that we kept from the resolver
 		backing_ty := get_llvm_type(gen, s.expr.type)
 		backing := build_entry_alloca(gen, backing_ty, "")
 		emit_into(gen, s.expr, backing, scope, span)
 
-		// ptr is the var's own alloca: { ptr, i64 }
 		slice_ty := get_llvm_type(gen, sym.type)
 		p0 := BuildStructGEP2(gen.builder, slice_ty, ptr, 0, "")
 		BuildStore(gen.builder, backing, p0)

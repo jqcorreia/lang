@@ -78,7 +78,7 @@ Ast_Var_Decl :: struct {
 
 Param :: struct {
 	name:            string,
-	type_expr:       ^Expr,
+	type_expr:       Type_Expr,
 	symbol:          ^Symbol,
 	variadic_marker: bool,
 }
@@ -119,6 +119,7 @@ Expr_Data :: union {
 	Expr_Cast,
 	Expr_Array_Type,
 	Expr_Function,
+	Expr_Array_To_Slice,
 }
 
 Expr_Null :: struct {}
@@ -173,6 +174,10 @@ Member_Kind :: enum {
 	Method,
 	Swizzle,
 	Variant,
+}
+
+Expr_Array_To_Slice :: struct {
+	original: ^Expr,
 }
 
 // Generic AST traverse function

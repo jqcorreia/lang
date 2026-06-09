@@ -632,7 +632,7 @@ parse_expression :: proc(
 		expect(p, .LParen)
 		params: [dynamic]Param
 		for current(p).kind != .RParen {
-			pe := parse_expression(p, 0)
+			pe := parse_type_expr(p)
 			append(&params, Param{type_expr = pe})
 			if current(p).kind == .Comma do advance(p)
 		}

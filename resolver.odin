@@ -49,7 +49,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 
 		// Inherit initializer type if type expression not present
 		target_type = data.type_expr == nil ? initializer_expr_type : type_expr_type
-		coerced_type := coerce(initializer_expr_type, target_type, node.scope)
+		coerced_type := coerce_expr(data.expr, target_type, node.scope)
 
 		if coerced_type == nil {
 			// Keep natural types so the checker can report a meaningful mismatch
@@ -60,19 +60,6 @@ resolve_types :: proc(node: ^Ast_Node) {
 
 		// Set the symbol final type
 		data.symbol.type = coerced_type
-
-		// Take into account that we need to keep the array size for Slice initialization
-		// and we don't want to put that information in the type itself. To be revisited later
-		if coerced_type.kind == .Slice && initializer_expr_type.kind == .Array {
-			// Leave the expression type as an Array so we can refer to it in codegen
-			backing := new(Type)
-			backing.kind = .Array
-			backing.elem_type = coerced_type.elem_type
-			backing.size = initializer_expr_type.size
-			set_expr_type(data.expr, backing, node.scope)
-		} else {
-			set_expr_type(data.expr, coerced_type, node.scope)
-		}
 
 	case Ast_Struct_Decl:
 		struct_decl_resolve(node)
@@ -162,6 +149,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	case Expr_Call:
 		return function_call_resolve(expr, scope, span)
 
+	case Expr_Array_To_Slice:
 	case Expr_Cast:
 	// Nothing is needed here since everything is done via the resolve branch of Expr_Call
 	case Expr_Member:
