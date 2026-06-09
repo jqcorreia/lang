@@ -231,12 +231,9 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 	if p.error_occured do return Ast_Error{}
 	switch {
 	case peek(p).kind == .Equal:
-		// --- Assignment ---
-		// Get variable name
+		// Normal assignment
 		lhs := parse_expression(p, 0)
 
-		// Advance and expect an '='
-		// advance(p)
 		expect(p, .Equal)
 
 		data := Ast_Var_Assign {
@@ -337,6 +334,8 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 	}
 }
 
+//Note: this is the exact same code for the parse_identifier() .Equal and .LBracket case
+//The disabmbiguation occurs in parse_expression(). we need to unify this TODO
 parse_deref :: proc(p: ^Parser) -> Ast_Data {
 	lhs := parse_expression(p, 0)
 	expect(p, .Equal)
