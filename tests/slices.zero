@@ -25,5 +25,13 @@ fn main() {
 
     c[2] = 100
     printf("ret: %d\n", c[2])
+
+    arr: [3]u8
+
+    slice: []u32 = [1,2,3,4,5,6,7]  // len(slice) == 7
+
+    printf("len arr: %d\n", len(arr))
+    printf("len slice: %d\n", len(slice))
+    printf("len untyped: %d\n", len([9,879,6,6,5]))
 }
 

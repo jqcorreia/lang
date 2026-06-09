@@ -270,7 +270,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			return &error_type
 		}
 		if builtin, builtin_ok := builtins_map[sym.name]; builtin_ok {
-			return builtin.resolve(sym, expr, scope)
+			return builtin.resolve(sym, expr, scope, span)
 		}
 
 		// If the symbol exists, but is of kind .Type then this a cast

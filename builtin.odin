@@ -1,8 +1,10 @@
 package main
 
+import "core:fmt"
+
 Builtin_Funcs :: struct {
 	create:  proc(scope: ^Scope),
-	resolve: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type,
+	resolve: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type,
 	emit:    proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef,
 }
 
@@ -26,7 +28,7 @@ builtin_create_new_func :: proc(scope: ^Scope) {
 	scope.symbols["new"] = new_fn
 }
 
-builtin_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
+builtin_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	call := expr.data.(Expr_Call)
 	name := call.args[0].data.(Expr_Identifier).value
 
@@ -77,8 +79,15 @@ builtin_len_create :: proc(scope: ^Scope) {
 	scope.symbols["len"] = sym
 }
 
-builtin_len_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
+builtin_len_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	i64_t, _ := resolve_symbol(scope, "i64")
+
+	// This is a function so it needs to be used on a call
+	data := expr.data.(Expr_Call)
+
+	for arg in data.args {
+		resolve_expr_type(arg, scope, span)
+	}
 
 	expr.type = i64_t.type
 	return expr.type
@@ -88,11 +97,17 @@ builtin_len_emit :: proc(gen: ^Generator, expr: Expr_Call, scope: ^Scope, span: 
 	arg0 := expr.args[0]
 	#partial switch arg0.type.kind {
 	case .Slice:
+		struct_ty := get_llvm_type(gen, arg0.type)
+
+		// alloc := build_entry_alloca(gen, struct_ty, "")
+		slice := emit_address(gen, arg0, scope, span)
+
+		p1 := BuildStructGEP2(gen.builder, struct_ty, slice, 1, "")
+		return BuildLoad2(gen.builder, Int64TypeInContext(gen.ctx), p1, "")
 
 	case .Array:
 		return ConstInt(Int64TypeInContext(gen.ctx), arg0.type.size, 0)
 	}
-
 
 	return nil
 }
