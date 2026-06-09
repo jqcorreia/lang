@@ -357,7 +357,7 @@ flow_for_check :: proc(c: ^Checker, node: ^Ast_Node, span: Span) {
 flow_break_parse :: proc(p: ^Parser) -> ^Ast_Break {
 	stmt := new(Ast_Break)
 
-	expect(p, .NewLine)
+	expect_statement_end(p)
 	return stmt
 }
 
@@ -387,7 +387,7 @@ flow_break_check :: proc(c: ^Checker, s: ^Ast_Break, scope: ^Scope, span: Span) 
 flow_continue_parse :: proc(p: ^Parser) -> ^Ast_Continue {
 	stmt := new(Ast_Continue)
 
-	expect(p, .NewLine)
+	expect_statement_end(p)
 	return stmt
 }
 
@@ -411,10 +411,10 @@ flow_continue_check :: proc(c: ^Checker, s: ^Ast_Continue, scope: ^Scope, span: 
 flow_return_parse :: proc(p: ^Parser) -> ^Ast_Return {
 	advance(p)
 	expr: ^Expr
-	if current(p).kind != .NewLine {
+	if current(p).kind != .NewLine && current(p).kind != .RBrace {
 		expr = parse_expression(p, 0)
 	}
-	expect(p, .NewLine)
+	expect_statement_end(p)
 
 	stmt := new(Ast_Return)
 	stmt.expr = expr

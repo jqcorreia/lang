@@ -56,6 +56,28 @@ expect :: proc(p: ^Parser, kind: Token_Kind, loc := #caller_location) -> Token {
 	return advance(p)
 }
 
+// Statements are normally terminated by a newline. Inside an inline block
+// (e.g. `if c { stmt }`) the closing brace terminates the statement instead;
+// in that case the RBrace (or EOF) is left in place so the enclosing
+// parse_block can consume and validate it.
+expect_statement_end :: proc(p: ^Parser, loc := #caller_location) {
+	#partial switch current(p).kind {
+	case .NewLine:
+		advance(p)
+	case .RBrace, .EOF:
+	// Terminated by the end of the enclosing block; leave the token for parse_block.
+	case:
+		fatal_token(
+			p,
+			current(p),
+			"Expected end of statement, got %v with lexeme '%s'",
+			current(p).kind,
+			current(p).lexeme,
+		)
+		p.error_occured = true
+	}
+}
+
 synchronize :: proc(p: ^Parser) {
 	for {
 		#partial switch current(p).kind {
@@ -220,7 +242,7 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 			expr = parse_expression(p, 0),
 		}
 
-		expect(p, .NewLine) // This should end with newline
+		expect_statement_end(p) // This should end with newline
 
 		return data
 
@@ -237,19 +259,19 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 				lhs  = lhs,
 				expr = parse_expression(p, 0),
 			}
-			expect(p, .NewLine)
+			expect_statement_end(p)
 
 			return data
 		}
 		// Method case
-		expect(p, .NewLine)
+		expect_statement_end(p)
 
 		return Ast_Expr{expr = lhs}
 
 	case peek(p).kind == .LParen:
 		// --- Function Call ---
 		expr := parse_expression(p)
-		expect(p, .NewLine)
+		expect_statement_end(p)
 		return Ast_Expr{expr = expr}
 
 	case peek(p).kind == .ColonEqual:
@@ -266,7 +288,7 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 			expr = parse_expression(p, 0),
 		}
 
-		expect(p, .NewLine) // This should end with newline
+		expect_statement_end(p) // This should end with newline
 		return data
 
 	case peek(p).kind == .Colon:
@@ -301,7 +323,7 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 			expr = parse_expression(p, 0),
 		}
 
-		expect(p, .NewLine)
+		expect_statement_end(p)
 
 		return data
 
@@ -319,7 +341,7 @@ parse_deref :: proc(p: ^Parser) -> Ast_Data {
 		lhs  = lhs,
 		expr = parse_expression(p, 0),
 	}
-	expect(p, .NewLine)
+	expect_statement_end(p)
 	return data
 }
 
@@ -751,7 +773,7 @@ parse_block :: proc(p: ^Parser) -> ^Ast_Block {
 		stmt := parse_statement(p)
 		append(&res, stmt)
 	}
-	advance(p)
+	expect(p, .RBrace)
 
 	if current(p).kind == .NewLine {
 		advance(p)
