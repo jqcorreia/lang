@@ -8,6 +8,10 @@ fn second(s: []u8) -> u8 {
     return s[1]
 }
 
+fn ret_slice() -> []u8 {
+    return [1,2,3,4,5]
+}
+
 fn main() {
     a : []u8 = [32, 45]
 
@@ -15,5 +19,7 @@ fn main() {
     printf("%d %d\n", a[0], b)
     printf("first: %d\n", first([42, 10, 1000]))
     printf("second: %d\n", second([42, 10, 1000]))
+
+    printf("ret: %d\n", ret_slice()[0])
 }
 
