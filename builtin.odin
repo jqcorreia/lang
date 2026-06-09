@@ -1,18 +1,32 @@
 package main
 
-// Note(quadrado): we need a way to abstract and simplify the declaration of builtins that can't be
-// declared in the language runtime.
-add_builtins :: proc(scope: ^Scope) {
-	heap_create_new_func(scope)
+Builtin_Funcs :: struct {
+	create:  proc(scope: ^Scope),
+	resolve: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type,
+	emit:    proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef,
 }
 
-heap_create_new_func :: proc(scope: ^Scope) {
+builtins_map: map[string]Builtin_Funcs
+
+@(init)
+builtins_init :: proc "contextless" () {
+	builtins_map["new"] = {builtin_create_new_func, builtin_new_resolve, builtin_new_emit}
+	builtins_map["len"] = {builtin_len_create, builtin_len_resolve, builtin_len_emit}
+}
+
+add_builtins :: proc(scope: ^Scope) {
+	for _, v in builtins_map {
+		v.create(scope)
+	}
+}
+
+builtin_create_new_func :: proc(scope: ^Scope) {
 	new_fn := make_symbol(.Function)
 	new_fn.name = "new"
 	scope.symbols["new"] = new_fn
 }
 
-heap_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
+builtin_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
 	call := expr.data.(Expr_Call)
 	name := call.args[0].data.(Expr_Identifier).value
 
@@ -32,7 +46,7 @@ heap_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
 	return ptr_type
 }
 
-heap_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
+builtin_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
 	name := e.args[0].data.(Expr_Identifier).value
 
 	sym, ok := resolve_symbol(scope, name)
@@ -55,4 +69,30 @@ heap_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) 
 	call := BuildCall2(gen.builder, fn_type, fn, &arg, 1, "")
 
 	return call
+}
+
+builtin_len_create :: proc(scope: ^Scope) {
+	sym := make_symbol(.Function)
+	sym.name = "len"
+	scope.symbols["len"] = sym
+}
+
+builtin_len_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope) -> ^Type {
+	i64_t, _ := resolve_symbol(scope, "i64")
+
+	expr.type = i64_t.type
+	return expr.type
+}
+
+builtin_len_emit :: proc(gen: ^Generator, expr: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
+	arg0 := expr.args[0]
+	#partial switch arg0.type.kind {
+	case .Slice:
+
+	case .Array:
+		return ConstInt(Int64TypeInContext(gen.ctx), arg0.type.size, 0)
+	}
+
+
+	return nil
 }

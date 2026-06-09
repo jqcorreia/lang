@@ -269,8 +269,8 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			expr.type = &error_type
 			return &error_type
 		}
-		if sym.name == "new" && sym.kind == .Function {
-			return heap_new_resolve(sym, expr, scope)
+		if builtin, builtin_ok := builtins_map[sym.name]; builtin_ok {
+			return builtin.resolve(sym, expr, scope)
 		}
 
 		// If the symbol exists, but is of kind .Type then this a cast
@@ -508,8 +508,8 @@ function_call_emit_sysv :: proc(
 
 		assert(sym != nil)
 
-		if sym.name == "new" {
-			return heap_new_emit(gen, e, scope, span)
+		if builtin, builtin_ok := builtins_map[sym.name]; builtin_ok {
+			return builtin.emit(gen, e, scope, span)
 		}
 		if sym.kind == .Function {
 			indirect = false
