@@ -20,6 +20,7 @@ fn main() {
     printf("first: %d\n", first([42, 10, 1000]))
     printf("second: %d\n", second([42, 10, 1000]))
 
-    printf("ret: %d\n", ret_slice()[0])
+    c := ret_slice()
+    printf("ret: %d\n", c[0])
 }
 
