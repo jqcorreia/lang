@@ -15,7 +15,8 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] API and code cleanups after a first working pass
 - [x] Primitive memory managemet (new(), free())
 - [x] Missing 'continue' construct
-- [ ] Slices support
+- [x] Slices support
+- [ ] Runtime bounds checking for array access
 - [ ] Properly support varargs.
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Struct untyped literals
@@ -26,7 +27,6 @@ Potentially this README can look a lot different in a couple of months if this b
 - [ ] Make `external` blocks its own AST node kind, in order to have linking rules and prefixes
 - [ ] Make sure that lexer is UTF-8 compliant
 - [ ] Add check for cyclic import
-- [ ] Runtime bounds checking for array access
 
 # Try it
 ```
