@@ -274,3 +274,26 @@ coerce_to_array :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	return nil
 
 }
+
+array_to_slice_emit_into :: proc(
+	gen: ^Generator,
+	expr: Expr_Array_To_Slice,
+	dst: ValueRef,
+	slice_type: ^Type,
+	scope: ^Scope,
+	span: Span,
+) {
+	// Create the backing array
+	arr := expr.original
+	n := arr.type.size
+	backing_ty := get_llvm_type(gen, expr.original.type)
+	backing := build_entry_alloca(gen, backing_ty, "")
+	emit_into(gen, arr, backing, scope, span)
+
+	struct_ty := get_llvm_type(gen, slice_type)
+
+	p0 := BuildStructGEP2(gen.builder, struct_ty, dst, 0, "")
+	BuildStore(gen.builder, backing, p0)
+	p1 := BuildStructGEP2(gen.builder, struct_ty, dst, 1, "")
+	BuildStore(gen.builder, ConstInt(Int64TypeInContext(gen.ctx), n, 0), p1)
+}

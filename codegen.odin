@@ -121,6 +121,8 @@ emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, s
 		// Do the general case here also
 		val := emit_value(gen, expr, scope, span)
 		BuildStore(gen.builder, val, dest)
+	case Expr_Array_To_Slice:
+		array_to_slice_emit_into(gen, e, dest, expr.type, scope, span)
 	case:
 		// General fallback: emit value and store into dest
 		val := emit_value(gen, expr, scope, span)
@@ -219,6 +221,11 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		return BuildGlobalStringPtr(gen.builder, strings.clone_to_cstring(e.value), "")
 	case Expr_Array_Literal:
 		return array_literal_emit_value(gen, expr, scope, span)
+	case Expr_Array_To_Slice:
+		slice_type := get_llvm_type(gen, expr.type)
+		slot := build_entry_alloca(gen, slice_type, "")
+		array_to_slice_emit_into(gen, e, slot, expr.type, scope, span)
+		return BuildLoad2(gen.builder, slice_type, slot, "")
 	case Expr_Struct_Literal:
 		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:
@@ -460,7 +467,7 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 	gen.values[sym] = ptr
 
 	#partial switch sym.type.kind {
-	case .Struct, .Array:
+	case .Struct, .Array, .Slice:
 		if s.expr != nil {
 			emit_into(gen, s.expr, ptr, scope, span)
 		} else {
@@ -476,18 +483,6 @@ emit_var_decl :: proc(gen: ^Generator, s: ^Ast_Var_Decl, scope: ^Scope, span: Sp
 				align,
 			)
 		}
-	case .Slice:
-		// Create the backing array
-		n := s.expr.type.size // recover the size that we kept from the resolver
-		backing_ty := get_llvm_type(gen, s.expr.type)
-		backing := build_entry_alloca(gen, backing_ty, "")
-		emit_into(gen, s.expr, backing, scope, span)
-
-		slice_ty := get_llvm_type(gen, sym.type)
-		p0 := BuildStructGEP2(gen.builder, slice_ty, ptr, 0, "")
-		BuildStore(gen.builder, backing, p0)
-		p1 := BuildStructGEP2(gen.builder, slice_ty, ptr, 1, "")
-		BuildStore(gen.builder, ConstInt(Int64TypeInContext(gen.ctx), n, 0), p1)
 	case:
 		val :=
 			s.expr != nil ? emit_value(gen, s.expr, scope, span) : make_zero_value(gen, sym.type)
