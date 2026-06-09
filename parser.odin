@@ -56,16 +56,16 @@ expect :: proc(p: ^Parser, kind: Token_Kind, loc := #caller_location) -> Token {
 	return advance(p)
 }
 
-// Statements are normally terminated by a newline. Inside an inline block
-// (e.g. `if c { stmt }`) the closing brace terminates the statement instead;
-// in that case the RBrace (or EOF) is left in place so the enclosing
-// parse_block can consume and validate it.
+// This function contains the logic for statement end
+// The importance of this function is that by only expecting NewLine then we can't have
+// inline blocks of code `if true { print("true") }` as it would fail the expectation
+// leave the close parent to the parse_block parsing function
 expect_statement_end :: proc(p: ^Parser, loc := #caller_location) {
 	#partial switch current(p).kind {
 	case .NewLine:
 		advance(p)
 	case .RBrace, .EOF:
-	// Terminated by the end of the enclosing block; leave the token for parse_block.
+	// leave the token for parse_block.
 	case:
 		fatal_token(
 			p,
@@ -225,6 +225,8 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 }
 
 
+// Parse every statement that starts with an identifier
+// assigment, decl, function calls, constant decl, etc
 parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 	if p.error_occured do return Ast_Error{}
 	switch {
@@ -242,13 +244,13 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 			expr = parse_expression(p, 0),
 		}
 
-		expect_statement_end(p) // This should end with newline
+		expect_statement_end(p)
 
 		return data
 
 	case peek(p).kind == .Period:
 		// Here we can have 2 things:
-		// - Member assignment
+		// - Member access
 		// - Member method/function call
 		lhs := parse_expression(p, 0)
 
@@ -269,14 +271,15 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 		return Ast_Expr{expr = lhs}
 
 	case peek(p).kind == .LParen:
-		// --- Function Call ---
+		// Function call
 		expr := parse_expression(p)
 		expect_statement_end(p)
 		return Ast_Expr{expr = expr}
 
 	case peek(p).kind == .ColonEqual:
-		// --- Assignment and initialization---
-		// Get variable name
+		// Variable declaration with initialization
+		// Note: this could be unified in .Colon and peek for an equal
+		// we actually don't need a ColonEqual... TODO
 		name_tok := current(p)
 
 		// Advance and expect an '='
@@ -288,17 +291,17 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 			expr = parse_expression(p, 0),
 		}
 
-		expect_statement_end(p) // This should end with newline
+		expect_statement_end(p)
 		return data
 
 	case peek(p).kind == .Colon:
+		// Variable declaration with explicit type
 		// Get variable name
 		name_tok := current(p)
 
 		advance(p)
 		expect(p, .Colon)
 
-		// type_expr := expect(p, .Identifier).lexeme
 		type_expr := parse_type_expr(p)
 		default_value_expr: ^Expr
 		if current(p).kind == .Equal {
@@ -314,7 +317,7 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 	case peek(p).kind == .ColonColon:
 		return const_parse(p)
 	case peek(p).kind == .LBracket:
-		// --- Member assignment: foo.bar = expr ---
+		// Assign to an indexable value like arrays or slices
 		lhs := parse_expression(p, 0)
 		expect(p, .Equal)
 
