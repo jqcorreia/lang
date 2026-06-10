@@ -27,6 +27,8 @@ Potentially this README can look a lot different in a couple of months if this b
 - [ ] Make `external` blocks its own AST node kind, in order to have linking rules and prefixes
 - [ ] Make sure that lexer is UTF-8 compliant
 - [ ] Add check for cyclic import
+- [ ] Formalize calling conventions (native vs C)
+- [ ] Refactor type fat-struct into a union
 
 # Try it
 ```

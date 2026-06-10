@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import "core:strings"
 
 Ast_Function :: struct {
@@ -174,9 +173,12 @@ function_signature_resolve :: proc(node: ^Ast_Function, scope: ^Scope, span: Spa
 		if param.variadic_marker {
 			// Note: should err if declaring multiple variadic args
 			variadic_type := new(Type)
-			variadic_type.kind = .Array
+			variadic_type.kind = .Slice
 			variadic_type.variadic = true
 			variadic_type.elem_type = param_type
+
+			// Flag this function as having C-type variadic args
+			type.c_variadic = node.external
 			append(&type.params, variadic_type)
 			continue
 		}
@@ -446,7 +448,9 @@ build_llvm_fn_type_sysv :: proc(
 
 	ret_type_ref := get_llvm_type(gen, sig.return_type)
 	for param in sig.params {
-		if param.variadic {
+		// Only build a variadic LLVM function if it's an effective c-style variadic function
+		// The loop continues because variadic param are not SysV classified yet TODO
+		if param.variadic && sig.c_variadic {
 			variadic = true
 			continue
 		}
@@ -499,6 +503,39 @@ function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 }
 
 
+// Pack native variadic args into a stack-backed array and build the {ptr,len}
+// slice value handed to the callee. Empty -> {null, 0}.
+build_variadic_slice :: proc(gen: ^Generator, slice_type: ^Type, vals: []ValueRef) -> ValueRef {
+	slice_struct_ty := get_llvm_type(gen, slice_type)
+	n := len(vals)
+	slot := build_entry_alloca(gen, slice_struct_ty, "varargs_slice")
+
+	ptr_val: ValueRef
+	if n > 0 {
+		elem_ty := get_llvm_type(gen, slice_type.elem_type)
+		arr_ty := ArrayType(elem_ty, u32(n))
+		backing := build_entry_alloca(gen, arr_ty, "varargs_backing")
+		for v, k in vals {
+			indices: []ValueRef = {
+				ConstInt(Int64TypeInContext(gen.ctx), 0, 0),
+				ConstInt(Int64TypeInContext(gen.ctx), u64(k), 0),
+			}
+			ep := BuildGEP2(gen.builder, arr_ty, backing, raw_data(indices), 2, "")
+			BuildStore(gen.builder, v, ep)
+		}
+		ptr_val = backing
+	} else {
+		ptr_val = ConstNull(PointerTypeInContext(gen.ctx, 0))
+	}
+
+	p0 := BuildStructGEP2(gen.builder, slice_struct_ty, slot, 0, "")
+	BuildStore(gen.builder, ptr_val, p0)
+	p1 := BuildStructGEP2(gen.builder, slice_struct_ty, slot, 1, "")
+	BuildStore(gen.builder, ConstInt(Int64TypeInContext(gen.ctx), u64(n), 0), p1)
+
+	return BuildLoad2(gen.builder, slice_struct_ty, slot, "")
+}
+
 function_call_emit_sysv :: proc(
 	gen: ^Generator,
 	e: Expr_Call,
@@ -537,7 +574,21 @@ function_call_emit_sysv :: proc(
 	byval_arg_idxs: [dynamic]u32
 	byval_arg_tys: [dynamic]TypeRef
 
+	// Native variadic: the callee declares a trailing {ptr,len} slice param.
+	// Locate it up front so we emit the slice arg even when zero variadic
+	// args are passed.
+	native_variadic: ^Type
+	if !fn_type.c_variadic {
+		for p in fn_type.params {
+			if p.variadic {
+				native_variadic = p
+				break
+			}
+		}
+	}
+
 	variadic_found := false
+	variadic_vals: [dynamic]ValueRef
 	for a, i in e.args {
 		is_variadic := variadic_found || i >= len(fn_type.params)
 		if !is_variadic && fn_type.params[i].variadic {
@@ -547,6 +598,11 @@ function_call_emit_sysv :: proc(
 
 		if is_variadic {
 			val := emit_value(gen, a, scope, span)
+			if native_variadic != nil {
+				// Native: collect and pack into a slice after the loop.
+				append(&variadic_vals, val)
+				continue
+			}
 			// C variadic ABI
 			// Floats are promoted to double (f64)
 			// Integers (or bools) are promoted to i32
@@ -589,6 +645,11 @@ function_call_emit_sysv :: proc(
 			append(&byval_arg_tys, l.struct_type)
 			append(&args, copy)
 		}
+	}
+
+	// Native variadic always passes a trailing slice (empty -> {null, 0}).
+	if native_variadic != nil {
+		append(&args, build_variadic_slice(gen, native_variadic, variadic_vals[:]))
 	}
 
 	sym_type: TypeRef

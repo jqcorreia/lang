@@ -1,10 +1,17 @@
 import "std:c"
 
-fn add(args: ...i32) -> i32 {
-    c := args[0]
-    return 0
+// Native variadic: nums is exposed as a {ptr,len} slice in the body.
+fn sum(nums: ...i32) -> i32 {
+    total: i32 = 0
+    for i in 0..len(nums) {
+        total = total + nums[i]
+    }
+    return total
 }
+
 fn main() {
-    printf("Hello %s, the answer is %d\n", "world", 42)
-    add(10, 20, 30)
+    // C varargs (printf) and native variadic coexist.
+    printf("sum 3: %d\n", sum(10, 20, 30))
+    printf("sum 5: %d\n", sum(1, 2, 3, 4, 5))
+    printf("sum 0: %d\n", sum())
 }

@@ -17,6 +17,7 @@ Type :: struct {
 	params:          [dynamic]^Type,
 	return_type:     ^Type,
 	variadic:        bool,
+	c_variadic:      bool, // function signature uses the C varargs ABI (foreign)
 }
 
 error_type := Type {
