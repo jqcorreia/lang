@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 Symbol :: struct {
 	name:        string,
 	kind:        Symbol_Kind,

@@ -16,8 +16,8 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Primitive memory managemet (new(), free())
 - [x] Missing 'continue' construct
 - [x] Slices support
-- [ ] Runtime bounds checking for array access
-- [ ] Properly support varargs.
+- [x] Properly support varargs.
+- [x] Runtime bounds checking for array access
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Struct untyped literals
 - [ ] Array swizzling

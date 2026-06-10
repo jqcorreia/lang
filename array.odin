@@ -139,6 +139,38 @@ array_literal_emit_into :: proc(
 
 }
 
+array_bound_check_emit :: proc(
+	gen: ^Generator,
+	index: ValueRef,
+	array_size: ValueRef,
+	scope: ^Scope,
+	span: Span,
+) {
+	func := GetBasicBlockParent(GetInsertBlock(gen.builder))
+
+	ok_bb := AppendBasicBlock(func, "bound_ok")
+	fail_bb := AppendBasicBlock(func, "bound_fail")
+
+	bound_bool := BuildICmp(gen.builder, .IntULT, index, array_size, "")
+	BuildCondBr(gen.builder, bound_bool, ok_bb, fail_bb)
+
+	PositionBuilderAtEnd(gen.builder, fail_bb)
+	abort_sym, ok := resolve_symbol(scope, "__trap")
+	// if !ok {
+	// 	decl := abort_sym.decl.data.(Ast_Function)
+	// 	function_decl_emit_sysv(gen, &decl, scope, span)
+	// 	abort_sym, _ = resolve_symbol(scope, "trap")
+	// }
+	abort_fn := gen.values[abort_sym]
+	abort_fn_ty := gen.types[abort_sym]
+	fmt.println(abort_fn, abort_fn_ty)
+	BuildCall2(gen.builder, abort_fn_ty, abort_fn, nil, 0, "")
+	BuildUnreachable(gen.builder)
+
+
+	PositionBuilderAtEnd(gen.builder, ok_bb)
+}
+
 array_expr_index_emit_address :: proc(
 	gen: ^Generator,
 	expr: ^Expr,
@@ -147,6 +179,15 @@ array_expr_index_emit_address :: proc(
 ) -> ValueRef {
 	e := expr.data.(Expr_Index)
 	index_val := emit_value(gen, e.index, scope, span)
+
+	array_bound_check_emit(
+		gen,
+		index_val,
+		ConstInt(Int64TypeInContext(gen.ctx), e.array.type.size, 0),
+		scope,
+		span,
+	)
+
 	indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index_val}
 
 	array_ptr: ValueRef

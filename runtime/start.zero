@@ -30,6 +30,8 @@ external "c" {
     fn time(t: &i64) -> i32
     fn malloc(size: i64) -> rawptr 
     fn free(ptr: rawptr)
+    fn abort()
+    fn puts(string: cstr)
 }
 
 fn segfault_handler(sig: i32) {
@@ -55,6 +57,11 @@ fn __zero_pow(b: i64, e: i64) -> i64 {
         res = res * b
     }
     return res
+}
+ 
+fn __trap() {
+    puts("Array index out of bounds!")
+    abort()
 }
 
 fn __zero_init_random_seed() {

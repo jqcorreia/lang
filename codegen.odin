@@ -168,6 +168,10 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 			p0 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 0, "")
 			base := BuildLoad2(gen.builder, PointerTypeInContext(gen.ctx, 0), p0, "")
 
+			p1 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 1, "")
+			size := BuildLoad2(gen.builder, Int64TypeInContext(gen.ctx), p1, "")
+
+			array_bound_check_emit(gen, index_val, size, scope, span)
 			indices: []ValueRef = {index_val}
 			return BuildGEP2(gen.builder, elem_type, base, raw_data(indices), 1, "")
 		}
