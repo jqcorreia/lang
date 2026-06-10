@@ -637,7 +637,7 @@ function_body_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 
 	llvm_idx: u32 = 0
 	for ast_param in s.params {
-		if ast_param.variadic_marker do continue
+		// if ast_param.variadic_marker do continue
 		param_sym := ast_param.symbol
 		name := strings.clone_to_cstring(ast_param.name)
 
