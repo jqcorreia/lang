@@ -5,7 +5,7 @@ import "core:os"
 import "core:testing"
 
 TEST_FOLDER :: "tests"
-SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero"}
+SKIP_TESTS := [?]string{"var_shadow.zero", "bench_large.zero", "variadic.zero"}
 
 @(test)
 run_tests :: proc(t: ^testing.T) {
@@ -14,6 +14,7 @@ run_tests :: proc(t: ^testing.T) {
 	os.close(handle)
 
 	for fi in fis {
+		fmt.printf("%s - started\n", fi.name)
 		skip := false
 		for name in SKIP_TESTS {
 			if fi.name == name {

@@ -170,22 +170,20 @@ function_signature_resolve :: proc(node: ^Ast_Function, scope: ^Scope, span: Spa
 	type := new(Type)
 	type.kind = .Function
 	for &param in node.params {
+		param_type := resolve_type_expr(&param.type_expr, scope, span)
 		if param.variadic_marker {
+			// Note: should err if declaring multiple variadic args
 			variadic_type := new(Type)
+			variadic_type.kind = .Array
 			variadic_type.variadic = true
+			variadic_type.elem_type = param_type
 			append(&type.params, variadic_type)
 			continue
 		}
-		// if !ok {
-		// 	error_span(span, "Invalid type expression for parameter '%s'", param.name)
-		// 	append(&type.params, &error_type)
-		// 	continue
-		// }
-		param_type := resolve_type_expr(&param.type_expr, scope, span)
 		append(&type.params, param_type)
 	}
-	ret_type := resolve_type_expr(&node.ret_type_expr, scope, span)
 
+	ret_type := resolve_type_expr(&node.ret_type_expr, scope, span)
 	if ret_type == &error_type {
 		return &error_type
 	}
@@ -284,22 +282,31 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	e.args = args
 
 	variadic_found := false
+	variadic_args: [dynamic]^Expr
+	variadic_type: ^Type
+
 	for i in 0 ..< len(e.args) {
 		arg := e.args[i]
 		arg.type = resolve_expr_type(arg, scope, span)
 
+		//Note: this is crappy, we should be iterating over params and not args TODO
+		// This way we avoid all this
 		if variadic_found || i >= len(fn_type.params) {
+			append(&variadic_args, arg)
 			continue
 		}
 
 		param := fn_type.params[i]
 		if param.variadic {
 			variadic_found = true
+			variadic_type = param.elem_type
+			arg.type = coerce(arg.type, variadic_type, scope)
+			append(&variadic_args, arg)
 			continue
 		}
 
-
 		// Auto-ref / auto-deref the receiver of a method-style call
+		// Note: This is a mess and should be refactored
 		if e.method && i == 0 && param != nil && arg.type != nil {
 			if param.kind == .Pointer &&
 			   arg.type.kind != .Pointer &&

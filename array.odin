@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+
 Expr_Array_Literal :: struct {
 	elements: []^Expr,
 }
@@ -46,6 +48,7 @@ array_expr_index_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Typ
 	type := resolve_expr_type(e.array, scope, span)
 	resolve_expr_type(e.index, scope, span)
 
+	// fmt.println(type)
 	// Support pointer to array
 	if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Array {
 		type = type.pointee_type

@@ -107,9 +107,15 @@ create_primitive_types :: proc(scope: ^Scope) {
 	create_type(.CString, "cstr", scope)
 	create_type(.RawPointer, "rawptr", scope)
 	create_type(.Any, "anytype", scope)
+	// create_type(.Array, "array", scope)
+	// create_type(.Slice, "slice", scope)
 }
 
 coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
+	// In case the destination is Any just return `from` unconditionally since every type should override `any`
+	if to.kind == .Any {
+		return from
+	}
 	if from.kind == .Function && to.kind == .Function {
 		same_len_params := len(from.params) == len(to.params)
 

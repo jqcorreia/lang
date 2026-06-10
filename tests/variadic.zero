@@ -1,5 +1,10 @@
 import "std:c"
 
+fn add(args: ...i32) -> i32 {
+    c := args[0]
+    return 0
+}
 fn main() {
     printf("Hello %s, the answer is %d\n", "world", 42)
+    add(10, 20, 30)
 }
