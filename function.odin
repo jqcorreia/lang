@@ -502,9 +502,8 @@ function_decl_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 	gen.types[sym] = fn_type
 }
 
-
-// Pack native variadic args into a stack-backed array and build the {ptr,len}
-// slice value handed to the callee. Empty -> {null, 0}.
+// Helper to build an slice struct backed by values. This is used on converting variadic variables
+// to a usable slice.
 build_variadic_slice :: proc(gen: ^Generator, slice_type: ^Type, vals: []ValueRef) -> ValueRef {
 	slice_struct_ty := get_llvm_type(gen, slice_type)
 	n := len(vals)
@@ -574,9 +573,7 @@ function_call_emit_sysv :: proc(
 	byval_arg_idxs: [dynamic]u32
 	byval_arg_tys: [dynamic]TypeRef
 
-	// Native variadic: the callee declares a trailing {ptr,len} slice param.
-	// Locate it up front so we emit the slice arg even when zero variadic
-	// args are passed.
+	// Find the native variadic param if it exists
 	native_variadic: ^Type
 	if !fn_type.c_variadic {
 		for p in fn_type.params {
@@ -750,12 +747,12 @@ function_body_emit_sysv :: proc(gen: ^Generator, s: ^Ast_Function, scope: ^Scope
 
 	emit_block(gen, s.body)
 
-	/*
-	If function return type is Void and not terminated yet (a explicit return, 
-    which is a valid expression), terminate with a RetVoid
-    NOTE(quadrado): Using the "terminated" field in the Ast is not good but GetBasicBlockTerminator 
-    always returns a value and not nil as expected of a non-terminated block.
-    */
+
+	// If function return type is Void and not terminated yet (a explicit return,
+	// which is a valid expression), terminate with a RetVoid
+	// NOTE(quadrado): Using the "terminated" field in the Ast is not good but GetBasicBlockTerminator
+	// always returns a value and not nil as expected of a non-terminated block.
+
 	if s.symbol.type.return_type.kind == .Void && !s.body.terminated {
 		BuildRetVoid(gen.builder)
 	}
