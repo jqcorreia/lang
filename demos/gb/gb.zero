@@ -1,0 +1,11 @@
+import "std:c"
+
+fn main() {
+    rom_file := fopen("demos/tetris.ro", "r")
+
+    if rom_file == nil {
+        printf("File not found!\n")
+        return
+    }
+    fclose(rom_file)
+}

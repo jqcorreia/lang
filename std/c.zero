@@ -2,11 +2,13 @@ external "c" {
     fn sprintf(dest: cstr, format: cstr, args: ...anytype) -> i32
     fn printf(format: cstr, args: ...anytype) -> i32
     fn fopen(filename: cstr, mode: cstr) -> &FILE
+    fn fread(ptr: rawptr, n: size_t, size: size_t) -> size_t
     fn fputc(char: i32, file: &FILE) -> i32
     fn fputs(string: cstr, file: &FILE) -> u64
     fn fclose(file: &FILE) -> u64
     fn random() -> i64
+
 }
 
+size_t :: i64
 struct FILE {}
-

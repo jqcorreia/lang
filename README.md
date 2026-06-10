@@ -29,6 +29,7 @@ Potentially this README can look a lot different in a couple of months if this b
 - [ ] Add check for cyclic import
 - [ ] Formalize calling conventions (native vs C)
 - [ ] Refactor type fat-struct into a union
+- [ ] Fix program return codes.
 
 # Try it
 ```
