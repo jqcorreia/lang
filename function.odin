@@ -292,6 +292,7 @@ function_call_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		//Note: this is crappy, we should be iterating over params and not args TODO
 		// This way we avoid all this
 		if variadic_found || i >= len(fn_type.params) {
+			arg.type = coerce(arg.type, variadic_type, scope)
 			append(&variadic_args, arg)
 			continue
 		}
