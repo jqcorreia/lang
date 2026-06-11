@@ -1,11 +1,24 @@
 import "std:c"
 
 fn main() {
-    rom_file := fopen("demos/tetris.ro", "r")
+    rom_file := fopen("demos/gb/tetris.gb", "r")
 
     if rom_file == nil {
         printf("File not found!\n")
         return
+    }
+
+    buf: [32 * 1000]u8
+    ch: u8
+    idx := 0
+    for {
+        nb := fread(&ch, 1, 1, rom_file)
+        printf("%d\n", ch)
+        if nb == 0 {
+            break
+        }
+        buf[idx] = ch
+        idx = idx + 1
     }
     fclose(rom_file)
 }

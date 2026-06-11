@@ -472,6 +472,8 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 		elem_size := get_type_byte_size(type.elem_type)
 		if elem_size == 0 {return 0}
 		return elem_size * u32(type.size)
+	case .Slice:
+		return 16 // struct ptr (8 bytes) + size (8 bytes)
 	}
 	return 0
 }
