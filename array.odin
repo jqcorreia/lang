@@ -48,7 +48,6 @@ array_expr_index_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Typ
 	type := resolve_expr_type(e.array, scope, span)
 	resolve_expr_type(e.index, scope, span)
 
-	// fmt.println(type)
 	// Support pointer to array
 	if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Array {
 		type = type.pointee_type
@@ -163,7 +162,6 @@ array_bound_check_emit :: proc(
 	// }
 	abort_fn := gen.values[abort_sym]
 	abort_fn_ty := gen.types[abort_sym]
-	fmt.println(abort_fn, abort_fn_ty)
 	BuildCall2(gen.builder, abort_fn_ty, abort_fn, nil, 0, "")
 	BuildUnreachable(gen.builder)
 
