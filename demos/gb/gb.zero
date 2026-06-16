@@ -5,7 +5,34 @@ struct Cart {
     title: [10]u8
 }
 
+struct Instruction {
+
+}
+
+struct registers {
+    a: u8
+    b: u8
+    c: u8
+    d: u8
+    e: u8
+    h: u8
+    l: u8
+    flags: u8
+    pc: u16
+    sp: u16
+}
+
+instructions: [256]Instruction
+regs: registers
+
+fn create_instructions() {
+    instructions[0] = Instruction{}
+}
+
 fn main() {
+    create_instructions()
+    regs.pc = 0x100
+
     rom_file := fopen("demos/gb/tetris.gb", "r")
 
     if rom_file == nil {
@@ -26,10 +53,21 @@ fn main() {
     }
 
     cart := cast(Cart, buf)
-    // printf("%c\n", cart.title[4])
-    for offset in 0..10 {
-        printf("%c", cart.title[offset])
-        // printf("%c", buf[0x104 + offset])
+
+    done := false
+    for {
+        if done { break }
+        pc := u64(regs.pc)
+        op_code := buf[pc]
+
+        match op_code {
+            0x00 => {
+                regs.pc = regs.pc + 1
+            }
+            0x50 => {
+                regs.pc = buf[pc + 1]
+            }
+        }
     }
     fclose(rom_file)
 }
