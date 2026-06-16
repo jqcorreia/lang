@@ -1,0 +1,12 @@
+import "std:c"
+
+struct Point {
+    x: i32
+    y: i32
+}
+
+fn main() {
+    bytes: []u8 = [1, 0, 0, 0, 2, 0, 0, 0]   // x=1, y=2 little-endian
+    p := cast(Point, bytes)
+    printf("x=%d y=%d\n", p.x, p.y)
+}

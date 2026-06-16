@@ -14,6 +14,7 @@ builtins_map: map[string]Builtin_Funcs
 builtins_init :: proc "contextless" () {
 	builtins_map["new"] = {builtin_create_new_func, builtin_new_resolve, builtin_new_emit}
 	builtins_map["len"] = {builtin_len_create, builtin_len_resolve, builtin_len_emit}
+	builtins_map["cast"] = {builtin_cast_create, builtin_cast_resolve, builtin_cast_emit}
 }
 
 add_builtins :: proc(scope: ^Scope) {
@@ -71,6 +72,101 @@ builtin_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Spa
 	call := BuildCall2(gen.builder, fn_type, fn, &arg, 1, "")
 
 	return call
+}
+
+// cast(T, bytes) reinterprets a slice/array/value as a value of type T.
+//
+// Semantics: a *copy*. The source bytes are memcpy'd into a freshly alloca'd,
+// correctly aligned T and the loaded T is returned. This is the safe default
+// (the slice's backing buffer carries no alignment guarantee for T, so a
+// zero-copy reinterpret + aligned load would be UB). A runtime bounds check
+// traps if the source has fewer bytes than sizeof(T).
+builtin_cast_create :: proc(scope: ^Scope) {
+	sym := make_symbol(.Function)
+	sym.name = "cast"
+	scope.symbols["cast"] = sym
+}
+
+builtin_cast_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
+	call := expr.data.(Expr_Call)
+
+	if len(call.args) != 2 {
+		error_span(span, "cast() takes a type and a value: cast(T, bytes)")
+		expr.type = &error_type
+		return expr.type
+	}
+
+	ident, is_ident := call.args[0].data.(Expr_Identifier)
+	if !is_ident {
+		error_span(span, "cast() expects a type as the first argument")
+		expr.type = &error_type
+		return expr.type
+	}
+
+	type_sym, ok := resolve_symbol(scope, ident.value)
+	if !ok || type_sym.kind != .Type {
+		error_span(span, "cast() expects a type as the first argument")
+		expr.type = &error_type
+		return expr.type
+	}
+
+	// Resolve the source value so its type is known at emit time.
+	resolve_expr_type(call.args[1], scope, span)
+
+	expr.type = type_sym.type
+	return expr.type
+}
+
+builtin_cast_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
+	i64_t := Int64TypeInContext(gen.ctx)
+	ptr_t := PointerTypeInContext(gen.ctx, 0)
+
+	name := e.args[0].data.(Expr_Identifier).value
+	sym, _ := resolve_symbol(scope, name)
+
+	dst_ty := get_llvm_type(gen, sym.type)
+	dst_size := StoreSizeOfType(gen.data_layout, dst_ty)
+	dst_align := ABIAlignmentOfType(gen.data_layout, dst_ty)
+
+	// Obtain the source data pointer and its byte length.
+	src := e.args[1]
+	src_ptr: ValueRef
+	src_bytes: ValueRef
+
+	#partial switch src.type.kind {
+	case .Slice:
+		struct_ty := get_llvm_type(gen, src.type)
+		slice := emit_address(gen, src, scope, span)
+
+		p0 := BuildStructGEP2(gen.builder, struct_ty, slice, 0, "")
+		src_ptr = BuildLoad2(gen.builder, ptr_t, p0, "")
+
+		p1 := BuildStructGEP2(gen.builder, struct_ty, slice, 1, "")
+		count := BuildLoad2(gen.builder, i64_t, p1, "")
+
+		elem_sz := ConstInt(i64_t, u64(get_type_byte_size(src.type.elem_type)), 0)
+		src_bytes = BuildMul(gen.builder, count, elem_sz, "")
+
+	case .Array:
+		src_ptr = emit_address(gen, src, scope, span)
+		src_bytes = ConstInt(i64_t, u64(get_type_byte_size(src.type)), 0)
+
+	case:
+		// Any other addressable value: reinterpret its in-memory bytes.
+		src_ptr = emit_address(gen, src, scope, span)
+		src_bytes = ConstInt(i64_t, u64(get_type_byte_size(src.type)), 0)
+	}
+
+	// Runtime guard: trap unless src_bytes >= dst_size.
+	// array_bound_check_emit traps unless (index < size), so passing
+	// index = dst_size - 1 makes it ok exactly when dst_size <= src_bytes.
+	last := ConstInt(i64_t, dst_size - 1, 0)
+	array_bound_check_emit(gen, last, src_bytes, scope, span)
+
+	// Copy into an aligned T and load it back by value.
+	slot := build_entry_alloca(gen, dst_ty, "cast")
+	BuildMemCpy(gen.builder, slot, dst_align, src_ptr, 1, ConstInt(i64_t, dst_size, 0))
+	return BuildLoad2(gen.builder, dst_ty, slot, "")
 }
 
 builtin_len_create :: proc(scope: ^Scope) {

@@ -1,5 +1,10 @@
 import "std:c"
 
+struct Cart {
+    pad1: [0x103]u8
+    title: [10]u8
+}
+
 fn main() {
     rom_file := fopen("demos/gb/tetris.gb", "r")
 
@@ -8,17 +13,21 @@ fn main() {
         return
     }
 
-    buf: [32 * 1000]u8
+    buf: [32 * 1024]u8
     ch: u8
     idx := 0
     for {
         nb := fread(&ch, 1, 1, rom_file)
-        printf("%d\n", ch)
         if nb == 0 {
             break
         }
         buf[idx] = ch
         idx = idx + 1
+    }
+
+    cart := cast(Cart, buf)
+    for offset in 0..10 {
+        printf("%c", cart.title[offset])
     }
     fclose(rom_file)
 }
