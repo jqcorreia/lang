@@ -1,7 +1,7 @@
 import "std:c"
 
 struct Cart {
-    pad1: [0x103]u8
+    pad1: [0x133]u8
     title: [10]u8
 }
 
@@ -26,8 +26,10 @@ fn main() {
     }
 
     cart := cast(Cart, buf)
+    // printf("%c\n", cart.title[4])
     for offset in 0..10 {
         printf("%c", cart.title[offset])
+        // printf("%c", buf[0x104 + offset])
     }
     fclose(rom_file)
 }
