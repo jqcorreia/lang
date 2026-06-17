@@ -127,6 +127,13 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		return to
 	}
 
+	if from.kind == .Function && to.kind == .Nil {
+		return from
+	}
+	if to.kind == .Function && from.kind == .Nil {
+		return to
+	}
+
 	if from.kind == .Array && to.kind == .Slice {
 		if coerce(from.elem_type, to.elem_type, scope) != nil {
 			return to

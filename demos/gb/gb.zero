@@ -6,7 +6,7 @@ struct Cart {
 }
 
 struct Instruction {
-
+    execute: fn()
 }
 
 struct registers {
@@ -24,14 +24,34 @@ struct registers {
 
 instructions: [256]Instruction
 regs: registers
+buf: [32 * 1024]u8
 
 fn create_instructions() {
-    instructions[0] = Instruction{}
+    instructions[0] = Instruction{ execute = noop }
+    instructions[0xc3] = Instruction{ execute = jp }
+    instructions[0xaf] = Instruction{ execute = xor_a_a }
+}
+
+fn noop() {
+    regs.pc = regs.pc + 1
+
+}
+
+fn jp() {
+    pc := u64(regs.pc)
+    addr: [2]u8 = [ buf[pc + 1], buf[pc + 2] ]
+    regs.pc = cast(u16, addr)
+}
+
+fn xor_a_a() { 
+    regs.a = 0
+    regs.pc = regs.pc + 3
 }
 
 fn main() {
     create_instructions()
-    regs.pc = 0x100
+    regs.pc = 0x0100
+    regs.sp = 0xFFFE
 
     rom_file := fopen("demos/gb/tetris.gb", "r")
 
@@ -40,7 +60,6 @@ fn main() {
         return
     }
 
-    buf: [32 * 1024]u8
     ch: u8
     idx := 0
     for {
@@ -56,18 +75,19 @@ fn main() {
 
     done := false
     for {
+        printf("pc: %x\n", regs.pc)
         if done { break }
         pc := u64(regs.pc)
         op_code := buf[pc]
-
-        match op_code {
-            0x00 => {
-                regs.pc = regs.pc + 1
-            }
-            0x50 => {
-                regs.pc = buf[pc + 1]
-            }
+        inst := instructions[u64(op_code)]
+        if inst.execute == nil {
+            printf("pc: %x, opcode: %x not implemented\n", regs.pc, op_code)
+            break
         }
+        inst.execute()
+
+    
+        // if regs.pc == 0x150 { break }
     }
     fclose(rom_file)
 }
