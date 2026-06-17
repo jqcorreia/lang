@@ -34,11 +34,10 @@ fn create_instructions() {
 
 fn noop() {
     regs.pc = regs.pc + 1
-
 }
 
 fn jp() {
-    pc := u64(regs.pc)
+    pc := regs.pc
     addr: [2]u8 = [ buf[pc + 1], buf[pc + 2] ]
     regs.pc = cast(u16, addr)
 }

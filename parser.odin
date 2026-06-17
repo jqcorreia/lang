@@ -689,9 +689,7 @@ parse_expression :: proc(
 
 		#partial switch op.kind {
 		case .LBracket:
-			index := parse_expression(p, 0)
-			expect(p, .RBracket)
-			left = expr_index_parse(left, index)
+			left = expr_index_parse(p, left)
 		case .LParen:
 			args := parse_call_args(p)
 			left = expr_call(left, args)

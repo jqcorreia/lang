@@ -35,5 +35,8 @@ fn main() {
     printf("len untyped: %d\n", len([9,879,6,6,5]))
 
     printf("out of bound: %d\n", slice[100])
+
+
+    rs := slice[1:2]
 }
 

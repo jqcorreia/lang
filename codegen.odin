@@ -159,7 +159,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		case .Array:
 			return array_expr_index_emit_address(gen, expr, scope, span)
 		case .Slice:
-			index_val := emit_value(gen, e.index, scope, span)
+			index_val := emit_value(gen, e.index0, scope, span)
 			elem_type := get_llvm_type(gen, e.array.type.elem_type)
 
 			struct_ptr := emit_address(gen, e.array, scope, span)

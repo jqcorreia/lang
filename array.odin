@@ -12,16 +12,28 @@ Expr_Array_Type :: struct {
 }
 
 Expr_Index :: struct {
-	array: ^Expr,
-	index: ^Expr,
+	array:  ^Expr,
+	index0: ^Expr,
+	index1: ^Expr,
 }
 
 
-expr_index_parse :: proc(left: ^Expr, index: ^Expr) -> ^Expr {
+expr_index_parse :: proc(p: ^Parser, left: ^Expr) -> ^Expr {
+	index0 := parse_expression(p, 0)
+	index1: ^Expr
+
+	if current(p).kind == .Colon {
+		advance(p)
+		index1 = parse_expression(p, 0)
+	}
+
+	expect(p, .RBracket)
+
 	ret := new(Expr)
 	ret.data = Expr_Index {
-		array = left,
-		index = index,
+		array  = left,
+		index0 = index0,
+		index1 = index1,
 	}
 
 	return ret
@@ -45,19 +57,35 @@ array_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 
 array_expr_index_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 	e := expr.data.(Expr_Index)
-	type := resolve_expr_type(e.array, scope, span)
-	resolve_expr_type(e.index, scope, span)
 
-	// Support pointer to array
+	type := resolve_expr_type(e.array, scope, span)
+
+	// Support pointer to array 
 	if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Array {
 		type = type.pointee_type
 	}
+
+	// Error on non indexables
 	if type.kind != .Array && type.kind != .Slice {
 		name, _ := get_type_name(scope, type)
 		error_span(span, "Cannot index non-array type '%s'", name)
 		expr.type = &error_type
 		return &error_type
 	}
+
+	if e.index1 != nil {
+		slice_type := new(Type)
+		slice_type.kind = .Slice
+		slice_type.elem_type = type.elem_type
+
+		resolve_expr_type(e.index0, scope, span)
+		resolve_expr_type(e.index1, scope, span)
+		expr.type = slice_type
+		return slice_type
+	}
+
+	resolve_expr_type(e.index0, scope, span)
+
 	expr.type = type.elem_type
 	return type.elem_type
 }
@@ -65,8 +93,13 @@ array_expr_index_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Typ
 array_expr_index_check :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 	e := expr.data.(Expr_Index)
 	check_expr(c, e.array, scope, span)
-	check_expr(c, e.index, scope, span)
-	if e.array.type.kind == .Error || e.index.type.kind == .Error {
+	check_expr(c, e.index0, scope, span)
+
+	if e.index1 != nil {
+		check_expr(c, e.index1, scope, span)
+	}
+
+	if e.array.type.kind == .Error || e.index0.type.kind == .Error {
 		return
 	}
 	array_type := e.array.type
@@ -75,9 +108,11 @@ array_expr_index_check :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Sp
 	}
 	if array_type.kind != .Array && array_type.kind != .Slice {
 		error_span(span, "'%s' is not indexable", e.array.type.kind)
-	} else if !e.index.type.numeric_integer && e.index.type.kind != .Untyped_Int {
-		error_span(span, "Index must be an integer, got '%s'", e.index.type.kind)
-	} else if lit, ok := e.index.data.(Expr_Int_Literal); ok {
+	} else if !e.index0.type.numeric_integer && e.index0.type.kind != .Untyped_Int {
+		error_span(span, "Index must be an integer, got '%s'", e.index0.type.kind)
+		// } else if !e.index1.type.numeric_integer && e.index1.type.kind != .Untyped_Int {
+		// 	error_span(span, "Index must be an integer, got '%s'", e.index1.type.kind)
+	} else if lit, ok := e.index0.data.(Expr_Int_Literal); ok {
 		if u64(lit.value) >= array_type.size && array_type.kind == .Array {
 			error_span(
 				span,
@@ -173,7 +208,7 @@ array_expr_index_emit_address :: proc(
 	span: Span,
 ) -> ValueRef {
 	e := expr.data.(Expr_Index)
-	index_val := emit_value(gen, e.index, scope, span)
+	index_val := emit_value(gen, e.index0, scope, span)
 
 	array_bound_check_emit(
 		gen,
