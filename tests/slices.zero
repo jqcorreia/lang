@@ -34,9 +34,10 @@ fn main() {
     printf("len slice: %d\n", len(slice))
     printf("len untyped: %d\n", len([9,879,6,6,5]))
 
-    printf("out of bound: %d\n", slice[100])
+    // printf("out of bound: %d\n", slice[100])
 
 
-    rs := slice[1:2]
+    rs := slice[3:4]
+    printf("sub slice idx 0: %d\n", rs[0])
 }
 

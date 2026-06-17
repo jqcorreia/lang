@@ -159,21 +159,7 @@ emit_address :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) ->
 		case .Array:
 			return array_expr_index_emit_address(gen, expr, scope, span)
 		case .Slice:
-			index_val := emit_value(gen, e.index0, scope, span)
-			elem_type := get_llvm_type(gen, e.array.type.elem_type)
-
-			struct_ptr := emit_address(gen, e.array, scope, span)
-			struct_ty := get_llvm_type(gen, e.array.type)
-
-			p0 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 0, "")
-			base := BuildLoad2(gen.builder, PointerTypeInContext(gen.ctx, 0), p0, "")
-
-			p1 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 1, "")
-			size := BuildLoad2(gen.builder, Int64TypeInContext(gen.ctx), p1, "")
-
-			array_bound_check_emit(gen, index_val, size, scope, span)
-			indices: []ValueRef = {index_val}
-			return BuildGEP2(gen.builder, elem_type, base, raw_data(indices), 1, "")
+			return slice_expr_index_emit_address(gen, expr, scope, span)
 		}
 		return array_expr_index_emit_address(gen, expr, scope, span)
 

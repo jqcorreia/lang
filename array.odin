@@ -110,8 +110,10 @@ array_expr_index_check :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Sp
 		error_span(span, "'%s' is not indexable", e.array.type.kind)
 	} else if !e.index0.type.numeric_integer && e.index0.type.kind != .Untyped_Int {
 		error_span(span, "Index must be an integer, got '%s'", e.index0.type.kind)
-		// } else if !e.index1.type.numeric_integer && e.index1.type.kind != .Untyped_Int {
-		// 	error_span(span, "Index must be an integer, got '%s'", e.index1.type.kind)
+	} else if e.index1 != nil &&
+	   !e.index1.type.numeric_integer &&
+	   e.index1.type.kind != .Untyped_Int {
+		error_span(span, "Index must be an integer, got '%s'", e.index1.type.kind)
 	} else if lit, ok := e.index0.data.(Expr_Int_Literal); ok {
 		if u64(lit.value) >= array_type.size && array_type.kind == .Array {
 			error_span(
@@ -370,4 +372,57 @@ array_to_slice_emit_into :: proc(
 	BuildStore(gen.builder, backing, p0)
 	p1 := BuildStructGEP2(gen.builder, struct_ty, dst, 1, "")
 	BuildStore(gen.builder, ConstInt(Int64TypeInContext(gen.ctx), n, 0), p1)
+}
+
+slice_expr_index_emit_address :: proc(
+	gen: ^Generator,
+	expr: ^Expr,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
+	e := expr.data.(Expr_Index)
+	if e.index1 == nil {
+		index_val := emit_value(gen, e.index0, scope, span)
+		elem_type := get_llvm_type(gen, e.array.type.elem_type)
+
+		struct_ptr := emit_address(gen, e.array, scope, span)
+		struct_ty := get_llvm_type(gen, e.array.type)
+
+		p0 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 0, "")
+		base := BuildLoad2(gen.builder, PointerTypeInContext(gen.ctx, 0), p0, "")
+
+		p1 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 1, "")
+		size := BuildLoad2(gen.builder, Int64TypeInContext(gen.ctx), p1, "")
+
+		array_bound_check_emit(gen, index_val, size, scope, span)
+		indices: []ValueRef = {index_val}
+		return BuildGEP2(gen.builder, elem_type, base, raw_data(indices), 1, "")
+	} else {
+		index0_val := emit_value(gen, e.index0, scope, span)
+		index1_val := emit_value(gen, e.index1, scope, span)
+		elem_type := get_llvm_type(gen, e.array.type.elem_type)
+
+		struct_ptr := emit_address(gen, e.array, scope, span)
+		struct_ty := get_llvm_type(gen, e.array.type)
+
+		p0 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 0, "")
+		base := BuildLoad2(gen.builder, PointerTypeInContext(gen.ctx, 0), p0, "")
+
+		p1 := BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 1, "")
+		size := BuildLoad2(gen.builder, Int64TypeInContext(gen.ctx), p1, "")
+
+		// array_bound_check_emit(gen, index_val, size, scope, span)
+		indices: []ValueRef = {index0_val}
+		new_base := BuildGEP2(gen.builder, elem_type, base, raw_data(indices), 1, "")
+		new_size := BuildSub(gen.builder, index1_val, index0_val, "")
+
+		result := build_entry_alloca(gen, struct_ty, "")
+		p0 = BuildStructGEP2(gen.builder, struct_ty, result, 0, "")
+		BuildStore(gen.builder, new_base, p0)
+
+		p1 = BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 1, "")
+		BuildStore(gen.builder, new_size, p1)
+
+		return result
+	}
 }
