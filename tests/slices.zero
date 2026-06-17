@@ -26,16 +26,17 @@ fn main() {
     c[2] = 100
     printf("ret: %d\n", c[2])
 
-    arr: [3]u8
+    arr: [3]u8 = [30,20,10]
 
     slice: []u32 = [1,2,3,4,5,6,7]  // len(slice) == 7
 
     printf("len arr: %d\n", len(arr))
     printf("len slice: %d\n", len(slice))
     printf("len untyped: %d\n", len([9,879,6,6,5]))
-
     // printf("out of bound: %d\n", slice[100])
 
+    // as := arr[0:1]
+    // printf("sub slice idx 0: %d\n", as[0])
 
     rs := slice[3:4]
     printf("sub slice idx 0: %d\n", rs[0])

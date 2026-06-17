@@ -60,7 +60,7 @@ array_expr_index_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Typ
 
 	type := resolve_expr_type(e.array, scope, span)
 
-	// Support pointer to array 
+	// Support pointer to array
 	if type.kind == .Pointer && type.pointee_type != nil && type.pointee_type.kind == .Array {
 		type = type.pointee_type
 	}
@@ -362,7 +362,7 @@ array_to_slice_emit_into :: proc(
 	// Create the backing array
 	arr := expr.original
 	n := arr.type.size
-	backing_ty := get_llvm_type(gen, expr.original.type)
+	backing_ty := get_llvm_type(gen, arr.type)
 	backing := build_entry_alloca(gen, backing_ty, "")
 	emit_into(gen, arr, backing, scope, span)
 
@@ -416,11 +416,14 @@ slice_expr_index_emit_address :: proc(
 		new_base := BuildGEP2(gen.builder, elem_type, base, raw_data(indices), 1, "")
 		new_size := BuildSub(gen.builder, index1_val, index0_val, "")
 
+		// Increment the size by one since for instance [3:4] is a slice of size 2
+		new_size = BuildAdd(gen.builder, new_size, ConstInt(Int64TypeInContext(gen.ctx), 1, 0), "")
+
 		result := build_entry_alloca(gen, struct_ty, "")
 		p0 = BuildStructGEP2(gen.builder, struct_ty, result, 0, "")
 		BuildStore(gen.builder, new_base, p0)
 
-		p1 = BuildStructGEP2(gen.builder, struct_ty, struct_ptr, 1, "")
+		p1 = BuildStructGEP2(gen.builder, struct_ty, result, 1, "")
 		BuildStore(gen.builder, new_size, p1)
 
 		return result
