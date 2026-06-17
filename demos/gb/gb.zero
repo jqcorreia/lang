@@ -77,7 +77,7 @@ fn main() {
     for {
         printf("pc: %x\n", regs.pc)
         if done { break }
-        pc := u64(regs.pc)
+        pc := regs.pc
         op_code := buf[pc]
         inst := instructions[u64(op_code)]
         if inst.execute == nil {

@@ -150,16 +150,13 @@ array_bound_check_emit :: proc(
 	ok_bb := AppendBasicBlock(func, "bound_ok")
 	fail_bb := AppendBasicBlock(func, "bound_fail")
 
-	bound_bool := BuildICmp(gen.builder, .IntULT, index, array_size, "")
+	// Widen index to 64 bits so the check doesn't fail on using indexes of other types
+	index64 := BuildIntCast(gen.builder, index, Int64TypeInContext(gen.ctx), "")
+	bound_bool := BuildICmp(gen.builder, .IntULT, index64, array_size, "")
 	BuildCondBr(gen.builder, bound_bool, ok_bb, fail_bb)
 
 	PositionBuilderAtEnd(gen.builder, fail_bb)
-	abort_sym, ok := resolve_symbol(scope, "__trap")
-	// if !ok {
-	// 	decl := abort_sym.decl.data.(Ast_Function)
-	// 	function_decl_emit_sysv(gen, &decl, scope, span)
-	// 	abort_sym, _ = resolve_symbol(scope, "trap")
-	// }
+	abort_sym, _ := resolve_symbol(scope, "__trap")
 	abort_fn := gen.values[abort_sym]
 	abort_fn_ty := gen.types[abort_sym]
 	BuildCall2(gen.builder, abort_fn_ty, abort_fn, nil, 0, "")
