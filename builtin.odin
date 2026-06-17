@@ -77,10 +77,7 @@ builtin_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Spa
 // cast(T, bytes) reinterprets a slice/array/value as a value of type T.
 //
 // Semantics: a *copy*. The source bytes are memcpy'd into a freshly alloca'd,
-// correctly aligned T and the loaded T is returned. This is the safe default
-// (the slice's backing buffer carries no alignment guarantee for T, so a
-// zero-copy reinterpret + aligned load would be UB). A runtime bounds check
-// traps if the source has fewer bytes than sizeof(T).
+// correctly aligned T and the loaded T is returned. 
 builtin_cast_create :: proc(scope: ^Scope) {
 	sym := make_symbol(.Function)
 	sym.name = "cast"
@@ -146,21 +143,13 @@ builtin_cast_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Sp
 
 		elem_sz := ConstInt(i64_t, u64(get_type_byte_size(src.type.elem_type)), 0)
 		src_bytes = BuildMul(gen.builder, count, elem_sz, "")
-
-	case .Array:
-		src_ptr = emit_address(gen, src, scope, span)
-		src_bytes = ConstInt(i64_t, u64(get_type_byte_size(src.type)), 0)
-
 	case:
-		// Any other addressable value: reinterpret its in-memory bytes.
+		// Any other addressable value (including arrays): reinterpret its in-memory bytes.
 		src_ptr = emit_address(gen, src, scope, span)
 		src_bytes = ConstInt(i64_t, u64(get_type_byte_size(src.type)), 0)
 	}
 
-	// Runtime guard: trap unless src_bytes >= dst_size.
-	// array_bound_check_emit traps unless (index < size), so passing
-	// index = dst_size - 1 makes it ok exactly when dst_size <= src_bytes.
-	last := ConstInt(i64_t, dst_size - 1, 0)
+	last := ConstInt(i64_t, dst_size - 1, 0) // Bounds are checked based on 0-index hence the dst_size - 1
 	array_bound_check_emit(gen, last, src_bytes, scope, span)
 
 	// Copy into an aligned T and load it back by value.
