@@ -104,10 +104,12 @@ flow_match_resolve :: proc(node: ^Ast_Node) {
 		if coerced_type == nil {
 			error_span(clause.expr.span, "Invalid value type in clause")
 			clause.expr.type = &error_type
-			return
+		} else {
+			clause.expr.type = coerced_type
 		}
-		clause.expr.type = coerced_type
 
+		// Resolve the block even on error so the checker sees fully-typed
+		// statements instead of crashing on nil expr types.
 		resolve_block_types(clause.block)
 	}
 }
