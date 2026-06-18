@@ -90,14 +90,14 @@ fn jr_nz() {
     o := dev.r.pc
     r := i16(i8(dev.rom[dev.r.pc + 1]))
 
-    printf("pc: %d, r: %d\n", o, r)
-    abort()
+    printf("pc: %x, r: %d, res: %x\n", o, r, u16(i16(dev.r.pc) + r))
+    // abort()
 
-    // if !get_flag(.Zero) {
-    //     dev.r.pc = u16(i16(dev.r.pc) + i16(r))  
-    // } else {
-    //     adv(2)
-    // }
+    if !get_flag(.Zero) {
+        dev.r.pc = u16(i16(dev.r.pc) + r)  
+    } else {
+        adv(2)
+    }
 }
 
 fn xor_a_a() { 
@@ -221,6 +221,7 @@ fn main() {
         if done { break }
         pc := dev.r.pc
         op_code := dev.rom[pc]
+        printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
         inst := instructions[u64(op_code)]
         if inst.execute == null {
             printf("pc: %x, opcode: %x not implemented\n", dev.r.pc, op_code)
