@@ -188,7 +188,8 @@ array_bound_check_emit :: proc(
 	fail_bb := AppendBasicBlock(func, "bound_fail")
 
 	// Widen index to 64 bits so the check doesn't fail on using indexes of other types
-	index64 := BuildIntCast(gen.builder, index, Int64TypeInContext(gen.ctx), "")
+	// Do not use signed extension
+	index64 := BuildIntCast2(gen.builder, index, Int64TypeInContext(gen.ctx), 0, "")
 	bound_bool := BuildICmp(gen.builder, .IntULT, index64, array_size, "")
 	BuildCondBr(gen.builder, bound_bool, ok_bb, fail_bb)
 
