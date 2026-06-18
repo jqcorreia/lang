@@ -334,13 +334,13 @@ array_expr_index_emit_address :: proc(
 			span,
 		)
 
-		indices: []ValueRef = {ConstInt(Int32TypeInContext(gen.ctx), 0, 0), index0_val}
+		indices: []ValueRef = {gen.const_zero, index0_val}
 		ptr := BuildGEP2(gen.builder, llvm_type, array_ptr, raw_data(indices), 2, "")
 
 		return ptr
 	} else {
-		indices: []ValueRef = {index0_val}
-		new_base := BuildGEP2(gen.builder, llvm_type, array_ptr, raw_data(indices), 1, "")
+		indices: []ValueRef = {gen.const_zero, index0_val}
+		new_base := BuildGEP2(gen.builder, llvm_type, array_ptr, raw_data(indices), 2, "")
 		new_size := BuildSub(gen.builder, index1_val, index0_val, "")
 		// Increment the size by one since for instance [3:4] is a slice of size 2
 		new_size = BuildAdd(gen.builder, new_size, ConstInt(Int64TypeInContext(gen.ctx), 1, 0), "")

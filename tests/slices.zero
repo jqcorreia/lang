@@ -37,7 +37,7 @@ fn main() {
     rs := slice[3:4]
     printf("sub slice idx 0: %d\n", rs[0])
 
-    as := arr[0:1]
-    printf("ranged slice of array idx 0: %d\n", as[0])
+    as := arr[1:2]
+    printf("ranged slice of array idx 1: %d\n", as[0])
 }
 

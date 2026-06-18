@@ -12,6 +12,7 @@ Generator :: struct {
 	primitive_types: map[^Type]TypeRef,
 	empty_str_ptr:   ValueRef,
 	data_layout:     TargetDataRef,
+	const_zero:      ValueRef,
 }
 
 Loop :: struct {
@@ -538,6 +539,7 @@ setup_codegen :: proc(gen: ^Generator) {
 		}
 	}
 	gen.empty_str_ptr = make_global_string_ptr(gen, "")
+	gen.const_zero = ConstInt(Int64TypeInContext(gen.ctx), 0, 0)
 }
 
 make_zero_value :: proc(gen: ^Generator, type: ^Type) -> ValueRef {
