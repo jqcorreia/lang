@@ -28,7 +28,9 @@ Token_Kind :: enum {
 	Bang,
 	Percent,
 	Greater,
+	DoubleGreater,
 	Lesser,
+	DoubleLesser,
 	GreaterOrEqual,
 	LesserOrEqual,
 	Comma,
@@ -462,6 +464,12 @@ lex :: proc(input: string, filename: string) -> []Token {
 					Token{kind = .GreaterOrEqual, lexeme = ">=", span = two_char_span(lexer)},
 				)
 				lexer.pos += 2
+			} else if lex_peek(&lexer) == '>' {
+				append(
+					&tokens,
+					Token{kind = .DoubleGreater, lexeme = ">>", span = two_char_span(lexer)},
+				)
+				lexer.pos += 2
 			} else {
 				append(&tokens, Token{kind = .Greater, lexeme = ">", span = one_char_span(lexer)})
 				lexer.pos += 1
@@ -471,6 +479,12 @@ lex :: proc(input: string, filename: string) -> []Token {
 				append(
 					&tokens,
 					Token{kind = .LesserOrEqual, lexeme = "<=", span = two_char_span(lexer)},
+				)
+				lexer.pos += 2
+			} else if lex_peek(&lexer) == '<' {
+				append(
+					&tokens,
+					Token{kind = .DoubleLesser, lexeme = "<<", span = two_char_span(lexer)},
 				)
 				lexer.pos += 2
 			} else {

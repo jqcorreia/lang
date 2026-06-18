@@ -366,6 +366,15 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			}
 			pred := e.left.type.signed || e.right.type.signed ? IntPredicate.IntSLE : .IntULE
 			return BuildICmp(gen.builder, pred, left, right, "lte")
+		case .Ampersand:
+			return BuildBinOp(gen.builder, .And, left, right, "bin_and")
+		case .Pipe:
+			return BuildBinOp(gen.builder, .Or, left, right, "bin_or")
+		case .DoubleLesser:
+			return BuildShl(gen.builder, left, right, "shit_left")
+		case .DoubleGreater:
+			if e.left.type.signed do return BuildAShr(gen.builder, left, right, "shift_rigt_arit")
+			return BuildLShr(gen.builder, left, right, "shift_rigt_logic")
 		case .DoublePipe:
 			return BuildOr(gen.builder, left, right, "or")
 		case .DoubleAmpersand:

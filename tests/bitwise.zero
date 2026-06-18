@@ -1,0 +1,8 @@
+import "std:c"
+
+fn main() {
+    a := 0xFF
+    b := a & 0x0F
+    printf("%d\n", b) // 15
+    printf("%d\n", b << 8)
+}

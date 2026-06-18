@@ -1,10 +1,5 @@
 import "std:c"
 
-struct Cart {
-    pad1: [0x133]u8
-    title: [10]u8
-}
-
 struct Instruction {
     execute: fn()
 }
@@ -22,9 +17,14 @@ struct registers {
     sp: u16
 }
 
+struct Dev {
+    r: registers
+    rom: [32 * 1024]u8
+    ram: [32 * 1024]u8
+}
+
+dev: Dev
 instructions: [256]Instruction
-regs: registers
-buf: [32 * 1024]u8
 
 fn create_instructions() {
     instructions[0] = Instruction{ execute = noop }
@@ -33,28 +33,31 @@ fn create_instructions() {
 }
 
 fn noop() {
-    regs.pc = regs.pc + 1
+    dev.r.pc = dev.r.pc + 1
 }
 
 fn jp() {
-    pc := u64(regs.pc)
-    addr := buf[pc+1:pc+2]
-    regs.pc = cast(u16, addr)
+    pc := u64(dev.r.pc)
+    addr := dev.rom[pc+1:pc+2]
+    dev.r.pc = cast(u16, addr)
 }
 
 fn xor_a_a() { 
-    regs.a = 0
-    regs.pc = regs.pc + 3
+    dev.r.a = 0
+    dev.r.pc = dev.r.pc + 3
 }
 
+fn rst(addr: u16) {
+    
+}
 fn main() {
     create_instructions()
-    regs.pc = 0x0100
-    regs.sp = 0xFFFE
+    dev.r.pc = 0x0100
+    dev.r.sp = 0xFFFE
 
     rom_file := fopen("demos/gb/tetris.gb", "r")
 
-    if rom_file == nil {
+    if rom_file == null {
         printf("File not found!\n")
         return
     }
@@ -66,27 +69,25 @@ fn main() {
         if nb == 0 {
             break
         }
-        buf[idx] = ch
+        dev.rom[idx] = ch
         idx = idx + 1
     }
 
-    cart := cast(Cart, buf)
-
     done := false
     for {
-        printf("pc: %x\n", regs.pc)
+        printf("pc: %x\n", dev.r.pc)
         if done { break }
-        pc := regs.pc
-        op_code := buf[pc]
+        pc := dev.r.pc
+        op_code := dev.rom[pc]
         inst := instructions[u64(op_code)]
-        if inst.execute == nil {
-            printf("pc: %x, opcode: %x not implemented\n", regs.pc, op_code)
+        if inst.execute == null {
+            printf("pc: %x, opcode: %x not implemented\n", dev.r.pc, op_code)
             break
         }
         inst.execute()
 
     
-        // if regs.pc == 0x150 { break }
+        // if dev.r.pc == 0x150 { break }
     }
     fclose(rom_file)
 }

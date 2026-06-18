@@ -531,9 +531,15 @@ precedence :: proc(op: Token_Kind) -> int {
 	case .Caret:
 		return 100
 	case .Star, .Slash, .Percent:
-		return 20
+		return 50
 	case .Plus, .Minus:
+		return 20
+	case .DoubleLesser, .DoubleGreater:
+		return 15
+	case .Ampersand:
 		return 10
+	case .Pipe:
+		return 8
 	case .Lesser, .Greater, .GreaterOrEqual, .LesserOrEqual, .DoubleEqual, .NotEqual:
 		return 5
 	case .DoublePipe, .DoubleAmpersand:
