@@ -18,6 +18,7 @@ Potentially this README can look a lot different in a couple of months if this b
 - [x] Slices support
 - [x] Properly support varargs.
 - [x] Runtime bounds checking for array access
+- [x] Ranged indexes for arrays and slices.
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Struct untyped literals
 - [ ] Array swizzling

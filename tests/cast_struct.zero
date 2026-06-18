@@ -6,7 +6,11 @@ struct Point {
 }
 
 fn main() {
-    bytes: []u8 = [1, 0, 0, 0, 2, 0, 0, 0]   // x=1, y=2 little-endian
+    bytes: []u8 = [1, 0, 0, 0, 2, 1, 0, 0]   // x=1, y=258 little-endian
     p := cast(Point, bytes)
     printf("x=%d y=%d\n", p.x, p.y)
+
+    w := cast(u32, bytes[4:7]) // 258
+
+    printf("w=%d\n", w)
 }
