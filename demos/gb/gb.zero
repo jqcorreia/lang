@@ -10,7 +10,6 @@ struct registers {
     c: u8
     d: u8
     e: u8
-    f: u8
     h: u8
     l: u8
     flags: u8
@@ -24,26 +23,59 @@ struct Dev {
     ram: [64 * 1024]u8
 }
 
+enum Flag {
+    Zero = 7
+    Subtract = 6
+    HalfCarry = 5
+    Carry = 4
+}
+
 dev: Dev
 instructions: [256]Instruction
 
 fn create_instructions() {
     instructions[0x00] = Instruction{ execute = noop }
+
+    instructions[0x20] = Instruction{ execute = jr_nz }
     instructions[0xc3] = Instruction{ execute = jp }
 
     instructions[0xaf] = Instruction{ execute = xor_a_a }
+
+    instructions[0x05] = Instruction{ execute = dec_b }
 
     instructions[0xdf] = Instruction{ execute = rst }
     instructions[0xff] = Instruction{ execute = rst }
 
     instructions[0x21] = Instruction{ execute = load_hl }
+    instructions[0x32] = Instruction{ execute = ldd_hl_a }
 
     instructions[0x0E] = Instruction{ execute = load_c }
     instructions[0x06] = Instruction{ execute = load_b }
 }
+fn adv(n: u16) {
+    dev.r.pc = dev.r.pc + n
+}
+
+fn set_flag(flag: Flag, val: bool) {
+    x: u8
+    if val { x = 1 }
+    else { x = 0 }
+
+    match x {
+        0 => {
+            dev.r.flags = dev.r.flags & (x << flag)  
+        }
+        1 => {
+            dev.r.flags = dev.r.flags | (x << flag)  
+        }
+    }
+}
+fn get_flag(flag: Flag) -> bool {
+    return (dev.r.flags >> flag) & 0x1 == 1
+}
 
 fn noop() {
-    dev.r.pc = dev.r.pc + 1
+    adv(1)
 }
 
 fn jp() {
@@ -54,10 +86,47 @@ fn jp() {
     dev.r.pc = cast(u16, addr)
 }
 
+fn jr_nz() {
+    o := dev.r.pc
+    r := i16(i8(dev.rom[dev.r.pc + 1]))
+
+    printf("pc: %d, r: %d\n", o, r)
+    abort()
+
+    // if !get_flag(.Zero) {
+    //     dev.r.pc = u16(i16(dev.r.pc) + i16(r))  
+    // } else {
+    //     adv(2)
+    // }
+}
+
 fn xor_a_a() { 
     dev.r.a = 0
-    dev.r.pc = dev.r.pc + 1
+    adv(1)
 }
+
+fn dec_b() {
+    h_flag := false
+    if (dev.r.b & 0x0F) == 0 {
+        h_flag = true
+    }
+
+    dev.r.b = dev.r.b - 1
+    set_flag(.Zero, dev.r.b == 0)
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, h_flag) 
+
+    adv(1)
+}
+
+// fn inc_b() {
+//     lnib := dev.r.b & 0x0F    
+//     if lnib + 1 > 0x0F {
+//         set_flag(.HalfCarry, true)
+//     }
+//     dev.r.b = dev.r.b + 1
+//     adv(1)
+// }
 
 fn rst() {
     opcode := dev.rom[dev.r.pc]
@@ -70,21 +139,28 @@ fn load_hl() {
     val := cast(u16, dev.rom[pc+1:pc+2])
     dev.r.h = u8(val >> 8)
     dev.r.l = u8(val & 0xFF)
-    dev.r.pc = dev.r.pc + 3
+    adv(3)
 }
+
+fn ldd_hl_a() {
+    dev.ram[read_hl()] = dev.r.a
+    write_hl(read_hl() - 1)
+    adv(1)
+}
+
 
 fn load_b() {
     pc := u64(dev.r.pc)
     val := dev.rom[pc]
     dev.r.b = val
-    dev.r.pc = dev.r.pc + 2
+    adv(2)
 }
 
 fn load_c() {
     pc := u64(dev.r.pc)
     val := dev.rom[pc]
     dev.r.c = val
-    dev.r.pc = dev.r.pc + 2
+    adv(2)
 }
 
 fn write8(addr: u16, val: u8) {
@@ -98,12 +174,28 @@ fn push16(val: u16) {
     write8(dev.r.sp, u8(val & 0xFF))
 }
 
+fn read_hl() -> u16 {
+    return u16(dev.r.h) << 8 | u16(dev.r.l)
+}
+
+fn write_hl(val: u16)  {
+    dev.r.h = u8(val >> 8)
+    dev.r.l = u8(val & 0xFF)
+}
+
 fn main() {
     create_instructions()
     dev.r.pc = 0x0100
     dev.r.sp = 0xFFFE
     dev.r.a = 0x01
-    dev.r.f = 0xb0
+    dev.r.b = 0x00
+    dev.r.c = 0x13
+    dev.r.d = 0x00
+    dev.r.e = 0xd8
+    dev.r.h = 0x01
+    dev.r.l = 0x4d
+
+    dev.r.flags = 0xb0
 
     rom_file := fopen("demos/gb/tetris.gb", "r")
 
