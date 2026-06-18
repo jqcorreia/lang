@@ -136,7 +136,7 @@ Keyword_Map: map[string]Token_Kind = {
 	"in"       = .In_Keyword,
 	"true"     = .True_Keyword,
 	"false"    = .False_Keyword,
-	"nil"      = .Nil_Keyword,
+	"null"     = .Nil_Keyword,
 	"match"    = .Match_Keyword,
 }
 

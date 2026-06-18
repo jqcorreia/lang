@@ -64,8 +64,8 @@ fn main() {
         return
     }
 
-    window := glfwCreateWindow(800, 600, "Hello Triangle", nil, nil)
-    if window == nil {
+    window := glfwCreateWindow(800, 600, "Hello Triangle", null, null)
+    if window == null {
         printf("glfwCreateWindow failed\n")
         glfwTerminate()
         return

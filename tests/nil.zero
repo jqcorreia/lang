@@ -1,13 +1,13 @@
 import "std:c"
 
-fn nilpointer() -> &i32 {
-    return nil
+fn nullpointer() -> &i32 {
+    return null
 }
 
 fn main() {
-    if nilpointer() == nil {
-        printf("nilpointer is nil\n")
+    if nullpointer() == null {
+        printf("nilpointer is null\n")
     } else {
-        printf("nilpointer is not nil\n")
+        printf("nilpointer is not null\n")
     }
 }

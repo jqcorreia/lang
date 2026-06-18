@@ -65,5 +65,5 @@ fn __trap() {
 }
 
 fn __zero_init_random_seed() {
-    srand(time(nil)) // Until we have time calling function or proper seed-setting logic
+    srand(time(null)) // Until we have time calling function or proper seed-setting logic
 }
