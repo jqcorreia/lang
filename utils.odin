@@ -22,6 +22,19 @@ compiler_bug :: proc(span: Span, format: string, args: ..any) {
 	)
 	append(&compiler.errors, Compiler_Error{span = span, message = message})
 }
+compiler_bug_exit :: proc(span: Span, format: string, args: ..any) {
+	error := error_string(span, format, args)
+	message := fmt.tprintf(
+		"%sCOMPILER BUG%s%s: %s%s\n",
+		ANSI_RED,
+		ANSI_RESET,
+		ANSI_BOLD,
+		error,
+		ANSI_RESET,
+	)
+	fmt.println(message)
+	os.exit(1)
+}
 
 fatal_token :: proc(p: ^Parser, token: Token, format: string, args: ..any) {
 	p.error_occured = true

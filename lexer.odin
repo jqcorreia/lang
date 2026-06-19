@@ -39,6 +39,7 @@ Token_Kind :: enum {
 	ColonColon,
 	Period,
 	Caret,
+	Tilde,
 	Ellipsis,
 	DotDot,
 	DotDotEq,
@@ -375,6 +376,9 @@ lex :: proc(input: string, filename: string) -> []Token {
 			}
 		case c == '%':
 			append(&tokens, Token{kind = .Percent, lexeme = "%", span = one_char_span(lexer)})
+			lexer.pos += 1
+		case c == '~':
+			append(&tokens, Token{kind = .Tilde, lexeme = "~", span = one_char_span(lexer)})
 			lexer.pos += 1
 		case c == '(':
 			append(&tokens, Token{kind = .LParen, lexeme = "(", span = one_char_span(lexer)})

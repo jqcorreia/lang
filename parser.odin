@@ -562,6 +562,8 @@ prefix_precedence :: proc(op: Token_Kind) -> int {
 		return 50
 	case .Bang:
 		return 50
+	case .Tilde:
+		return 50
 	}
 	return -1
 }
@@ -605,8 +607,8 @@ parse_expression :: proc(
 	case .LParen:
 		left = parse_expression(p, 0, true) // parentheses reset the context
 		expect(p, .RParen)
-	case .Minus, .Bang, .Ampersand, .Star:
-		// Negative values, negation, address_of, dereference
+	case .Minus, .Bang, .Ampersand, .Star, .Tilde:
+		// Negative values, negation, address_of, dereference, bitwise NOT
 		rbp := prefix_precedence(t.kind)
 		right := parse_expression(p, rbp, allow_struct_literal)
 		left = expr_unary(t.kind, right)

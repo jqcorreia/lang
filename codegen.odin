@@ -283,6 +283,15 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		case .Star:
 			ptr := emit_value(gen, e.expr, scope, span)
 			return BuildLoad2(gen.builder, get_llvm_type(gen, e.expr.type.pointee_type), ptr, "")
+		case .Tilde:
+			// There is no bitwise NOT, the equivalent is a xor with all ones.
+			operand := emit_value(gen, e.expr, scope, span)
+			return BuildXor(
+				gen.builder,
+				operand,
+				ConstAllOnes(get_llvm_type(gen, e.expr.type)),
+				"bin_not",
+			)
 		}
 	case Expr_Binary:
 		if expr.type.kind == .Array {
@@ -384,7 +393,8 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		}
 	}
 
-	compiler_bug(expr.span, "Expression %v emit not implemented")
+	//Note: Emit a compiler bug with immediate exit to avoid a segfault. TODO
+	compiler_bug_exit(expr.span, "Expression %v emit not implemented", expr)
 	return nil
 }
 

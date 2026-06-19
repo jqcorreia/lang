@@ -5,4 +5,8 @@ fn main() {
     b := a & 0x0F
     printf("%d\n", b) // 15
     printf("%d\n", b << 8)
+
+    c :u8 = 0xFE
+
+    printf("bitwise not of 0xFE = %d\n", ~c)
 }
