@@ -315,6 +315,8 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			}
 			return BuildSDiv(gen.builder, left, right, "div")
 		case .Caret:
+			return BuildBinOp(gen.builder, .Xor, left, right, "xor")
+		case .DoubleStar:
 			if e.left.type.numeric_integer && e.right.type.numeric_integer {
 				// Call a prelude function
 				sym, _ := resolve_symbol(scope, "__zero_pow")

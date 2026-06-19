@@ -23,6 +23,7 @@ Token_Kind :: enum {
 	Minus,
 	Slash,
 	Star,
+	DoubleStar,
 	Pipe,
 	DoublePipe,
 	Bang,
@@ -351,8 +352,16 @@ lex :: proc(input: string, filename: string) -> []Token {
 				lexer.pos += 1
 			}
 		case c == '*':
-			append(&tokens, Token{kind = .Star, lexeme = "*", span = one_char_span(lexer)})
-			lexer.pos += 1
+			if lex_peek(&lexer) == '*' {
+				append(
+					&tokens,
+					Token{kind = .DoubleStar, lexeme = "**", span = two_char_span(lexer)},
+				)
+				lexer.pos += 2
+			} else {
+				append(&tokens, Token{kind = .Star, lexeme = "*", span = one_char_span(lexer)})
+				lexer.pos += 1
+			}
 		case c == '!':
 			if lex_peek(&lexer) == '=' {
 				append(

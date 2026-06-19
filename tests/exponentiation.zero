@@ -2,5 +2,5 @@ import "std:c"
 
 
 fn main() {
-    printf("2 ^ 4 = %d\n", 2 ^ 4)
+    printf("2 ^ 10 = %d\n", 2 ** 10)
 }
