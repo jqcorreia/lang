@@ -175,6 +175,14 @@ array_literal_emit_into :: proc(
 
 }
 
+// When widening an index to be used on a GEP we must take into consideration it's signedness
+// otherwise we risk a narrow int type to get negative and index memory not intended behind
+// the base pointer.
+widen_index :: proc(gen: ^Generator, index: ValueRef, index_type: ^Type) -> ValueRef {
+	signed := index_type != nil ? index_type.signed : false
+	return BuildIntCast2(gen.builder, index, Int64TypeInContext(gen.ctx), i32(signed), "idxext")
+}
+
 array_bound_check_emit :: proc(
 	gen: ^Generator,
 	index: ValueRef,
@@ -316,6 +324,11 @@ array_expr_index_emit_address :: proc(
 	index0_val := emit_value(gen, e.index0, scope, span)
 	index1_val := e.index1 != nil ? emit_value(gen, e.index1, scope, span) : nil
 
+	index0_val = widen_index(gen, index0_val, e.index0.type)
+	if index1_val != nil {
+		index1_val = widen_index(gen, index1_val, e.index1.type)
+	}
+
 	array_ptr: ValueRef
 	llvm_type: TypeRef
 	if e.array.type.kind == .Pointer {
@@ -403,6 +416,11 @@ slice_expr_index_emit_address :: proc(
 	e := expr.data.(Expr_Index)
 	index0_val := emit_value(gen, e.index0, scope, span)
 	index1_val := e.index1 != nil ? emit_value(gen, e.index1, scope, span) : nil
+
+	index0_val = widen_index(gen, index0_val, e.index0.type)
+	if index1_val != nil {
+		index1_val = widen_index(gen, index1_val, e.index1.type)
+	}
 	elem_type := get_llvm_type(gen, e.array.type.elem_type)
 
 	struct_ptr := emit_address(gen, e.array, scope, span)
