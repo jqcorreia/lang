@@ -38,6 +38,8 @@ enum Flag {
 
 dev: Dev
 instructions: [256]Instruction
+prefixed: [256]Instruction
+
 
 fn init_dev() {
     dev.r.pc = 0x0100
@@ -63,6 +65,7 @@ fn init_dev() {
     instructions[0x0c] = Instruction{ execute = inc_c }
     instructions[0x05] = Instruction{ execute = dec_b }
     instructions[0x0d] = Instruction{ execute = dec_c }
+    instructions[0x0b] = Instruction{ execute = dec_bc }
 
     instructions[0xdf] = Instruction{ execute = rst }
     instructions[0xff] = Instruction{ execute = rst }
@@ -77,36 +80,32 @@ fn init_dev() {
     instructions[0xF0] = Instruction{ execute = ldh_a_a8 }
     instructions[0xE2] = Instruction{ execute = ldh_c_a }
 
+    instructions[0x78] = Instruction{ execute = ld_a_b }
+
     instructions[0x3e] = Instruction{ execute = ld_a_n8 }
     instructions[0x06] = Instruction{ execute = ld_b_n8 }
     instructions[0x0E] = Instruction{ execute = ld_c_n8 }
 
+    instructions[0x01] = Instruction{ execute = ld_bc_n16 }
     instructions[0x31] = Instruction{ execute = ld_sp_n16 }
 
-    instructions[0xfE] = Instruction{ execute = cp_a_n8 }
+    instructions[0xFE] = Instruction{ execute = cp_a_n8 }
+    instructions[0xB1] = Instruction{ execute = or_a_c }
+
+    instructions[0xe6] = Instruction{ execute = push_hl }
+    instructions[0x2F] = Instruction{ execute = cpl }
+    instructions[0x0F] = Instruction{ execute = rrca }
 
     instructions[0xCD] = Instruction{ execute = call_a16 }
-
+    instructions[0xC9] = Instruction{ execute = ret }
 
     instructions[0xF3] = Instruction{ execute = di }
     instructions[0xFB] = Instruction{ execute = ei }
+
+    prefixed[0x00] = Instruction{ execute = null }
 }
 
-fn adv(n: u16) {
-    dev.r.pc = dev.r.pc + n
-}
-
-fn set_flag(flag: Flag, val: bool) {
-    mask := u8(1) << flag
-    if val {
-        dev.r.flags = dev.r.flags | mask
-    } else {
-        dev.r.flags = dev.r.flags & (0xFF ^ mask)
-    }
-}
-fn get_flag(flag: Flag) -> bool {
-    return (dev.r.flags >> flag) & 0x1 == 1
-}
+// -- ops implementations
 
 fn noop() {
     adv(1)
@@ -148,38 +147,48 @@ fn inc_c() {
     adv(1)
 }
 
-fn dec_b() {
+fn dec_reg(r: &u8) {
     h_flag := false
-    if (dev.r.b & 0x0F) == 0 {
+    if (*r & 0x0F) == 0 {
         h_flag = true
     }
 
-    dev.r.b = dev.r.b - 1
-    set_flag(.Zero, dev.r.b == 0)
+    *r = *r - 1
+    set_flag(.Zero, *r == 0)
     set_flag(.Subtract, true)
     set_flag(.HalfCarry, h_flag) 
 
     adv(1)
+}
+
+fn dec_b() {
+    dec_reg(&(dev.r.b))
 }
 
 fn dec_c() {
-    h_flag := false
-    if (dev.r.c & 0x0F) == 0 {
-        h_flag = true
-    }
+    dec_reg(&(dev.r.c))
+}
 
-    dev.r.c = dev.r.c - 1
-    set_flag(.Zero, dev.r.c == 0)
-    set_flag(.Subtract, true)
-    set_flag(.HalfCarry, h_flag) 
-
+fn dec_bc() {
+    write_bc(read_bc() - 1)
     adv(1)
 }
 
+fn cpl() {
+    dev.r.a = ~dev.r.a
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, true)
+    adv(1)
+}
 fn rst() {
     opcode := dev.rom[dev.r.pc]
-    push16(dev.r.pc)
+    push16(dev.r.pc + 1) // return address = instruction after RST
     dev.r.pc = u16(opcode & 0x38) // Formula to calculate the reset vector
+}
+
+fn ld_a_b() {
+    dev.r.a = dev.r.b
+    adv(1)
 }
 
 fn load_hl() {
@@ -267,6 +276,13 @@ fn ld_sp_n16() {
 
     adv(3)
 }
+fn ld_bc_n16() {
+    pc := u64(dev.r.pc)
+    val := cast(u16, dev.rom[pc+1:pc+2])
+
+    write_bc(val)
+    adv(3)
+}
 
 fn cp_a_n8() {
     pc := u64(dev.r.pc)
@@ -281,11 +297,42 @@ fn cp_a_n8() {
     adv(2)
 }
 
+fn or_a_c() {
+    dev.r.a = dev.r.a | dev.r.c
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, false)
+
+    adv(1)
+}
+
+fn push_hl() {
+    push16(read_hl())
+    adv(1)
+}
+
+fn rrca() {
+    c_flag := dev.r.a & 0x01 == 1
+    dev.r.a = dev.r.a >> 1
+
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, c_flag)
+    adv(1)
+}
+
+fn ret() {
+    addr := pop16()
+    dev.r.pc = addr
+}
+
 fn call_a16() {
     pc := u64(dev.r.pc)
     target_addr := cast(u16, dev.rom[pc+1:pc+2])
 
-    push16(target_addr + 3)
+    push16(u16(pc) + 3) // return address = instruction after CALL
     dev.r.pc = target_addr
 }
 
@@ -301,8 +348,29 @@ fn di() {
 
 
 // -------- Utils ------------
+fn adv(n: u16) {
+    dev.r.pc = dev.r.pc + n
+}
+
+fn set_flag(flag: Flag, val: bool) {
+    mask := u8(1) << flag
+    if val {
+        dev.r.flags = dev.r.flags | mask
+    } else {
+        dev.r.flags = dev.r.flags & (0xFF ^ mask)
+    }
+}
+
+fn get_flag(flag: Flag) -> bool {
+    return (dev.r.flags >> flag) & 0x1 == 1
+}
+
 fn write8(addr: u16, val: u8) {
     dev.ram[addr] = val 
+}
+
+fn read8(addr: u16) -> u8 {
+    return dev.ram[addr]
 }
 
 fn push16(val: u16) {
@@ -312,6 +380,15 @@ fn push16(val: u16) {
     write8(dev.r.sp, u8(val & 0xFF))
 }
 
+fn pop16() -> u16 {
+    low := u16(read8(dev.r.sp))
+    dev.r.sp = dev.r.sp + 1
+    high := u16(read8(dev.r.sp))
+    dev.r.sp = dev.r.sp + 1
+
+    return (high << 8) | low
+}
+
 fn read_hl() -> u16 {
     return u16(dev.r.h) << 8 | u16(dev.r.l)
 }
@@ -319,6 +396,15 @@ fn read_hl() -> u16 {
 fn write_hl(val: u16)  {
     dev.r.h = u8(val >> 8)
     dev.r.l = u8(val & 0xFF)
+}
+
+fn read_bc() -> u16 {
+    return u16(dev.r.b) << 8 | u16(dev.r.c)
+}
+
+fn write_bc(val: u16)  {
+    dev.r.b = u8(val >> 8)
+    dev.r.c = u8(val & 0xFF)
 }
 
 fn h_flag_sub(v1: u8, v2: u8) -> bool {
@@ -349,13 +435,23 @@ fn main() {
 
     done := false
     for {
+        prefix := false
         if done { break }
-        pc := dev.r.pc
-        op_code := dev.rom[pc]
-        printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
-        inst := instructions[u64(op_code)]
+
+        op_code := dev.rom[dev.r.pc]
+
+        inst: Instruction
+        if op_code == 0xcb {
+            dev.r.pc = dev.r.pc + 1
+            op_code = dev.rom[dev.r.pc]
+            inst = prefixed[u64(op_code)]
+            prefix = true
+        } else {
+            inst = instructions[u64(op_code)]
+        }
+        // printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
         if inst.execute == null {
-            printf("pc: %x, opcode: %x not implemented\n", dev.r.pc, op_code)
+            printf("pc: %x, opcode: %x (prefixed=%b) not implemented\n", dev.r.pc, op_code, prefix)
             break
         }
         inst.execute()
