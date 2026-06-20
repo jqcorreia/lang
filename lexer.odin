@@ -524,6 +524,7 @@ lex :: proc(input: string, filename: string) -> []Token {
 				"Unrecognized character %c",
 				c,
 			)
+			lexer.pos += 1
 		}
 	}
 	compiler.line_starts[filename] = lexer.line_starts
