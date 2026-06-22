@@ -40,6 +40,11 @@ dev: Dev
 instructions: [256]Instruction
 prefixed: [256]Instruction
 
+VBlank  ::  0x40
+STAT    ::  0x48   
+Timer   ::  0x50   
+Serial  ::  0x58  
+Joypad  ::  0x60   
 
 fn init_dev() {
     dev.r.pc = 0x0100
@@ -684,7 +689,7 @@ fn main() {
         } else {
             inst = instructions[u64(op_code)]
         }
-        printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
+        // printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
         if inst.execute == null {
             printf("pc: %x, opcode: %x (prefixed=%b) not implemented\n", dev.r.pc, op_code, prefix)
             break
