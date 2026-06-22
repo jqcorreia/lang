@@ -19,7 +19,6 @@ struct registers {
 
 struct Dev {
     r: registers
-    rom: [32 * 1024]u8
     ram: [64 * 1024]u8
     ime: bool // IME == Interrupt Master Enable
     ppu: PPU
@@ -64,18 +63,26 @@ fn init_dev() {
     dev.ppu.ly = 0xFF44
 
     instructions[0x00] = Instruction{ execute = noop }
+
     instructions[0x20] = Instruction{ execute = jr_nz }
+    instructions[0x28] = Instruction{ execute = jr_z }
     instructions[0xc3] = Instruction{ execute = jp }
+    instructions[0xca] = Instruction{ execute = jp_z }
     instructions[0xe9] = Instruction{ execute = jp_hl }
 
     instructions[0xaf] = Instruction{ execute = xor_a_a }
 
+    instructions[0x3c] = Instruction{ execute = inc_a }
     instructions[0x04] = Instruction{ execute = inc_b }
     instructions[0x0c] = Instruction{ execute = inc_c }
+    instructions[0x14] = Instruction{ execute = inc_d }
+    instructions[0x1c] = Instruction{ execute = inc_e }
+    instructions[0x23] = Instruction{ execute = inc_hl }
+    instructions[0x34] = Instruction{ execute = inc_ind_hl }
+    instructions[0x3d] = Instruction{ execute = dec_a }
     instructions[0x05] = Instruction{ execute = dec_b }
     instructions[0x0d] = Instruction{ execute = dec_c }
     instructions[0x0b] = Instruction{ execute = dec_bc }
-    instructions[0x23] = Instruction{ execute = inc_hl }
 
     instructions[0xdf] = Instruction{ execute = rst }
     instructions[0xff] = Instruction{ execute = rst }
@@ -86,6 +93,7 @@ fn init_dev() {
     instructions[0x2a] = Instruction{ execute = ldi_a_hl }
     instructions[0x36] = Instruction{ execute = ld_hl_n8 }
     instructions[0xea] = Instruction{ execute = ld_a16_a }
+    instructions[0xfa] = Instruction{ execute = ld_a_a16 }
 
     instructions[0xE0] = Instruction{ execute = ldh_a8_a }
     instructions[0xF0] = Instruction{ execute = ldh_a_a8 }
@@ -102,10 +110,12 @@ fn init_dev() {
     instructions[0x0E] = Instruction{ execute = ld_c_n8 }
     instructions[0x16] = Instruction{ execute = ld_d_n8 }
 
+    instructions[0x11] = Instruction{ execute = ld_de_n16 }
     instructions[0x01] = Instruction{ execute = ld_bc_n16 }
     instructions[0x02] = Instruction{ execute = ld_bc_a }
     instructions[0x31] = Instruction{ execute = ld_sp_n16 }
     
+    instructions[0x1a] = Instruction{ execute = ld_a_de }
     instructions[0x4e] = Instruction{ execute = ld_c_hl }
     instructions[0x5e] = Instruction{ execute = ld_e_hl }
     instructions[0x56] = Instruction{ execute = ld_d_hl }
@@ -118,14 +128,21 @@ fn init_dev() {
     instructions[0xB0] = Instruction{ execute = or_a_b }
     instructions[0xB1] = Instruction{ execute = or_a_c }
 
+    instructions[0xa7] = Instruction{ execute = and_a_a }
     instructions[0xa1] = Instruction{ execute = and_a_c }
     instructions[0xe6] = Instruction{ execute = and_a_n8 }
+    instructions[0xa6] = Instruction{ execute = and_a_hl }
 
     instructions[0xa9] = Instruction{ execute = xor_a_c }
 
-    instructions[0xe5] = Instruction{ execute = push_hl }
     instructions[0xe1] = Instruction{ execute = pop_hl }
+    instructions[0xf1] = Instruction{ execute = pop_af }
+    instructions[0xd1] = Instruction{ execute = pop_de }
+    instructions[0xc1] = Instruction{ execute = pop_bc }
+    instructions[0xc5] = Instruction{ execute = push_bc }
     instructions[0xd5] = Instruction{ execute = push_de }
+    instructions[0xe5] = Instruction{ execute = push_hl }
+    instructions[0xf5] = Instruction{ execute = push_af }
 
     instructions[0x2F] = Instruction{ execute = cpl }
     instructions[0x0F] = Instruction{ execute = rrca }
@@ -133,6 +150,8 @@ fn init_dev() {
     instructions[0xCD] = Instruction{ execute = call_a16 }
     instructions[0xD4] = Instruction{ execute = call_nc_a16 }
     instructions[0xC9] = Instruction{ execute = ret }
+    instructions[0xC8] = Instruction{ execute = ret_z }
+    instructions[0xC0] = Instruction{ execute = ret_nz }
     instructions[0xD9] = Instruction{ execute = reti }
 
     instructions[0xF3] = Instruction{ execute = di }
@@ -149,8 +168,19 @@ fn noop() {
 
 fn jp() {
     pc := u64(dev.r.pc)
-    addr := dev.rom[pc+1:pc+2]
+    addr := dev.ram[pc+1:pc+2]
     dev.r.pc = cast(u16, addr)
+}
+
+fn jp_z() {
+    pc := u64(dev.r.pc)
+    addr := dev.ram[pc+1:pc+2]
+
+    if get_flag(.Zero) {
+        dev.r.pc = cast(u16, addr)
+    } else {
+        adv(3)
+    }
 }
 
 fn jp_hl() {
@@ -158,11 +188,21 @@ fn jp_hl() {
     adv(1)
 }
 
+fn jr_z() {
+    o := dev.r.pc
+    r := i16(i8(dev.ram[dev.r.pc + 1]))
+
+     // Since we need to jump from the next instruction,
+    // advance unconditionally
+    adv(2)
+    if get_flag(.Zero) {
+        dev.r.pc = u16(i16(dev.r.pc) + r)  
+    }
+}
+
 fn jr_nz() {
     o := dev.r.pc
-    r := i16(i8(dev.rom[dev.r.pc + 1]))
-
-    // abort()
+    r := i16(i8(dev.ram[dev.r.pc + 1]))
 
      // Since we need to jump from the next instruction,
     // advance unconditionally
@@ -177,31 +217,51 @@ fn xor_a_a() {
     adv(1)
 }
 
-fn inc_b() {
-    h_flag := dev.r.b & 0x0F == 0x0F
-    c_flag := dev.r.b == 0xFF 
+fn inc_reg(r: &u8) {
+    h_flag := *r & 0x0F == 0x0F
+    c_flag := *r == 0xFF 
 
-    dev.r.b = dev.r.b + 1
-    set_flag(.Zero, dev.r.b == 0)
+    *r = *r + 1
+    set_flag(.Zero, *r == 0)
     set_flag(.Subtract, false)
     set_flag(.HalfCarry, h_flag)
     adv(1)
 }
 
-fn inc_c() {
-    h_flag := dev.r.c & 0x0F == 0x0F
-    c_flag := dev.r.c == 0xFF 
+fn inc_a() {
+    inc_reg(&dev.r.a)
+}
 
-    dev.r.c = dev.r.c + 1
-    set_flag(.Zero, dev.r.c == 0)
-    set_flag(.Subtract, false)
-    set_flag(.HalfCarry, h_flag)
-    adv(1)
+fn inc_b() {
+    inc_reg(&dev.r.b)
+}
+
+fn inc_c() {
+    inc_reg(&dev.r.c)
+}
+
+fn inc_d() {
+    inc_reg(&dev.r.d)
+}
+
+fn inc_e() {
+    inc_reg(&dev.r.e)
 }
 
 fn inc_hl() {
     write_hl(read_hl() + 1)
 
+    adv(1)
+}
+
+fn inc_ind_hl() {
+    val := dev.ram[read_hl()] 
+    h_flag := val & 0x0F == 0x0F
+    dev.ram[read_hl()] = val + 1 
+
+    set_flag(.Zero, val == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, h_flag) 
     adv(1)
 }
 
@@ -217,6 +277,10 @@ fn dec_reg(r: &u8) {
     set_flag(.HalfCarry, h_flag) 
 
     adv(1)
+}
+
+fn dec_a() {
+    dec_reg(&(dev.r.a))
 }
 
 fn dec_b() {
@@ -239,7 +303,7 @@ fn cpl() {
     adv(1)
 }
 fn rst() {
-    opcode := dev.rom[dev.r.pc]
+    opcode := dev.ram[dev.r.pc]
     push16(dev.r.pc + 1) // return address = instruction after RST
     dev.r.pc = u16(opcode & 0x38) // Formula to calculate the reset vector
 }
@@ -269,6 +333,11 @@ fn ld_a_c() {
     adv(1)
 }
 
+fn ld_a_de() {
+    dev.r.a = dev.ram[read_de()]
+    adv(1)
+}
+
 fn ld_c_hl() {
     dev.r.c = dev.ram[read_hl()]
     adv(1)
@@ -284,7 +353,7 @@ fn ld_e_hl() {
 
 fn load_hl() {
     pc := u64(dev.r.pc)
-    val := cast(u16, dev.rom[pc+1:pc+2])
+    val := cast(u16, dev.ram[pc+1:pc+2])
     dev.r.h = u8(val >> 8)
     dev.r.l = u8(val & 0xFF)
     adv(3)
@@ -307,76 +376,93 @@ fn ldi_a_hl() {
 
 fn ld_hl_n8() {
     pc := u64(dev.r.pc)
-    val := dev.rom[pc + 1]
+    val := dev.ram[pc + 1]
     dev.ram[read_hl()] = val
     adv(2)
 }
 
 fn ld_a_n8() {
     pc := u64(dev.r.pc)
-    val := dev.rom[pc + 1]
+    val := dev.ram[pc + 1]
     dev.r.a = val
     adv(2)
 }
 
 fn ld_b_n8() {
     pc := u64(dev.r.pc)
-    val := dev.rom[pc + 1]
+    val := dev.ram[pc + 1]
     dev.r.b = val
     adv(2)
 }
 
 fn ld_c_n8() {
     pc := u64(dev.r.pc)
-    val := dev.rom[pc + 1]
+    val := dev.ram[pc + 1]
     dev.r.c = val
     adv(2)
 }
 
 fn ld_d_n8() {
     pc := u64(dev.r.pc)
-    val := dev.rom[pc + 1]
+    val := dev.ram[pc + 1]
     dev.r.d = val
     adv(2)
 }
 
 fn ldh_a8_a() {
     pc := u64(dev.r.pc)
-    offset := dev.rom[pc + 1]
+    offset := dev.ram[pc + 1]
     dev.ram[0xFF00 + u16(offset)] = dev.r.a
     adv(2)
 }
 
 fn ldh_a_a8() {
     pc := u64(dev.r.pc)
-    offset := dev.rom[pc + 1]
+    offset := dev.ram[pc + 1]
     dev.r.a = dev.ram[0xFF00 + u16(offset)]
     adv(2)
 }
 
 fn ldh_c_a() {
-    dev.ram[0xFF00 + dev.r.c] = dev.r.a
+    dev.ram[0xFF00 + u16(dev.r.c)] = dev.r.a
     adv(1)
 }
 
 fn ld_a16_a() {
     pc := u64(dev.r.pc)
-    val := cast(u16, dev.rom[pc+1:pc+2])
+    val := cast(u16, dev.ram[pc+1:pc+2])
     dev.ram[val] = dev.r.a
+
+    adv(3)
+}
+
+fn ld_a_a16() {
+    pc := u64(dev.r.pc)
+    val := cast(u16, dev.ram[pc+1:pc+2])
+    dev.r.a = dev.ram[val]
 
     adv(3)
 }
 
 fn ld_sp_n16() {
     pc := u64(dev.r.pc)
-    val := cast(u16, dev.rom[pc+1:pc+2])
+    val := cast(u16, dev.ram[pc+1:pc+2])
     dev.r.sp = val
 
     adv(3)
 }
+
+fn ld_de_n16() {
+    pc := u64(dev.r.pc)
+    val := cast(u16, dev.ram[pc+1:pc+2])
+
+    write_de(val)
+    adv(3)
+}
+
 fn ld_bc_n16() {
     pc := u64(dev.r.pc)
-    val := cast(u16, dev.rom[pc+1:pc+2])
+    val := cast(u16, dev.ram[pc+1:pc+2])
 
     write_bc(val)
     adv(3)
@@ -390,7 +476,7 @@ fn ld_bc_a() {
 
 fn cp_a_n8() {
     pc := u64(dev.r.pc)
-    im := dev.rom[pc + 1]
+    im := dev.ram[pc + 1]
     val := dev.r.a
 
     set_flag(.Zero, im == val)
@@ -446,7 +532,7 @@ fn and_r1_r2(r1: &u8, r2: &u8) {
 }
 
 fn and_r1_n8(r1: &u8) {
-    val := dev.rom[dev.r.pc + 1]
+    val := dev.ram[dev.r.pc + 1]
     *r1 = *r1 & val
     set_flag(.Zero, *r1 == 0)
     set_flag(.Subtract, false)
@@ -481,12 +567,31 @@ fn or_a_b() {
     or_r1_r2(&dev.r.a, &dev.r.b)
 }
 
+fn and_a_a() {
+   and_r1_r2(&dev.r.a, &dev.r.a)
+}
+
 fn and_a_c() {
    and_r1_r2(&dev.r.a, &dev.r.c)
 }
 
 fn and_a_n8() {
    and_r1_n8(&dev.r.a)
+}
+
+fn and_a_hl() {
+    and_r1_hl(&dev.r.a)
+}
+
+fn and_r1_hl(r1: &u8) {
+    val := dev.ram[read_hl()]
+    *r1 = *r1 & val
+    set_flag(.Zero, *r1 == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, true) // Halfcarry is true in case of AND
+    set_flag(.Carry, false)
+
+    adv(2)
 }
 
 fn xor_a_c() {
@@ -500,6 +605,31 @@ fn push_hl() {
 
 fn push_de() {
     push16(read_de())
+    adv(1)
+}
+
+fn push_af() {
+    push16(read_af())
+    adv(1)
+}
+
+fn push_bc() {
+    push16(read_bc())
+    adv(1)
+}
+
+fn pop_de() {
+    write_de(pop16())
+    adv(1)
+}
+
+fn pop_bc() {
+    write_bc(pop16())
+    adv(1)
+}
+
+fn pop_af() {
+    write_af(pop16())
     adv(1)
 }
 
@@ -524,6 +654,24 @@ fn ret() {
     dev.r.pc = addr
 }
 
+fn ret_z() {
+    addr := pop16()
+    if get_flag(.Zero) {
+        dev.r.pc = addr
+    } else {
+        adv(1)
+    }
+}
+
+fn ret_nz() {
+    addr := pop16()
+    if !get_flag(.Zero) {
+        dev.r.pc = addr
+    } else {
+        adv(1)
+    }
+}
+
 fn reti() {
     ret()
     dev.ime = true
@@ -534,7 +682,7 @@ fn call_nc_a16() {
         adv(3)
     } else {
         pc := u64(dev.r.pc)
-        target_addr := cast(u16, dev.rom[pc+1:pc+2])
+        target_addr := cast(u16, dev.ram[pc+1:pc+2])
 
         printf("target addr %x\n", target_addr)
         push16(u16(pc) + 3) // return address = instruction after CALL
@@ -544,7 +692,7 @@ fn call_nc_a16() {
 
 fn call_a16() {
     pc := u64(dev.r.pc)
-    target_addr := cast(u16, dev.rom[pc+1:pc+2])
+    target_addr := cast(u16, dev.ram[pc+1:pc+2])
 
     push16(u16(pc) + 3) // return address = instruction after CALL
     dev.r.pc = target_addr
@@ -606,7 +754,10 @@ fn get_flag(flag: Flag) -> bool {
 }
 
 fn write8(addr: u16, val: u8) {
-    dev.ram[addr] = val 
+    if addr < 0x8000 {
+        return // ROM region is read-only (no MBC); ignore writes
+    }
+    dev.ram[addr] = val
 }
 
 fn read8(addr: u16) -> u8 {
@@ -633,9 +784,24 @@ fn read_hl() -> u16 {
     return u16(dev.r.h) << 8 | u16(dev.r.l)
 }
 
+fn write_bc(val: u16)  {
+    dev.r.b = u8(val >> 8)
+    dev.r.c = u8(val & 0xFF)
+}
+
+fn write_de(val: u16)  {
+    dev.r.d = u8(val >> 8)
+    dev.r.e = u8(val & 0xFF)
+}
+
 fn write_hl(val: u16)  {
     dev.r.h = u8(val >> 8)
     dev.r.l = u8(val & 0xFF)
+}
+
+fn write_af(val: u16)  {
+    dev.r.a = u8(val >> 8)
+    dev.r.flags = u8(val & 0xFF)
 }
 
 fn read_bc() -> u16 {
@@ -644,6 +810,9 @@ fn read_bc() -> u16 {
 
 fn read_de() -> u16 {
     return u16(dev.r.d) << 8 | u16(dev.r.e)
+}
+fn read_af() -> u16 {
+    return u16(dev.r.a) << 8 | u16(dev.r.flags)
 }
 
 fn write_bc(val: u16)  {
@@ -657,6 +826,13 @@ fn h_flag_sub(v1: u8, v2: u8) -> bool {
 
 fn h_flag_add(v1: u8, v2: u8) -> bool {
     return (v1 & 0x0F) + (v2 & 0x0F) > 0x0F
+}
+
+fn interrupt(vector: IRQ_Vector) {
+    dev.ram[0xFF0F] = dev.ram[0xFF0F] & 0xFE 
+    push16(dev.r.pc)
+    dev.ime = false
+    dev.r.pc = vector 
 }
 
 fn ppu_tick() {
@@ -683,31 +859,32 @@ fn main() {
         if nb == 0 {
             break
         }
-        dev.rom[idx] = ch
+        dev.ram[idx] = ch
         idx = idx + 1
     }
 
     done := false
     for {
         pending := false
-        if dev.ram[0xFFFF] & dev.ram[0xFF0F] & 0x1F == 1 {
-            break
+
+        if dev.ime && (dev.ram[0xFFFF] & dev.ram[0xFF0F] & 0x01) != 0 {
+            interrupt(.VBlank)
         }
         
         prefix := false
         if done { break }
 
-        op_code := dev.rom[dev.r.pc]
+        op_code := dev.ram[dev.r.pc]
 
         inst: Instruction
         if op_code == 0xcb {
-            op_code = dev.rom[dev.r.pc + 1]
+            op_code = dev.ram[dev.r.pc + 1]
             inst = prefixed[u64(op_code)]
             prefix = true
         } else {
             inst = instructions[u64(op_code)]
         }
-        // printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
+        printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
         if inst.execute == null {
             printf("pc: %x, opcode: %x (prefixed=%b) not implemented\n", dev.r.pc, op_code, prefix)
             break
@@ -715,6 +892,7 @@ fn main() {
         inst.execute()
         ops_done = ops_done + 1
 
+    
         // Increment LY per cycle, dumb and wrong
         dev.ram[dev.ppu.ly] = dev.ram[dev.ppu.ly] + 1 
     }
