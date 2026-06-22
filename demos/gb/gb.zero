@@ -2,6 +2,7 @@ import "std:c"
 
 struct Instruction {
     execute: fn()
+    cycles: u16
 }
 
 struct registers {
@@ -62,100 +63,262 @@ fn init_dev() {
 
     dev.ppu.ly = 0xFF44
 
-    instructions[0x00] = Instruction{ execute = noop }
-
-    instructions[0x20] = Instruction{ execute = jr_nz }
-    instructions[0x28] = Instruction{ execute = jr_z }
-    instructions[0xc3] = Instruction{ execute = jp }
-    instructions[0xca] = Instruction{ execute = jp_z }
-    instructions[0xe9] = Instruction{ execute = jp_hl }
-
-    instructions[0xaf] = Instruction{ execute = xor_a_a }
-
-    instructions[0x3c] = Instruction{ execute = inc_a }
-    instructions[0x04] = Instruction{ execute = inc_b }
-    instructions[0x0c] = Instruction{ execute = inc_c }
-    instructions[0x14] = Instruction{ execute = inc_d }
-    instructions[0x1c] = Instruction{ execute = inc_e }
-    instructions[0x23] = Instruction{ execute = inc_hl }
-    instructions[0x34] = Instruction{ execute = inc_ind_hl }
-    instructions[0x3d] = Instruction{ execute = dec_a }
-    instructions[0x05] = Instruction{ execute = dec_b }
-    instructions[0x0d] = Instruction{ execute = dec_c }
-    instructions[0x0b] = Instruction{ execute = dec_bc }
-
-    instructions[0xdf] = Instruction{ execute = rst }
-    instructions[0xff] = Instruction{ execute = rst }
-    instructions[0xef] = Instruction{ execute = rst }
-
-    instructions[0x21] = Instruction{ execute = load_hl }
-    instructions[0x32] = Instruction{ execute = ldd_hl_a }
-    instructions[0x2a] = Instruction{ execute = ldi_a_hl }
-    instructions[0x36] = Instruction{ execute = ld_hl_n8 }
-    instructions[0xea] = Instruction{ execute = ld_a16_a }
-    instructions[0xfa] = Instruction{ execute = ld_a_a16 }
-
-    instructions[0xE0] = Instruction{ execute = ldh_a8_a }
-    instructions[0xF0] = Instruction{ execute = ldh_a_a8 }
-    instructions[0xE2] = Instruction{ execute = ldh_c_a }
-
-    instructions[0x78] = Instruction{ execute = ld_a_b }
-    instructions[0x47] = Instruction{ execute = ld_b_a }
-    instructions[0x79] = Instruction{ execute = ld_a_c }
-    instructions[0x4F] = Instruction{ execute = ld_c_a }
-    instructions[0x5F] = Instruction{ execute = ld_e_a }
-
-    instructions[0x3e] = Instruction{ execute = ld_a_n8 }
-    instructions[0x06] = Instruction{ execute = ld_b_n8 }
-    instructions[0x0E] = Instruction{ execute = ld_c_n8 }
-    instructions[0x16] = Instruction{ execute = ld_d_n8 }
-
-    instructions[0x11] = Instruction{ execute = ld_de_n16 }
-    instructions[0x01] = Instruction{ execute = ld_bc_n16 }
-    instructions[0x02] = Instruction{ execute = ld_bc_a }
-    instructions[0x31] = Instruction{ execute = ld_sp_n16 }
-    
-    instructions[0x1a] = Instruction{ execute = ld_a_de }
-    instructions[0x4e] = Instruction{ execute = ld_c_hl }
-    instructions[0x5e] = Instruction{ execute = ld_e_hl }
-    instructions[0x56] = Instruction{ execute = ld_d_hl }
-
-    instructions[0x87] = Instruction{ execute = add_a_a }
-    instructions[0x19] = Instruction{ execute = add_hl_de }
-
-    instructions[0xFE] = Instruction{ execute = cp_a_n8 }
-
-    instructions[0xB0] = Instruction{ execute = or_a_b }
-    instructions[0xB1] = Instruction{ execute = or_a_c }
-
-    instructions[0xa7] = Instruction{ execute = and_a_a }
-    instructions[0xa1] = Instruction{ execute = and_a_c }
-    instructions[0xe6] = Instruction{ execute = and_a_n8 }
-    instructions[0xa6] = Instruction{ execute = and_a_hl }
-
-    instructions[0xa9] = Instruction{ execute = xor_a_c }
-
-    instructions[0xe1] = Instruction{ execute = pop_hl }
-    instructions[0xf1] = Instruction{ execute = pop_af }
-    instructions[0xd1] = Instruction{ execute = pop_de }
-    instructions[0xc1] = Instruction{ execute = pop_bc }
-    instructions[0xc5] = Instruction{ execute = push_bc }
-    instructions[0xd5] = Instruction{ execute = push_de }
-    instructions[0xe5] = Instruction{ execute = push_hl }
-    instructions[0xf5] = Instruction{ execute = push_af }
-
-    instructions[0x2F] = Instruction{ execute = cpl }
-    instructions[0x0F] = Instruction{ execute = rrca }
-
-    instructions[0xCD] = Instruction{ execute = call_a16 }
-    instructions[0xD4] = Instruction{ execute = call_nc_a16 }
-    instructions[0xC9] = Instruction{ execute = ret }
-    instructions[0xC8] = Instruction{ execute = ret_z }
-    instructions[0xC0] = Instruction{ execute = ret_nz }
-    instructions[0xD9] = Instruction{ execute = reti }
-
-    instructions[0xF3] = Instruction{ execute = di }
-    instructions[0xFB] = Instruction{ execute = ei }
+    instructions[0x00] = Instruction{ execute = noop, cycles = 4 } // NOP
+    instructions[0x01] = Instruction{ execute = ld_bc_n16, cycles = 12 } // LD BC,n16
+    instructions[0x02] = Instruction{ execute = ld_bc_a, cycles = 8 } // LD BC,A
+    instructions[0x03] = Instruction{ execute = null, cycles = 8 } // INC BC
+    instructions[0x04] = Instruction{ execute = inc_b, cycles = 4 } // INC B
+    instructions[0x05] = Instruction{ execute = dec_b, cycles = 4 } // DEC B
+    instructions[0x06] = Instruction{ execute = ld_b_n8, cycles = 8 } // LD B,n8
+    instructions[0x07] = Instruction{ execute = null, cycles = 4 } // RLCA
+    instructions[0x08] = Instruction{ execute = null, cycles = 20 } // LD a16,SP
+    instructions[0x09] = Instruction{ execute = null, cycles = 8 } // ADD HL,BC
+    instructions[0x0a] = Instruction{ execute = null, cycles = 8 } // LD A,BC
+    instructions[0x0b] = Instruction{ execute = dec_bc, cycles = 8 } // DEC BC
+    instructions[0x0c] = Instruction{ execute = inc_c, cycles = 4 } // INC C
+    instructions[0x0d] = Instruction{ execute = dec_c, cycles = 4 } // DEC C
+    instructions[0x0e] = Instruction{ execute = ld_c_n8, cycles = 8 } // LD C,n8
+    instructions[0x0f] = Instruction{ execute = rrca, cycles = 4 } // RRCA
+    instructions[0x10] = Instruction{ execute = null, cycles = 4 } // STOP n8
+    instructions[0x11] = Instruction{ execute = ld_de_n16, cycles = 12 } // LD DE,n16
+    instructions[0x12] = Instruction{ execute = null, cycles = 8 } // LD DE,A
+    instructions[0x13] = Instruction{ execute = null, cycles = 8 } // INC DE
+    instructions[0x14] = Instruction{ execute = inc_d, cycles = 4 } // INC D
+    instructions[0x15] = Instruction{ execute = null, cycles = 4 } // DEC D
+    instructions[0x16] = Instruction{ execute = ld_d_n8, cycles = 8 } // LD D,n8
+    instructions[0x17] = Instruction{ execute = null, cycles = 4 } // RLA
+    instructions[0x18] = Instruction{ execute = jr, cycles = 12 } // JR e8
+    instructions[0x19] = Instruction{ execute = add_hl_de, cycles = 8 } // ADD HL,DE
+    instructions[0x1a] = Instruction{ execute = ld_a_de, cycles = 8 } // LD A,DE
+    instructions[0x1b] = Instruction{ execute = null, cycles = 8 } // DEC DE
+    instructions[0x1c] = Instruction{ execute = inc_e, cycles = 4 } // INC E
+    instructions[0x1d] = Instruction{ execute = null, cycles = 4 } // DEC E
+    instructions[0x1e] = Instruction{ execute = null, cycles = 8 } // LD E,n8
+    instructions[0x1f] = Instruction{ execute = null, cycles = 4 } // RRA
+    instructions[0x20] = Instruction{ execute = jr_nz, cycles = 12 } // JR NZ,e8
+    instructions[0x21] = Instruction{ execute = load_hl, cycles = 12 } // LD HL,n16
+    instructions[0x22] = Instruction{ execute = null, cycles = 8 } // LD HL+,A
+    instructions[0x23] = Instruction{ execute = inc_hl, cycles = 8 } // INC HL
+    instructions[0x24] = Instruction{ execute = null, cycles = 4 } // INC H
+    instructions[0x25] = Instruction{ execute = null, cycles = 4 } // DEC H
+    instructions[0x26] = Instruction{ execute = null, cycles = 8 } // LD H,n8
+    instructions[0x27] = Instruction{ execute = null, cycles = 4 } // DAA
+    instructions[0x28] = Instruction{ execute = jr_z, cycles = 12 } // JR Z,e8
+    instructions[0x29] = Instruction{ execute = null, cycles = 8 } // ADD HL,HL
+    instructions[0x2a] = Instruction{ execute = ldi_a_hl, cycles = 8 } // LD A,HL+
+    instructions[0x2b] = Instruction{ execute = null, cycles = 8 } // DEC HL
+    instructions[0x2c] = Instruction{ execute = inc_l, cycles = 4 } // INC L
+    instructions[0x2d] = Instruction{ execute = null, cycles = 4 } // DEC L
+    instructions[0x2e] = Instruction{ execute = null, cycles = 8 } // LD L,n8
+    instructions[0x2f] = Instruction{ execute = cpl, cycles = 4 } // CPL
+    instructions[0x30] = Instruction{ execute = null, cycles = 12 } // JR NC,e8
+    instructions[0x31] = Instruction{ execute = ld_sp_n16, cycles = 12 } // LD SP,n16
+    instructions[0x32] = Instruction{ execute = ldd_hl_a, cycles = 8 } // LD HL-,A
+    instructions[0x33] = Instruction{ execute = null, cycles = 8 } // INC SP
+    instructions[0x34] = Instruction{ execute = inc_ind_hl, cycles = 12 } // INC HL
+    instructions[0x35] = Instruction{ execute = null, cycles = 12 } // DEC HL
+    instructions[0x36] = Instruction{ execute = ld_hl_n8, cycles = 12 } // LD HL,n8
+    instructions[0x37] = Instruction{ execute = null, cycles = 4 } // SCF
+    instructions[0x38] = Instruction{ execute = null, cycles = 12 } // JR C,e8
+    instructions[0x39] = Instruction{ execute = null, cycles = 8 } // ADD HL,SP
+    instructions[0x3a] = Instruction{ execute = null, cycles = 8 } // LD A,HL-
+    instructions[0x3b] = Instruction{ execute = null, cycles = 8 } // DEC SP
+    instructions[0x3c] = Instruction{ execute = inc_a, cycles = 4 } // INC A
+    instructions[0x3d] = Instruction{ execute = dec_a, cycles = 4 } // DEC A
+    instructions[0x3e] = Instruction{ execute = ld_a_n8, cycles = 8 } // LD A,n8
+    instructions[0x3f] = Instruction{ execute = null, cycles = 4 } // CCF
+    instructions[0x40] = Instruction{ execute = null, cycles = 4 } // LD B,B
+    instructions[0x41] = Instruction{ execute = null, cycles = 4 } // LD B,C
+    instructions[0x42] = Instruction{ execute = null, cycles = 4 } // LD B,D
+    instructions[0x43] = Instruction{ execute = null, cycles = 4 } // LD B,E
+    instructions[0x44] = Instruction{ execute = null, cycles = 4 } // LD B,H
+    instructions[0x45] = Instruction{ execute = null, cycles = 4 } // LD B,L
+    instructions[0x46] = Instruction{ execute = null, cycles = 8 } // LD B,HL
+    instructions[0x47] = Instruction{ execute = ld_b_a, cycles = 4 } // LD B,A
+    instructions[0x48] = Instruction{ execute = null, cycles = 4 } // LD C,B
+    instructions[0x49] = Instruction{ execute = null, cycles = 4 } // LD C,C
+    instructions[0x4a] = Instruction{ execute = null, cycles = 4 } // LD C,D
+    instructions[0x4b] = Instruction{ execute = null, cycles = 4 } // LD C,E
+    instructions[0x4c] = Instruction{ execute = null, cycles = 4 } // LD C,H
+    instructions[0x4d] = Instruction{ execute = null, cycles = 4 } // LD C,L
+    instructions[0x4e] = Instruction{ execute = ld_c_hl, cycles = 8 } // LD C,HL
+    instructions[0x4f] = Instruction{ execute = ld_c_a, cycles = 4 } // LD C,A
+    instructions[0x50] = Instruction{ execute = null, cycles = 4 } // LD D,B
+    instructions[0x51] = Instruction{ execute = null, cycles = 4 } // LD D,C
+    instructions[0x52] = Instruction{ execute = null, cycles = 4 } // LD D,D
+    instructions[0x53] = Instruction{ execute = null, cycles = 4 } // LD D,E
+    instructions[0x54] = Instruction{ execute = null, cycles = 4 } // LD D,H
+    instructions[0x55] = Instruction{ execute = null, cycles = 4 } // LD D,L
+    instructions[0x56] = Instruction{ execute = ld_d_hl, cycles = 8 } // LD D,HL
+    instructions[0x57] = Instruction{ execute = null, cycles = 4 } // LD D,A
+    instructions[0x58] = Instruction{ execute = null, cycles = 4 } // LD E,B
+    instructions[0x59] = Instruction{ execute = null, cycles = 4 } // LD E,C
+    instructions[0x5a] = Instruction{ execute = null, cycles = 4 } // LD E,D
+    instructions[0x5b] = Instruction{ execute = null, cycles = 4 } // LD E,E
+    instructions[0x5c] = Instruction{ execute = null, cycles = 4 } // LD E,H
+    instructions[0x5d] = Instruction{ execute = null, cycles = 4 } // LD E,L
+    instructions[0x5e] = Instruction{ execute = ld_e_hl, cycles = 8 } // LD E,HL
+    instructions[0x5f] = Instruction{ execute = ld_e_a, cycles = 4 } // LD E,A
+    instructions[0x60] = Instruction{ execute = null, cycles = 4 } // LD H,B
+    instructions[0x61] = Instruction{ execute = null, cycles = 4 } // LD H,C
+    instructions[0x62] = Instruction{ execute = null, cycles = 4 } // LD H,D
+    instructions[0x63] = Instruction{ execute = null, cycles = 4 } // LD H,E
+    instructions[0x64] = Instruction{ execute = null, cycles = 4 } // LD H,H
+    instructions[0x65] = Instruction{ execute = null, cycles = 4 } // LD H,L
+    instructions[0x66] = Instruction{ execute = null, cycles = 8 } // LD H,HL
+    instructions[0x67] = Instruction{ execute = null, cycles = 4 } // LD H,A
+    instructions[0x68] = Instruction{ execute = null, cycles = 4 } // LD L,B
+    instructions[0x69] = Instruction{ execute = null, cycles = 4 } // LD L,C
+    instructions[0x6a] = Instruction{ execute = null, cycles = 4 } // LD L,D
+    instructions[0x6b] = Instruction{ execute = null, cycles = 4 } // LD L,E
+    instructions[0x6c] = Instruction{ execute = null, cycles = 4 } // LD L,H
+    instructions[0x6d] = Instruction{ execute = null, cycles = 4 } // LD L,L
+    instructions[0x6e] = Instruction{ execute = null, cycles = 8 } // LD L,HL
+    instructions[0x6f] = Instruction{ execute = null, cycles = 4 } // LD L,A
+    instructions[0x70] = Instruction{ execute = null, cycles = 8 } // LD HL,B
+    instructions[0x71] = Instruction{ execute = null, cycles = 8 } // LD HL,C
+    instructions[0x72] = Instruction{ execute = null, cycles = 8 } // LD HL,D
+    instructions[0x73] = Instruction{ execute = null, cycles = 8 } // LD HL,E
+    instructions[0x74] = Instruction{ execute = null, cycles = 8 } // LD HL,H
+    instructions[0x75] = Instruction{ execute = null, cycles = 8 } // LD HL,L
+    instructions[0x76] = Instruction{ execute = null, cycles = 4 } // HALT
+    instructions[0x77] = Instruction{ execute = null, cycles = 8 } // LD HL,A
+    instructions[0x78] = Instruction{ execute = ld_a_b, cycles = 4 } // LD A,B
+    instructions[0x79] = Instruction{ execute = ld_a_c, cycles = 4 } // LD A,C
+    instructions[0x7a] = Instruction{ execute = null, cycles = 4 } // LD A,D
+    instructions[0x7b] = Instruction{ execute = null, cycles = 4 } // LD A,E
+    instructions[0x7c] = Instruction{ execute = null, cycles = 4 } // LD A,H
+    instructions[0x7d] = Instruction{ execute = null, cycles = 4 } // LD A,L
+    instructions[0x7e] = Instruction{ execute = ld_a_hl, cycles = 8 } // LD A,HL
+    instructions[0x7f] = Instruction{ execute = null, cycles = 4 } // LD A,A
+    instructions[0x80] = Instruction{ execute = null, cycles = 4 } // ADD A,B
+    instructions[0x81] = Instruction{ execute = null, cycles = 4 } // ADD A,C
+    instructions[0x82] = Instruction{ execute = null, cycles = 4 } // ADD A,D
+    instructions[0x83] = Instruction{ execute = null, cycles = 4 } // ADD A,E
+    instructions[0x84] = Instruction{ execute = null, cycles = 4 } // ADD A,H
+    instructions[0x85] = Instruction{ execute = null, cycles = 4 } // ADD A,L
+    instructions[0x86] = Instruction{ execute = null, cycles = 8 } // ADD A,HL
+    instructions[0x87] = Instruction{ execute = add_a_a, cycles = 4 } // ADD A,A
+    instructions[0x88] = Instruction{ execute = null, cycles = 4 } // ADC A,B
+    instructions[0x89] = Instruction{ execute = null, cycles = 4 } // ADC A,C
+    instructions[0x8a] = Instruction{ execute = null, cycles = 4 } // ADC A,D
+    instructions[0x8b] = Instruction{ execute = null, cycles = 4 } // ADC A,E
+    instructions[0x8c] = Instruction{ execute = null, cycles = 4 } // ADC A,H
+    instructions[0x8d] = Instruction{ execute = null, cycles = 4 } // ADC A,L
+    instructions[0x8e] = Instruction{ execute = null, cycles = 8 } // ADC A,HL
+    instructions[0x8f] = Instruction{ execute = null, cycles = 4 } // ADC A,A
+    instructions[0x90] = Instruction{ execute = null, cycles = 4 } // SUB A,B
+    instructions[0x91] = Instruction{ execute = null, cycles = 4 } // SUB A,C
+    instructions[0x92] = Instruction{ execute = null, cycles = 4 } // SUB A,D
+    instructions[0x93] = Instruction{ execute = null, cycles = 4 } // SUB A,E
+    instructions[0x94] = Instruction{ execute = null, cycles = 4 } // SUB A,H
+    instructions[0x95] = Instruction{ execute = null, cycles = 4 } // SUB A,L
+    instructions[0x96] = Instruction{ execute = null, cycles = 8 } // SUB A,HL
+    instructions[0x97] = Instruction{ execute = null, cycles = 4 } // SUB A,A
+    instructions[0x98] = Instruction{ execute = null, cycles = 4 } // SBC A,B
+    instructions[0x99] = Instruction{ execute = null, cycles = 4 } // SBC A,C
+    instructions[0x9a] = Instruction{ execute = null, cycles = 4 } // SBC A,D
+    instructions[0x9b] = Instruction{ execute = null, cycles = 4 } // SBC A,E
+    instructions[0x9c] = Instruction{ execute = null, cycles = 4 } // SBC A,H
+    instructions[0x9d] = Instruction{ execute = null, cycles = 4 } // SBC A,L
+    instructions[0x9e] = Instruction{ execute = null, cycles = 8 } // SBC A,HL
+    instructions[0x9f] = Instruction{ execute = null, cycles = 4 } // SBC A,A
+    instructions[0xa0] = Instruction{ execute = null, cycles = 4 } // AND A,B
+    instructions[0xa1] = Instruction{ execute = and_a_c, cycles = 4 } // AND A,C
+    instructions[0xa2] = Instruction{ execute = null, cycles = 4 } // AND A,D
+    instructions[0xa3] = Instruction{ execute = null, cycles = 4 } // AND A,E
+    instructions[0xa4] = Instruction{ execute = null, cycles = 4 } // AND A,H
+    instructions[0xa5] = Instruction{ execute = null, cycles = 4 } // AND A,L
+    instructions[0xa6] = Instruction{ execute = and_a_hl, cycles = 8 } // AND A,HL
+    instructions[0xa7] = Instruction{ execute = and_a_a, cycles = 4 } // AND A,A
+    instructions[0xa8] = Instruction{ execute = null, cycles = 4 } // XOR A,B
+    instructions[0xa9] = Instruction{ execute = xor_a_c, cycles = 4 } // XOR A,C
+    instructions[0xaa] = Instruction{ execute = null, cycles = 4 } // XOR A,D
+    instructions[0xab] = Instruction{ execute = null, cycles = 4 } // XOR A,E
+    instructions[0xac] = Instruction{ execute = null, cycles = 4 } // XOR A,H
+    instructions[0xad] = Instruction{ execute = null, cycles = 4 } // XOR A,L
+    instructions[0xae] = Instruction{ execute = null, cycles = 8 } // XOR A,HL
+    instructions[0xaf] = Instruction{ execute = xor_a_a, cycles = 4 } // XOR A,A
+    instructions[0xb0] = Instruction{ execute = or_a_b, cycles = 4 } // OR A,B
+    instructions[0xb1] = Instruction{ execute = or_a_c, cycles = 4 } // OR A,C
+    instructions[0xb2] = Instruction{ execute = null, cycles = 4 } // OR A,D
+    instructions[0xb3] = Instruction{ execute = null, cycles = 4 } // OR A,E
+    instructions[0xb4] = Instruction{ execute = null, cycles = 4 } // OR A,H
+    instructions[0xb5] = Instruction{ execute = null, cycles = 4 } // OR A,L
+    instructions[0xb6] = Instruction{ execute = null, cycles = 8 } // OR A,HL
+    instructions[0xb7] = Instruction{ execute = null, cycles = 4 } // OR A,A
+    instructions[0xb8] = Instruction{ execute = null, cycles = 4 } // CP A,B
+    instructions[0xb9] = Instruction{ execute = null, cycles = 4 } // CP A,C
+    instructions[0xba] = Instruction{ execute = null, cycles = 4 } // CP A,D
+    instructions[0xbb] = Instruction{ execute = null, cycles = 4 } // CP A,E
+    instructions[0xbc] = Instruction{ execute = null, cycles = 4 } // CP A,H
+    instructions[0xbd] = Instruction{ execute = null, cycles = 4 } // CP A,L
+    instructions[0xbe] = Instruction{ execute = null, cycles = 8 } // CP A,HL
+    instructions[0xbf] = Instruction{ execute = null, cycles = 4 } // CP A,A
+    instructions[0xc0] = Instruction{ execute = ret_nz, cycles = 20 } // RET NZ
+    instructions[0xc1] = Instruction{ execute = pop_bc, cycles = 12 } // POP BC
+    instructions[0xc2] = Instruction{ execute = null, cycles = 16 } // JP NZ,a16
+    instructions[0xc3] = Instruction{ execute = jp, cycles = 16 } // JP a16
+    instructions[0xc4] = Instruction{ execute = null, cycles = 24 } // CALL NZ,a16
+    instructions[0xc5] = Instruction{ execute = push_bc, cycles = 16 } // PUSH BC
+    instructions[0xc6] = Instruction{ execute = null, cycles = 8 } // ADD A,n8
+    instructions[0xc7] = Instruction{ execute = null, cycles = 16 } // RST $00
+    instructions[0xc8] = Instruction{ execute = ret_z, cycles = 20 } // RET Z
+    instructions[0xc9] = Instruction{ execute = ret, cycles = 16 } // RET
+    instructions[0xca] = Instruction{ execute = jp_z, cycles = 16 } // JP Z,a16
+    instructions[0xcb] = Instruction{ execute = null, cycles = 4 } // PREFIX
+    instructions[0xcc] = Instruction{ execute = null, cycles = 24 } // CALL Z,a16
+    instructions[0xcd] = Instruction{ execute = call_a16, cycles = 24 } // CALL a16
+    instructions[0xce] = Instruction{ execute = null, cycles = 8 } // ADC A,n8
+    instructions[0xcf] = Instruction{ execute = null, cycles = 16 } // RST $08
+    instructions[0xd0] = Instruction{ execute = null, cycles = 20 } // RET NC
+    instructions[0xd1] = Instruction{ execute = pop_de, cycles = 12 } // POP DE
+    instructions[0xd2] = Instruction{ execute = null, cycles = 16 } // JP NC,a16
+    instructions[0xd3] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_D3
+    instructions[0xd4] = Instruction{ execute = call_nc_a16, cycles = 24 } // CALL NC,a16
+    instructions[0xd5] = Instruction{ execute = push_de, cycles = 16 } // PUSH DE
+    instructions[0xd6] = Instruction{ execute = null, cycles = 8 } // SUB A,n8
+    instructions[0xd7] = Instruction{ execute = null, cycles = 16 } // RST $10
+    instructions[0xd8] = Instruction{ execute = null, cycles = 20 } // RET C
+    instructions[0xd9] = Instruction{ execute = reti, cycles = 16 } // RETI
+    instructions[0xda] = Instruction{ execute = null, cycles = 16 } // JP C,a16
+    instructions[0xdb] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_DB
+    instructions[0xdc] = Instruction{ execute = null, cycles = 24 } // CALL C,a16
+    instructions[0xdd] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_DD
+    instructions[0xde] = Instruction{ execute = null, cycles = 8 } // SBC A,n8
+    instructions[0xdf] = Instruction{ execute = rst, cycles = 16 } // RST $18
+    instructions[0xe0] = Instruction{ execute = ldh_a8_a, cycles = 12 } // LDH a8,A
+    instructions[0xe1] = Instruction{ execute = pop_hl, cycles = 12 } // POP HL
+    instructions[0xe2] = Instruction{ execute = ldh_c_a, cycles = 8 } // LDH C,A
+    instructions[0xe3] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_E3
+    instructions[0xe4] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_E4
+    instructions[0xe5] = Instruction{ execute = push_hl, cycles = 16 } // PUSH HL
+    instructions[0xe6] = Instruction{ execute = and_a_n8, cycles = 8 } // AND A,n8
+    instructions[0xe7] = Instruction{ execute = null, cycles = 16 } // RST $20
+    instructions[0xe8] = Instruction{ execute = null, cycles = 16 } // ADD SP,e8
+    instructions[0xe9] = Instruction{ execute = jp_hl, cycles = 4 } // JP HL
+    instructions[0xea] = Instruction{ execute = ld_a16_a, cycles = 16 } // LD a16,A
+    instructions[0xeb] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_EB
+    instructions[0xec] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_EC
+    instructions[0xed] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_ED
+    instructions[0xee] = Instruction{ execute = null, cycles = 8 } // XOR A,n8
+    instructions[0xef] = Instruction{ execute = rst, cycles = 16 } // RST $28
+    instructions[0xf0] = Instruction{ execute = ldh_a_a8, cycles = 12 } // LDH A,a8
+    instructions[0xf1] = Instruction{ execute = pop_af, cycles = 12 } // POP AF
+    instructions[0xf2] = Instruction{ execute = null, cycles = 8 } // LDH A,C
+    instructions[0xf3] = Instruction{ execute = di, cycles = 4 } // DI
+    instructions[0xf4] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_F4
+    instructions[0xf5] = Instruction{ execute = push_af, cycles = 16 } // PUSH AF
+    instructions[0xf6] = Instruction{ execute = null, cycles = 8 } // OR A,n8
+    instructions[0xf7] = Instruction{ execute = null, cycles = 16 } // RST $30
+    instructions[0xf8] = Instruction{ execute = null, cycles = 12 } // LD HL,SP+,e8
+    instructions[0xf9] = Instruction{ execute = null, cycles = 8 } // LD SP,HL
+    instructions[0xfa] = Instruction{ execute = ld_a_a16, cycles = 16 } // LD A,a16
+    instructions[0xfb] = Instruction{ execute = ei, cycles = 4 } // EI
+    instructions[0xfc] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_FC
+    instructions[0xfd] = Instruction{ execute = null, cycles = 4 } // ILLEGAL_FD
+    instructions[0xfe] = Instruction{ execute = cp_a_n8, cycles = 8 } // CP A,n8
+    instructions[0xff] = Instruction{ execute = rst, cycles = 16 } // RST $38
 
     prefixed[0x37] = Instruction{ execute = swap_a }
 }
@@ -186,6 +349,14 @@ fn jp_z() {
 fn jp_hl() {
     dev.r.pc = read_hl()
     adv(1)
+}
+
+fn jr() {
+    o := dev.r.pc
+    r := i16(i8(dev.ram[dev.r.pc + 1]))
+
+    adv(2)
+    dev.r.pc = u16(i16(dev.r.pc) + r)  
 }
 
 fn jr_z() {
@@ -246,6 +417,10 @@ fn inc_d() {
 
 fn inc_e() {
     inc_reg(&dev.r.e)
+}
+
+fn inc_l() {
+    inc_reg(&dev.r.l)
 }
 
 fn inc_hl() {
@@ -338,6 +513,11 @@ fn ld_a_de() {
     adv(1)
 }
 
+fn ld_a_hl() {
+    dev.r.a = dev.ram[read_hl()]
+    adv(1)
+}
+
 fn ld_c_hl() {
     dev.r.c = dev.ram[read_hl()]
     adv(1)
@@ -419,7 +599,7 @@ fn ldh_a8_a() {
 fn ldh_a_a8() {
     pc := u64(dev.r.pc)
     offset := dev.ram[pc + 1]
-    dev.r.a = dev.ram[0xFF00 + u16(offset)]
+    dev.r.a = read8(0xFF00 + u16(offset))
     adv(2)
 }
 
@@ -439,7 +619,7 @@ fn ld_a16_a() {
 fn ld_a_a16() {
     pc := u64(dev.r.pc)
     val := cast(u16, dev.ram[pc+1:pc+2])
-    dev.r.a = dev.ram[val]
+    dev.r.a = read8(val)
 
     adv(3)
 }
@@ -761,6 +941,11 @@ fn write8(addr: u16, val: u8) {
 }
 
 fn read8(addr: u16) -> u8 {
+    if addr == 0xFF00 {
+        // Joypad: keep the select bits the game wrote, report all buttons
+        // released (1 == not pressed). No real input yet.
+        return dev.ram[0xFF00] | 0x0F
+    }
     return dev.ram[addr]
 }
 
