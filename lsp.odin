@@ -3,6 +3,7 @@ package main
 import "core:encoding/json"
 import "core:fmt"
 import "core:io"
+import "core:mem/virtual"
 import "core:os"
 import "core:strconv"
 import "core:strings"
@@ -98,6 +99,17 @@ json_value_to_string :: proc(v: json.Value) -> string {
 
 // Diagnostics
 lsp_publish_diagnostics :: proc(uri: string, source: string) {
+	// Route this compile through the arena and reclaim the previous run's
+	// memory, since compile() (unlike build()) doesn't free its allocations.
+	if !compiler.arena_initialized {
+		err := virtual.arena_init_growing(&compiler.arena)
+		assert(err == .None)
+		compiler.arena_initialized = true
+	}
+	free_all(virtual.arena_allocator(&compiler.arena))
+	context.allocator = virtual.arena_allocator(&compiler.arena)
+	defer free_all(context.temp_allocator)
+
 	// Extract file path from file:// URI and set source directory for import resolution
 	file_path := strings.has_prefix(uri, "file://") ? uri[len("file://"):] : uri
 	compiler_init(CompilerConfig{path = file_path})

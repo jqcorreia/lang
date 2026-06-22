@@ -24,6 +24,7 @@ Compiler :: struct {
 	errors:               [dynamic]Compiler_Error,
 	external_linker_libs: [dynamic]string,
 	arena:                virtual.Arena,
+	arena_initialized:    bool,
 	target:               string,
 	verify_only:          bool,
 	config:               CompilerConfig,
@@ -85,8 +86,15 @@ compiler_init :: proc(config: CompilerConfig) {
 	exe_dir, exe_dir_err := os.get_executable_directory(context.allocator)
 	assert(exe_dir_err == nil, "Could not determine compiler executable directory")
 	compiler.exe_dir = exe_dir
-	err := virtual.arena_init_growing(&compiler.arena)
-	assert(err == .None)
+
+	// Initialize the arena once. compiler_init may be called repeatedly within
+	// a single process (e.g. the LSP recompiles on every save); re-initializing
+	// here would abandon the previous arena and leak its reserved memory.
+	if !compiler.arena_initialized {
+		err := virtual.arena_init_growing(&compiler.arena)
+		assert(err == .None)
+		compiler.arena_initialized = true
+	}
 
 	compiler.config = config
 }
