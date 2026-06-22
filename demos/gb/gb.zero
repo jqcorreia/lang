@@ -40,11 +40,13 @@ dev: Dev
 instructions: [256]Instruction
 prefixed: [256]Instruction
 
-VBlank  ::  0x40
-STAT    ::  0x48   
-Timer   ::  0x50   
-Serial  ::  0x58  
-Joypad  ::  0x60   
+enum IRQ_Vector {
+    VBlank = 0x40
+    STAT   = 0x48   
+    Timer  = 0x50   
+    Serial = 0x58  
+    Joypad = 0x60   
+}
 
 fn init_dev() {
     dev.r.pc = 0x0100
@@ -129,8 +131,9 @@ fn init_dev() {
     instructions[0x0F] = Instruction{ execute = rrca }
 
     instructions[0xCD] = Instruction{ execute = call_a16 }
-    instructions[0xd4] = Instruction{ execute = call_nc_a16 }
+    instructions[0xD4] = Instruction{ execute = call_nc_a16 }
     instructions[0xC9] = Instruction{ execute = ret }
+    instructions[0xD9] = Instruction{ execute = reti }
 
     instructions[0xF3] = Instruction{ execute = di }
     instructions[0xFB] = Instruction{ execute = ei }
@@ -521,6 +524,11 @@ fn ret() {
     dev.r.pc = addr
 }
 
+fn reti() {
+    ret()
+    dev.ime = true
+}
+
 fn call_nc_a16() {
     if get_flag(.Carry) {
         adv(3)
@@ -651,6 +659,11 @@ fn h_flag_add(v1: u8, v2: u8) -> bool {
     return (v1 & 0x0F) + (v2 & 0x0F) > 0x0F
 }
 
+fn ppu_tick() {
+        // Increment LY per cycle, dumb and wrong
+        dev.ram[dev.ppu.ly] = dev.ram[dev.ppu.ly] + 1 
+
+}
 fn main() {
     ops_done := 0
 
@@ -676,6 +689,11 @@ fn main() {
 
     done := false
     for {
+        pending := false
+        if dev.ram[0xFFFF] & dev.ram[0xFF0F] & 0x1F == 1 {
+            break
+        }
+        
         prefix := false
         if done { break }
 
