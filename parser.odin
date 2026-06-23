@@ -246,26 +246,13 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 		return data
 
 	case peek(p).kind == .PlusEqual:
-		// Normal assignment
-		lhs := parse_expression(p, 0)
+		return parse_assignment_operator(p, .PlusEqual, .Plus)
 
-		expect(p, .PlusEqual)
+	case peek(p).kind == .MinusEqual:
+		return parse_assignment_operator(p, .MinusEqual, .Minus)
 
-		binary := new(Expr)
-		binary.data = Expr_Binary {
-			left  = lhs,
-			right = parse_expression(p, 0),
-			op    = .Plus,
-		}
-		data := Ast_Var_Assign {
-			lhs  = lhs,
-			expr = binary,
-		}
-
-		expect_statement_end(p)
-
-		return data
-
+	case peek(p).kind == .StarEqual:
+		return parse_assignment_operator(p, .StarEqual, .Star)
 
 	case peek(p).kind == .Period:
 		// Here we can have 2 things:
@@ -366,6 +353,28 @@ parse_deref :: proc(p: ^Parser) -> Ast_Data {
 		expr = parse_expression(p, 0),
 	}
 	expect_statement_end(p)
+	return data
+}
+
+parse_assignment_operator :: proc(p: ^Parser, original: Token_Kind, op: Token_Kind) -> Ast_Data {
+	// Normal assignment
+	lhs := parse_expression(p, 0)
+
+	expect(p, original)
+
+	binary := new(Expr)
+	binary.data = Expr_Binary {
+		left  = lhs,
+		right = parse_expression(p, 0),
+		op    = op,
+	}
+	data := Ast_Var_Assign {
+		lhs  = lhs,
+		expr = binary,
+	}
+
+	expect_statement_end(p)
+
 	return data
 }
 
