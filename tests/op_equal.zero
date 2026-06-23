@@ -12,5 +12,8 @@ fn main()
 
     a -= 20
     printf("a = %d\n", a) // 200
+
+    a /= 2
+    printf("a = %d\n", a) // 100
 }
     

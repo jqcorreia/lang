@@ -24,6 +24,7 @@ Token_Kind :: enum {
 	Minus,
 	MinusEqual,
 	Slash,
+	SlashEqual,
 	Star,
 	StarEqual,
 	DoubleStar,
@@ -337,6 +338,12 @@ lex :: proc(input: string, filename: string) -> []Token {
 				for lexer.pos < len(lexer.input) && lex_current(&lexer) != '\n' {
 					lexer.pos += 1
 				}
+			} else if lex_peek(&lexer) == '=' {
+				append(
+					&tokens,
+					Token{kind = .SlashEqual, lexeme = "/=", span = two_char_span(lexer)},
+				)
+				lexer.pos += 2
 			} else {
 				append(&tokens, Token{kind = .Slash, lexeme = "/", span = one_char_span(lexer)})
 				lexer.pos += 1
@@ -379,7 +386,7 @@ lex :: proc(input: string, filename: string) -> []Token {
 			} else if lex_peek(&lexer) == '=' {
 				append(
 					&tokens,
-					Token{kind = .StarEqual, lexeme = "-=", span = two_char_span(lexer)},
+					Token{kind = .StarEqual, lexeme = "*=", span = two_char_span(lexer)},
 				)
 				lexer.pos += 2
 			} else {

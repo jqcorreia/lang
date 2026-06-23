@@ -254,6 +254,9 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 	case peek(p).kind == .StarEqual:
 		return parse_assignment_operator(p, .StarEqual, .Star)
 
+	case peek(p).kind == .SlashEqual:
+		return parse_assignment_operator(p, .SlashEqual, .Slash)
+
 	case peek(p).kind == .Period:
 		// Here we can have 2 things:
 		// - Member access
