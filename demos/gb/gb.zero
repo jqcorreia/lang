@@ -23,10 +23,12 @@ struct Dev {
     ram: [64 * 1024]u8
     ime: bool // IME == Interrupt Master Enable
     ppu: PPU
+    cycles: u64
 }
 
 struct PPU {
     ly: u16
+    dots: u16
 }
 
 enum Flag {
@@ -1020,11 +1022,21 @@ fn interrupt(vector: IRQ_Vector) {
     dev.r.pc = vector 
 }
 
-fn ppu_tick() {
-        // Increment LY per cycle, dumb and wrong
-        dev.ram[dev.ppu.ly] = dev.ram[dev.ppu.ly] + 1 
+fn ppu_tick(cycles: u16) {
+    dev.ppu.dots = dev.ppu.dots + cycles
 
+    if dev.ppu.dots > 456 {
+        dev.ppu.dots = dev.ppu.dots - 456 // subtract, do not zero
+        ly := dev.ram[dev.ppu.ly] + 1 // increate LY 
+        if ly > 153  { ly = 0 } // wrap around
+        dev.ram[dev.ppu.ly] = ly
+        // If LY == 144 enable Vblank interrupt
+        if ly == 144 {
+            dev.ram[0xFF0F] = dev.ram[0xFF0F] | 0x01 
+        }
+    }
 }
+
 fn main() {
     ops_done := 0
 
@@ -1075,12 +1087,11 @@ fn main() {
             break
         }
         inst.execute()
+        dev.cycles = dev.cycles + u64(inst.cycles)
         ops_done = ops_done + 1
-
     
-        // Increment LY per cycle, dumb and wrong
-        dev.ram[dev.ppu.ly] = dev.ram[dev.ppu.ly] + 1 
+        ppu_tick(inst.cycles)
     }
     fclose(rom_file)
-    printf("Total ops executed %d\n", ops_done)
+    printf("ops executed %d, cycles executed: %d\n", ops_done, dev.cycles )
 }
