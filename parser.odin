@@ -245,6 +245,28 @@ parse_identifier :: proc(p: ^Parser) -> Ast_Data {
 
 		return data
 
+	case peek(p).kind == .PlusEqual:
+		// Normal assignment
+		lhs := parse_expression(p, 0)
+
+		expect(p, .PlusEqual)
+
+		binary := new(Expr)
+		binary.data = Expr_Binary {
+			left  = lhs,
+			right = parse_expression(p, 0),
+			op    = .Plus,
+		}
+		data := Ast_Var_Assign {
+			lhs  = lhs,
+			expr = binary,
+		}
+
+		expect_statement_end(p)
+
+		return data
+
+
 	case peek(p).kind == .Period:
 		// Here we can have 2 things:
 		// - Member access
@@ -771,6 +793,7 @@ parse_call_args :: proc(p: ^Parser) -> []^Expr {
 parse_block :: proc(p: ^Parser) -> ^Ast_Block {
 	res: [dynamic]^Ast_Node
 
+	skip_newlines(p) // Skip newlines to allow having the brace in the next line
 	expect(p, .LBrace)
 
 	for keep_parsing_block(p) {

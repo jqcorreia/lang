@@ -20,6 +20,7 @@ Token_Kind :: enum {
 	NotEqual,
 	Number,
 	Plus,
+	PlusEqual,
 	Minus,
 	Slash,
 	Star,
@@ -339,8 +340,16 @@ lex :: proc(input: string, filename: string) -> []Token {
 				lexer.pos += 1
 			}
 		case c == '+':
-			append(&tokens, Token{kind = .Plus, lexeme = "+", span = one_char_span(lexer)})
-			lexer.pos += 1
+			if lex_peek(&lexer) == '=' {
+				append(
+					&tokens,
+					Token{kind = .PlusEqual, lexeme = "+=", span = two_char_span(lexer)},
+				)
+				lexer.pos += 2
+			} else {
+				append(&tokens, Token{kind = .Plus, lexeme = "+", span = one_char_span(lexer)})
+				lexer.pos += 1
+			}
 		case c == '-':
 			if lex_peek(&lexer) == '>' {
 				append(
