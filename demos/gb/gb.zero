@@ -1034,7 +1034,7 @@ fn ppu_tick(cycles: u16) {
         // If LY == 144 enable Vblank interrupt
         if ly == 144 {
             dev.ram[0xFF0F] = dev.ram[0xFF0F] | 0x01 
-            dev.ppu.frame_available = true
+            dev.ppu.frame_ready = true
         }
     }
 }
