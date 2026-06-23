@@ -3,8 +3,8 @@ import "std:c"
 fn main() 
 {
     a := 100
-    a += 10
 
+    a += 10
     printf("a = %d\n", a) // 110
 
     a *= 2
