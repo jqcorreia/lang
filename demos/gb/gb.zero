@@ -350,8 +350,7 @@ fn jp_z() {
 }
 
 fn jp_hl() {
-    dev.r.pc = read_hl()
-    adv(1)
+    dev.r.pc = read_hl() // JP HL sets PC directly; no adv()
 }
 
 fn jr() {
@@ -1060,7 +1059,7 @@ fn run_single_instruction() -> bool {
     } else {
         inst = instructions[u64(op_code)]
     }
-    printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
+    // printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
     if inst.execute == null {
         printf("pc: %x, opcode: %x (prefixed=%b) not implemented\n", dev.r.pc, op_code, prefix)
         return false
@@ -1074,14 +1073,20 @@ fn run_single_instruction() -> bool {
     return true
 }
 
-fn main() {
-    init_dev()
+fn run_until_vblank() {
+    dev.ppu.frame_ready = false
+    for {
+        if !run_single_instruction() { break }
+        if dev.ppu.frame_ready { break }
+    }
+}
 
-    rom_file := fopen("demos/gb/tetris.gb", "r")
+fn load_rom(file: cstr) -> &FILE {
+    rom_file := fopen(file, "r")
 
     if rom_file == null {
         printf("File not found!\n")
-        return
+        return null
     }
 
     ch: u8
@@ -1094,11 +1099,29 @@ fn main() {
         dev.ram[idx] = ch
         idx = idx + 1
     }
+    return rom_file
+}
 
-    for {
-        if !run_single_instruction() { break }
+fn main() {
+    init_dev()
+
+    rom_file := load_rom("demos/gb/tetris.gb")
+    if rom_file == null {
+        exit(1)
     }
 
+    run_until_vblank()
+    
+    printf("LCD mode: %x\n", dev.ram[0xFF40])
+    run_until_vblank()
+
+    for t in 0..200 {
+        for i in 0..16 {
+            addr := 0x8000 + (t * 16) + i 
+            printf("%x ", dev.ram[addr])
+        }
+        printf("\n")
+    }
     fclose(rom_file)
     printf("cycles executed: %d\n", dev.cycles )
 }
