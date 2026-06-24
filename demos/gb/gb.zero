@@ -52,7 +52,7 @@ fn init_dev() {
     instructions[0x1f] = Instruction{ execute = null, cycles = 4 } // RRA
     instructions[0x20] = Instruction{ execute = jr_nz, cycles = 12 } // JR NZ,e8
     instructions[0x21] = Instruction{ execute = load_hl, cycles = 12 } // LD HL,n16
-    instructions[0x22] = Instruction{ execute = null, cycles = 8 } // LD HL+,A
+    instructions[0x22] = Instruction{ execute = ldi_hl_a, cycles = 8 } // LD HL+,A
     instructions[0x23] = Instruction{ execute = inc_hl, cycles = 8 } // INC HL
     instructions[0x24] = Instruction{ execute = null, cycles = 4 } // INC H
     instructions[0x25] = Instruction{ execute = null, cycles = 4 } // DEC H
@@ -71,7 +71,7 @@ fn init_dev() {
     instructions[0x32] = Instruction{ execute = ldd_hl_a, cycles = 8 } // LD HL-,A
     instructions[0x33] = Instruction{ execute = null, cycles = 8 } // INC SP
     instructions[0x34] = Instruction{ execute = inc_ind_hl, cycles = 12 } // INC HL
-    instructions[0x35] = Instruction{ execute = null, cycles = 12 } // DEC HL
+    instructions[0x35] = Instruction{ execute = dec_hl, cycles = 12 } // DEC HL
     instructions[0x36] = Instruction{ execute = ld_hl_n8, cycles = 12 } // LD HL,n8
     instructions[0x37] = Instruction{ execute = null, cycles = 4 } // SCF
     instructions[0x38] = Instruction{ execute = null, cycles = 12 } // JR C,e8
@@ -142,7 +142,7 @@ fn init_dev() {
     instructions[0x79] = Instruction{ execute = ld_a_c, cycles = 4 } // LD A,C
     instructions[0x7a] = Instruction{ execute = null, cycles = 4 } // LD A,D
     instructions[0x7b] = Instruction{ execute = null, cycles = 4 } // LD A,E
-    instructions[0x7c] = Instruction{ execute = null, cycles = 4 } // LD A,H
+    instructions[0x7c] = Instruction{ execute = ld_a_h, cycles = 4 } // LD A,H
     instructions[0x7d] = Instruction{ execute = null, cycles = 4 } // LD A,L
     instructions[0x7e] = Instruction{ execute = ld_a_hl, cycles = 8 } // LD A,HL
     instructions[0x7f] = Instruction{ execute = null, cycles = 4 } // LD A,A
@@ -547,25 +547,29 @@ fn main() {
         exit(1)
     }
 
-    for {
-        printf("LCD mode: %x\n", dev.ram[0xFF40])
+    for !WindowShouldClose(){
+        // run_until_vblank()
         if !run_until_vblank() {
             break
         }
+        printf("LCD mode: %x\n", dev.ram[0xFF40])
+
+        BeginDrawing()
+        ClearBackground(Color{0,0,0,0})
+        EndDrawing()
      }
 
-    for t in 0..200 {
+    for t in 0..20 {
         for y in 0..8 {
-            for x in 0..2 {
-                addr := 0x8000 + (t * 16) + (y * 2) + x 
-                v := dev.ram[addr]
-                for s in 0..4 {
-                    tmp := (v >> (4 - s) * 2) & 3
-                    if tmp  == 0 {
-                        printf("  ")
-                    } else {
-                    printf("%x ", tmp)
-                    }
+            lo := dev.ram[0x8000 + (t * 16) + (y * 2)]
+            hi := dev.ram[0x8000 + (t * 16) + (y * 2) + 1]
+            for x in 0..8 {
+                bit := 7 - x
+                color := (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1)
+                if color == 0 {
+                    printf("- ")
+                } else {
+                    printf("%x ", color)
                 }
             }
             printf("\n")

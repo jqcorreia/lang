@@ -143,6 +143,11 @@ fn dec_bc() {
     adv(1)
 }
 
+fn dec_hl() {
+    write_hl(read_hl() - 1)
+    adv(1)
+}
+
 fn cpl() {
     dev.r.a = ~dev.r.a
     set_flag(.Subtract, true)
@@ -177,6 +182,11 @@ fn ld_e_a() {
 
 fn ld_a_c() {
     dev.r.a = dev.r.c
+    adv(1)
+}
+
+fn ld_a_h() {
+    dev.r.a = dev.r.h
     adv(1)
 }
 
@@ -221,6 +231,15 @@ fn ldi_a_hl() {
     hl := read_hl()
 
     dev.r.a = dev.ram[hl]
+
+    write_hl(hl + 1)
+    adv(1)
+}
+
+fn ldi_hl_a() {
+    hl := read_hl()
+
+    dev.ram[hl] = dev.r.a
 
     write_hl(hl + 1)
     adv(1)
