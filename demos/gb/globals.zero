@@ -1,0 +1,54 @@
+SCREEN_W :: 160
+SCREEN_H :: 144
+
+struct Instruction {
+    execute: fn()
+    cycles: u16
+}
+
+struct registers {
+    a: u8
+    b: u8
+    c: u8
+    d: u8
+    e: u8
+    h: u8
+    l: u8
+    flags: u8
+    pc: u16
+    sp: u16
+}
+
+struct Dev {
+    r: registers
+    ram: [64 * 1024]u8
+    ime: bool // IME == Interrupt Master Enable
+    ppu: PPU
+    cycles: u64
+    framebuffer: [3 * SCREEN_W * SCREEN_H]u8
+}
+
+struct PPU {
+    ly: u16
+    dots: u16
+    frame_ready: bool
+}
+
+enum Flag {
+    Zero = 7
+    Subtract = 6
+    HalfCarry = 5
+    Carry = 4
+}
+
+dev: Dev
+instructions: [256]Instruction
+prefixed: [256]Instruction
+
+enum IRQ_Vector {
+    VBlank = 0x40
+    STAT   = 0x48   
+    Timer  = 0x50   
+    Serial = 0x58  
+    Joypad = 0x60   
+}
