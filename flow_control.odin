@@ -13,6 +13,7 @@ Ast_For :: struct {
 	iterator: string, // empty if unconditional loop
 	symbol:   ^Symbol, // nil if unconditional loop, bound in scope phase
 	range:    ^Expr, // nil if unconditional loop
+	cond:     ^Expr, // nil if unconditional loop
 }
 
 Ast_Match :: struct {
@@ -243,6 +244,10 @@ flow_for_parse :: proc(p: ^Parser) -> ^Ast_For {
 		stmt.range = parse_expression(p, 0, false)
 	}
 
+	if current(p).kind != .LBrace && current(p).kind != .NewLine {
+		stmt.cond = parse_expression(p, 0)
+	}
+
 	stmt.body = parse_block(p)
 	return stmt
 }
@@ -266,9 +271,52 @@ emit_for_loop_unconditional :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope,
 	PositionBuilderAtEnd(gen.builder, after_bb)
 }
 
+emit_for_loop_with_condition :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
+	function := GetBasicBlockParent(GetInsertBlock(gen.builder))
+
+	cond_bb := AppendBasicBlock(function, "loop_cond")
+	loop_bb := AppendBasicBlock(function, "loop")
+	after_bb := AppendBasicBlock(function, "after")
+
+	// Re-evaluate the condition on every iteration in its own block
+	BuildBr(gen.builder, cond_bb)
+	PositionBuilderAtEnd(gen.builder, cond_bb)
+
+	cond_val := emit_value(gen, s.cond, scope, span)
+	cond_bool: ValueRef
+	cond_val_type := TypeOf(cond_val)
+
+	// If the expression eval result is a i1 (one bit integer) then use it directly
+	// Otherwise emit a comparison to zero and the cond_bool
+	if GetTypeKind(cond_val_type) == .IntegerTypeKind && GetIntTypeWidth(cond_val_type) == 1 {
+		cond_bool = cond_val
+	} else {
+		zero := ConstInt(Int32Type(), 0, 0)
+		cond_bool = BuildICmp(gen.builder, .IntNE, cond_val, zero, "ifcond")
+	}
+
+	BuildCondBr(gen.builder, cond_bool, loop_bb, after_bb)
+
+	// The continue should go to cond_bb
+	queue.push_front(&compiler.loops, Loop{break_block = after_bb, continue_block = cond_bb})
+	PositionBuilderAtEnd(gen.builder, loop_bb)
+	emit_block(gen, s.body)
+
+	if GetBasicBlockTerminator(GetInsertBlock(gen.builder)) == nil {
+		BuildBr(gen.builder, cond_bb)
+	}
+
+	queue.pop_front(&compiler.loops)
+	PositionBuilderAtEnd(gen.builder, after_bb)
+}
+
 flow_for_emit :: proc(gen: ^Generator, s: ^Ast_For, scope: ^Scope, span: Span) {
-	if s.range == nil {
+	if s.range == nil && s.cond == nil {
 		emit_for_loop_unconditional(gen, s, scope, span)
+		return
+	}
+	if s.cond != nil {
+		emit_for_loop_with_condition(gen, s, scope, span)
 		return
 	}
 
@@ -345,6 +393,11 @@ flow_for_resolve :: proc(node: ^Ast_Node) {
 		range := data.range.data.(Expr_Range)
 		data.symbol.type = range.start.type
 	}
+
+	if data.cond != nil {
+		resolve_expr_type(data.cond, node.scope, node.span)
+	}
+
 	resolve_block_types(data.body)
 }
 
