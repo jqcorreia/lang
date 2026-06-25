@@ -438,11 +438,6 @@ fn read_af() -> u16 {
     return u16(dev.r.a) << 8 | u16(dev.r.flags)
 }
 
-fn write_bc(val: u16)  {
-    dev.r.b = u8(val >> 8)
-    dev.r.c = u8(val & 0xFF)
-}
-
 fn h_flag_sub(v1: u8, v2: u8) -> bool {
     return (v1 & 0x0F) < (v2 & 0x0F)
 }
@@ -456,25 +451,6 @@ fn interrupt(vector: IRQ_Vector) {
     push16(dev.r.pc)
     dev.ime = false
     dev.r.pc = vector 
-}
-
-fn ppu_tick(cycles: u16) {
-    dev.ppu.dots = dev.ppu.dots + cycles
-
-    if dev.ppu.dots > 456 {
-        dev.ppu.dots = dev.ppu.dots - 456 // subtract, do not zero
-        ly := dev.ram[dev.ppu.ly] + 1 // increate LY 
-        if ly > 153  { ly = 0 } // wrap around
-        dev.ram[dev.ppu.ly] = ly
-        // If LY == 144 enable Vblank interrupt
-        if ly == 144 {
-            dev.ram[0xFF0F] = dev.ram[0xFF0F] | 0x01 
-            dev.ppu.frame_ready = true
-        }
-    }
-}
-
-fn load_rom() {
 }
 
 fn run_single_instruction() -> bool {

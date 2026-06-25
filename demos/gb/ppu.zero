@@ -1,6 +1,22 @@
 SCX_ADDR :: 0xFF41
 SCY_ADDR :: 0xFF42
 
+fn ppu_tick(cycles: u16) {
+    dev.ppu.dots = dev.ppu.dots + cycles
+
+    if dev.ppu.dots > 456 {
+        dev.ppu.dots = dev.ppu.dots - 456 // subtract, do not zero
+        ly := dev.ram[dev.ppu.ly] + 1 // increate LY 
+        if ly > 153  { ly = 0 } // wrap around
+        dev.ram[dev.ppu.ly] = ly
+        // If LY == 144 enable Vblank interrupt
+        if ly == 144 {
+            dev.ram[0xFF0F] = dev.ram[0xFF0F] | 0x01 
+            dev.ppu.frame_ready = true
+        }
+    }
+}
+
 fn draw_tile_id(id: u16, x: u32, y: u32) {
     for ty in 0..8 {
         lo := dev.ram[0x8000 + (id * 16) + (ty * 2)]
