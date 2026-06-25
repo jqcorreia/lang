@@ -541,41 +541,74 @@ fn load_rom(file: cstr) -> &FILE {
 fn main() {
     init_dev()
 
-    InitWindow(SCREEN_W, SCREEN_H, "Zero GB")
+    InitWindow(SCREEN_W * 4, SCREEN_H * 4, "Zero GB")
     rom_file := load_rom("demos/gb/tetris.gb")
     if rom_file == null {
         exit(1)
     }
+
+    img := Image{
+        data = &dev.framebuffer[0],
+        width = SCREEN_W,
+        height = SCREEN_H,
+        mipmaps = 1,
+        format = i32(PixelFormat.UNCOMPRESSED_R8G8B8),
+    }
+
+    fb_tex := LoadTextureFromImage(img)
 
     for !WindowShouldClose(){
         // run_until_vblank()
         if !run_until_vblank() {
             break
         }
+
+        // for y in 10..50 {
+        //     for x in 10..50 {
+        //         dev.framebuffer[(SCREEN_W * y + x) * 3] = 255 
+        //     }
+        // }
+        // Dump tiles into framebuffer
+        for t in 0..20 {
+            sx := t * 8
+            sy := 0
+            for y in 0..8 {
+                lo := dev.ram[0x8000 + (t * 16) + (y * 2)]
+                hi := dev.ram[0x8000 + (t * 16) + (y * 2) + 1]
+                for x in 0..8 {
+                    bit := 7 - x
+                    color := (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1)
+                    dev.framebuffer[(SCREEN_W * (sy + y) + (sx + x)) * 3] = shades[color].r
+                    dev.framebuffer[(SCREEN_W * (sy + y) + (sx + x)) * 3 + 1] = shades[color].g
+                    dev.framebuffer[(SCREEN_W * (sy + y) + (sx + x)) * 3 + 2] = shades[color].b
+                    // print
+                        // printf("%x ", color)
+                    // if color == 0 {
+                    //     dev.framebuffer[3 * SCREEN_W * sy + sx] = shades[color].r
+                    //     dev.framebuffer[3 * SCREEN_W * sy + sx + 1] = shades[color].g
+                    //     dev.framebuffer[3 * SCREEN_W * sy + sx + 2] = shades[color].b
+                    //     printf("- ")
+                    // } else {
+                    //     printf("%x ", color)
+                    // }
+                }
+                // printf("\n")
+            }
+            // printf("\n\n")
+        }
+
+        UpdateTexture(fb_tex, &dev.framebuffer[0])
         printf("LCD mode: %x\n", dev.ram[0xFF40])
 
         BeginDrawing()
-        ClearBackground(Color{0,0,0,0})
+        printf("%d, %d, %d\n", shades[0].b, shades[0].g, shades[0].b)
+        ClearBackground(shades[0])
+        src := Rectangle{0, 0, f32(SCREEN_W), f32(SCREEN_H)}
+        dst := Rectangle{0, 0, f32(GetScreenWidth()), f32(GetScreenHeight())}
+        DrawTexturePro(fb_tex, src, dst, Vector2{0, 0}, 0, Color{255, 255, 255, 255})
         EndDrawing()
      }
 
-    for t in 0..20 {
-        for y in 0..8 {
-            lo := dev.ram[0x8000 + (t * 16) + (y * 2)]
-            hi := dev.ram[0x8000 + (t * 16) + (y * 2) + 1]
-            for x in 0..8 {
-                bit := 7 - x
-                color := (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1)
-                if color == 0 {
-                    printf("- ")
-                } else {
-                    printf("%x ", color)
-                }
-            }
-            printf("\n")
-        }
-        printf("\n\n")
-    }
 
     fclose(rom_file)
     printf("cycles executed: %d\n", dev.cycles )

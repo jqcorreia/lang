@@ -52,3 +52,11 @@ enum IRQ_Vector {
     Serial = 0x58  
     Joypad = 0x60   
 }
+
+// indexed by tile color 0..3, RGB8
+shades: [4]Color = [
+  Color{155, 188, 15, 255},
+  Color{139, 172, 15, 255},
+  Color{48,  98,  48, 255},
+  Color{15,  56,  15, 255},
+]
