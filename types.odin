@@ -464,6 +464,8 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 		return 8
 	case .Pointer, .CString:
 		return 8
+	case .Function:
+		return 8 // function values are pointers internally
 	case .Enum:
 		return 8
 	case .Struct:

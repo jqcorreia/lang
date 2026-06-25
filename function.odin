@@ -643,7 +643,9 @@ function_call_emit_sysv :: proc(
 		case ABI_Byval:
 			src := emit_address(gen, a, scope, span)
 			copy := build_entry_alloca(gen, l.struct_type, "byval_copy")
-			size := ConstInt(Int64TypeInContext(gen.ctx), u64(get_type_byte_size(param_type)), 0)
+			// Use the real (padded) LLVM struct size: get_type_byte_size is
+			// padding-free and would truncate the copy, corrupting later fields.
+			size := ConstInt(Int64TypeInContext(gen.ctx), u64(ABISizeOfType(gen.data_layout, l.struct_type)), 0)
 			BuildMemCpy(gen.builder, copy, 8, src, 8, size)
 			append(&byval_arg_idxs, u32(len(args)))
 			append(&byval_arg_tys, l.struct_type)
