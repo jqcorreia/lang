@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:strings"
 
 Ast_Struct_Decl :: struct {
@@ -301,8 +302,15 @@ struct_emit_const :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope) -> ValueR
 	llvm_type := get_llvm_type(gen, expr.type)
 	e := expr.data.(Expr_Struct_Literal)
 	field_vals: [dynamic]ValueRef
+	positional := len(e.args_pos) > 0 && e.positional
 	for field in expr.type.fields {
-		if arg, ok := e.args[field.name]; ok {
+		arg: ^Expr = nil
+		if positional && field.index < len(e.args_pos) {
+			arg = e.args_pos[field.index]
+		} else if a, ok := e.args[field.name]; ok {
+			arg = a
+		}
+		if arg != nil {
 			append(&field_vals, make_const_value(gen, arg, scope))
 		} else {
 			append(&field_vals, ConstNull(get_llvm_type(gen, field.type)))
