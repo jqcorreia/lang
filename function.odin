@@ -144,24 +144,31 @@ function_external_block_parse :: proc(p: ^Parser, lib_name: string) -> ^Ast_Bloc
 function_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	data := &node.data.(Ast_Function)
 
-	new_scope := make_scope(.Function, parent = cur_scope)
-	symbol := new(Symbol)
-	symbol.name = data.name
-	symbol.kind = .Function
-	symbol.decl = node
-	symbol.scope = cur_scope
-	new_scope.function = symbol
-	cur_scope.symbols[data.name] = symbol
-	for &param in data.params {
-		sym := make_symbol(.Param)
-		sym.decl = node
-		sym.name = param.name
-		new_scope.symbols[param.name] = sym
-		param.symbol = sym
-	}
-	data.symbol = symbol
-	if !data.external {
-		get_block_symbols(data.body, new_scope)
+	existing, ok := resolve_symbol(cur_scope, data.name)
+
+	if !ok {
+		new_scope := make_scope(.Function, parent = cur_scope)
+		symbol := new(Symbol)
+		symbol.name = data.name
+		symbol.kind = .Function
+		symbol.decl = node
+		symbol.scope = cur_scope
+		new_scope.function = symbol
+		cur_scope.symbols[data.name] = symbol
+		for &param in data.params {
+			sym := make_symbol(.Param)
+			sym.decl = node
+			sym.name = param.name
+			new_scope.symbols[param.name] = sym
+			param.symbol = sym
+		}
+		data.symbol = symbol
+		if !data.external {
+			get_block_symbols(data.body, new_scope)
+		}
+	} else {
+		error_span(node.span, "Re-declaration of function '%s'", data.name)
+		data.symbol = existing
 	}
 }
 

@@ -13,6 +13,12 @@ check :: proc(c: ^Checker, nodes: []^Ast_Node) {
 		bind_scopes(node, global_scope)
 	}
 
+	// Note: this should be avoided or better structured. Symbol redeclaration occur
+	// in the bind phase and they need to stop compilation ASAP.
+	// This simple check will do it for now. TODO
+	if len(compiler.errors) > 0 {
+		return
+	}
 	// Resolve type aliases, this needs to happen after bind in order to be able
 	// to alias already ocurring symbols
 	for node in nodes {
