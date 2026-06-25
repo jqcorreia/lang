@@ -564,17 +564,7 @@ fn main() {
             break
         }
 
-        // for y in 10..50 {
-        //     for x in 10..50 {
-        //         dev.framebuffer[(SCREEN_W * y + x) * 3] = 255 
-        //     }
-        // }
-        // Dump tiles into framebuffer
-        for t in 0..20 {
-            sx := t * 8
-            sy := 0
-            draw_tile_id(t, sx, sy)
-        }
+        draw_background()
 
         UpdateTexture(fb_tex, &dev.framebuffer[0])
 

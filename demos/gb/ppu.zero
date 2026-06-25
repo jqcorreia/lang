@@ -1,3 +1,5 @@
+SCX_ADDR :: 0xFF41
+SCY_ADDR :: 0xFF42
 
 fn draw_tile_id(id: u16, x: u32, y: u32) {
     for ty in 0..8 {
@@ -10,6 +12,22 @@ fn draw_tile_id(id: u16, x: u32, y: u32) {
             dev.framebuffer[(SCREEN_W * (y + ty) + (x + tx)) * 3]     = shades[color].r
             dev.framebuffer[(SCREEN_W * (y + ty) + (x + tx)) * 3 + 1] = shades[color].g
             dev.framebuffer[(SCREEN_W * (y + ty) + (x + tx)) * 3 + 2] = shades[color].b
+        }
+    }
+}
+
+fn draw_background() {
+    scx := dev.ram[SCX_ADDR]
+    scy := dev.ram[SCY_ADDR]
+
+    // printf("%d %d\n", scx, scy)
+    // bottom := (scy + 143) % 256 
+    // right := (scx + 159) % 256
+
+    for by in 0..(144 / 8) {
+        for bx in 0..(160 / 8){
+            tile_id := u16(dev.ram[0x9800 + (by * 32 + bx)])
+            draw_tile_id(tile_id, bx * 8, by * 8)
         }
     }
 }
