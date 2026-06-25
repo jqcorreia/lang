@@ -1,6 +1,7 @@
 import "std:c"
 import "globals"
 import "opcodes"
+import "ppu"
 import "vendor:raylib"
 
 fn init_dev() {
@@ -572,36 +573,12 @@ fn main() {
         for t in 0..20 {
             sx := t * 8
             sy := 0
-            for y in 0..8 {
-                lo := dev.ram[0x8000 + (t * 16) + (y * 2)]
-                hi := dev.ram[0x8000 + (t * 16) + (y * 2) + 1]
-                for x in 0..8 {
-                    bit := 7 - x
-                    color := (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1)
-                    dev.framebuffer[(SCREEN_W * (sy + y) + (sx + x)) * 3] = shades[color].r
-                    dev.framebuffer[(SCREEN_W * (sy + y) + (sx + x)) * 3 + 1] = shades[color].g
-                    dev.framebuffer[(SCREEN_W * (sy + y) + (sx + x)) * 3 + 2] = shades[color].b
-                    // print
-                        // printf("%x ", color)
-                    // if color == 0 {
-                    //     dev.framebuffer[3 * SCREEN_W * sy + sx] = shades[color].r
-                    //     dev.framebuffer[3 * SCREEN_W * sy + sx + 1] = shades[color].g
-                    //     dev.framebuffer[3 * SCREEN_W * sy + sx + 2] = shades[color].b
-                    //     printf("- ")
-                    // } else {
-                    //     printf("%x ", color)
-                    // }
-                }
-                // printf("\n")
-            }
-            // printf("\n\n")
+            draw_tile_id(t, sx, sy)
         }
 
         UpdateTexture(fb_tex, &dev.framebuffer[0])
-        printf("LCD mode: %x\n", dev.ram[0xFF40])
 
         BeginDrawing()
-        printf("%d, %d, %d\n", shades[0].b, shades[0].g, shades[0].b)
         ClearBackground(shades[0])
         src := Rectangle{0, 0, f32(SCREEN_W), f32(SCREEN_H)}
         dst := Rectangle{0, 0, f32(GetScreenWidth()), f32(GetScreenHeight())}

@@ -1,0 +1,15 @@
+
+fn draw_tile_id(id: u16, x: u32, y: u32) {
+    for ty in 0..8 {
+        lo := dev.ram[0x8000 + (id * 16) + (ty * 2)]
+        hi := dev.ram[0x8000 + (id * 16) + (ty * 2) + 1]
+        for tx in 0..8 {
+            bit := 7 - tx
+            color := (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1)
+
+            dev.framebuffer[(SCREEN_W * (y + ty) + (x + tx)) * 3]     = shades[color].r
+            dev.framebuffer[(SCREEN_W * (y + ty) + (x + tx)) * 3 + 1] = shades[color].g
+            dev.framebuffer[(SCREEN_W * (y + ty) + (x + tx)) * 3 + 2] = shades[color].b
+        }
+    }
+}
