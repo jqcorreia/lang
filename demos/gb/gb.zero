@@ -62,7 +62,7 @@ fn init_dev() {
     instructions[0x28] = Instruction{ execute = jr_z, cycles = 12 } // JR Z,e8
     instructions[0x29] = Instruction{ execute = null, cycles = 8 } // ADD HL,HL
     instructions[0x2a] = Instruction{ execute = ldi_a_hl, cycles = 8 } // LD A,HL+
-    instructions[0x2b] = Instruction{ execute = null, cycles = 8 } // DEC HL
+    instructions[0x2b] = Instruction{ execute = dec_hl, cycles = 8 } // DEC HL
     instructions[0x2c] = Instruction{ execute = inc_l, cycles = 4 } // INC L
     instructions[0x2d] = Instruction{ execute = null, cycles = 4 } // DEC L
     instructions[0x2e] = Instruction{ execute = null, cycles = 8 } // LD L,n8
@@ -72,7 +72,7 @@ fn init_dev() {
     instructions[0x32] = Instruction{ execute = ldd_hl_a, cycles = 8 } // LD HL-,A
     instructions[0x33] = Instruction{ execute = null, cycles = 8 } // INC SP
     instructions[0x34] = Instruction{ execute = inc_ind_hl, cycles = 12 } // INC HL
-    instructions[0x35] = Instruction{ execute = dec_hl, cycles = 12 } // DEC HL
+    instructions[0x35] = Instruction{ execute = dec_ind_hl, cycles = 12 } // DEC HL
     instructions[0x36] = Instruction{ execute = ld_hl_n8, cycles = 12 } // LD HL,n8
     instructions[0x37] = Instruction{ execute = null, cycles = 4 } // SCF
     instructions[0x38] = Instruction{ execute = null, cycles = 12 } // JR C,e8
@@ -471,7 +471,7 @@ fn run_single_instruction() -> bool {
     } else {
         inst = instructions[u64(op_code)]
     }
-    // printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
+    printf("pc: %x, opcode %x\n", dev.r.pc, op_code)
     if inst.execute == null {
         printf("pc: %x, opcode: %x (prefixed=%b) not implemented\n", dev.r.pc, op_code, prefix)
         return false

@@ -4,6 +4,8 @@ SCREEN_H :: 144
 struct Instruction {
     execute: fn()
     cycles: u16
+    mnemonic: cstr
+    operand_len: u8 // bytes of immediate following the opcode: 0, 1, or 2
 }
 
 struct registers {

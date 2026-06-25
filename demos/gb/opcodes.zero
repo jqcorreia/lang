@@ -106,8 +106,19 @@ fn inc_ind_hl() {
     h_flag := val & 0x0F == 0x0F
     dev.ram[read_hl()] = val + 1 
 
-    set_flag(.Zero, val == 0)
+    set_flag(.Zero, val + 1 == 0)
     set_flag(.Subtract, false)
+    set_flag(.HalfCarry, h_flag) 
+    adv(1)
+}
+
+fn dec_ind_hl() {
+    val := dev.ram[read_hl()] 
+    h_flag := (val & 0x0F) == 0
+    dev.ram[read_hl()] = val - 1 
+
+    set_flag(.Zero, val - 1 == 0)
+    set_flag(.Subtract, true)
     set_flag(.HalfCarry, h_flag) 
     adv(1)
 }
