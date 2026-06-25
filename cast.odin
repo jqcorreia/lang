@@ -39,6 +39,9 @@ cast_emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span)
 	switch {
 	case from.numeric_integer && to.numeric_integer:
 		return BuildIntCast2(gen.builder, val, to_llvm, i32(from.signed), "")
+	case from.kind == .Enum && to.numeric_integer:
+		// Enums are backed by an integer, so an enum->int cast is an integer cast
+		return BuildIntCast2(gen.builder, val, to_llvm, i32(to.signed), "")
 	case from.numeric_float && to.numeric_integer:
 		if to.signed {
 			return BuildFPToSI(gen.builder, val, to_llvm, "")
