@@ -225,6 +225,11 @@ fn ld_a_e() {
     adv(1)
 }
 
+fn ld_a_l() {
+    dev.r.a = dev.r.l
+    adv(1)
+}
+
 fn ld_a_h() {
     dev.r.a = dev.r.h
     adv(1)

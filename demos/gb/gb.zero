@@ -144,7 +144,7 @@ fn init_dev() {
     instructions[0x7a] = Instruction{ execute = ld_a_d, cycles = 4, mnemonic = "LD A,D", operand_len = 0 } // LD A,D
     instructions[0x7b] = Instruction{ execute = ld_a_e, cycles = 4, mnemonic = "LD A,E", operand_len = 0 } // LD A,E
     instructions[0x7c] = Instruction{ execute = ld_a_h, cycles = 4, mnemonic = "LD A,H", operand_len = 0 } // LD A,H
-    instructions[0x7d] = Instruction{ execute = null, cycles = 4, mnemonic = "LD A,L", operand_len = 0 } // LD A,L
+    instructions[0x7d] = Instruction{ execute = ld_a_l, cycles = 4, mnemonic = "LD A,L", operand_len = 0 } // LD A,L
     instructions[0x7e] = Instruction{ execute = ld_a_hl, cycles = 8, mnemonic = "LD A,HL", operand_len = 0 } // LD A,HL
     instructions[0x7f] = Instruction{ execute = null, cycles = 4, mnemonic = "LD A,A", operand_len = 0 } // LD A,A
     instructions[0x80] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,B", operand_len = 0 } // ADD A,B
