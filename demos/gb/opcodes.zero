@@ -216,6 +216,7 @@ fn daa() {
     set_flag(.Carry, set_carry)
     adv(1)
 }
+
 fn rst() {
     opcode := dev.ram[dev.r.pc]
     push16(dev.r.pc + 1) // return address = instruction after RST

@@ -729,7 +729,7 @@ fn main() {
             break
         }
 
-        draw_background()
+        draw()
 
         UpdateTexture(fb_tex, &dev.framebuffer[0])
 
