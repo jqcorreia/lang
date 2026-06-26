@@ -148,20 +148,12 @@ fn dec_reg(r: &u8) {
     adv(1)
 }
 
-fn dec_a() {
-    dec_reg(&(dev.r.a))
-}
-
-fn dec_b() {
-    dec_reg(&(dev.r.b))
-}
-
-fn dec_c() {
-    dec_reg(&(dev.r.c))
-}
-fn dec_l() {
-    dec_reg(&(dev.r.l))
-}
+fn dec_a() { dec_reg(&(dev.r.a)) }
+fn dec_b() { dec_reg(&(dev.r.b)) }
+fn dec_c() { dec_reg(&(dev.r.c)) }
+fn dec_d() { dec_reg(&(dev.r.e)) }
+fn dec_e() { dec_reg(&(dev.r.e)) }
+fn dec_l() { dec_reg(&(dev.r.l)) }
 
 fn dec_bc() {
     write_bc(read_bc() - 1)
@@ -491,7 +483,6 @@ fn ld_bc_n16() {
 fn ld_bc_a() {
     dev.ram[read_bc()] = dev.r.a
     adv(1)
-
 }
 
 fn ld_de_a() {
@@ -551,6 +542,19 @@ fn cp_a_n8() {
     adv(2)
 }
 
+fn cp_a_hl() {
+    pc := u64(dev.r.pc)
+    im := dev.ram[read_hl()]
+    val := dev.r.a
+
+    set_flag(.Zero, im == val)
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, h_flag_sub(val, im))
+    set_flag(.Carry, val < im)
+
+    adv(2)
+}
+
 fn add_r1_r2(r1: &u8, r2: &u8) {
     c_flag := *r1 + *r2 > 0xFF 
     h_flag := h_flag_add(*r1, *r2)
@@ -579,6 +583,22 @@ fn add_r1_n8(r1: &u8) {
 
     adv(2)
 }
+
+fn sub_r1_n8(r1: &u8) {
+    r2 := dev.ram[dev.r.pc + 1]
+    c_flag := r2 > *r1 
+    h_flag := h_flag_sub(*r1, r2)
+
+    *r1 = *r1 - r2
+
+    set_flag(.Zero, *r1 == 0)
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, h_flag)
+    set_flag(.Carry, c_flag)
+
+    adv(2)
+}
+
 
 fn or_r1_r2(r1: &u8, r2: &u8) {
     *r1 = *r1 | *r2
@@ -611,6 +631,18 @@ fn xor_r1_r2(r1: &u8, r2: &u8) {
     adv(1)
 }
 
+fn xor_r1_n8(r1: &u8) {
+    val := dev.ram[dev.r.pc + 1]
+    *r1 = *r1 ^ val
+    set_flag(.Zero, *r1 == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false) // Halfcarry is false in case of XOR
+    set_flag(.Carry, false)
+
+    adv(2)
+}
+
+
 fn and_r1_r2(r1: &u8, r2: &u8) {
     *r1 = *r1 & *r2
     set_flag(.Zero, *r1 == 0)
@@ -632,17 +664,11 @@ fn and_r1_n8(r1: &u8) {
     adv(2)
 }
 
-fn add_a_a() {
-    add_r1_r2(&dev.r.a, &dev.r.a)
-}
-
-fn add_a_n8() {
-    add_r1_n8(&dev.r.a)
-}
-
-fn add_a_l() {
-    add_r1_r2(&dev.r.a, &dev.r.l)
-}
+fn add_a_a() { add_r1_r2(&dev.r.a, &dev.r.a) }
+fn add_a_b() { add_r1_r2(&dev.r.a, &dev.r.b) }
+fn add_a_c() { add_r1_r2(&dev.r.a, &dev.r.c) }
+fn add_a_n8() { add_r1_n8(&dev.r.a) }
+fn add_a_l() { add_r1_r2(&dev.r.a, &dev.r.l) }
 
 fn add_hl_de() {
     hl := read_hl()
@@ -668,6 +694,10 @@ fn add_hl_bc() {
 
     write_hl(u16(sum))
     adv(1)
+}
+
+fn sub_a_n8() {
+    sub_r1_n8(&dev.r.a)
 }
 
 fn or_a_c() {
@@ -712,6 +742,8 @@ fn and_r1_hl(r1: &u8) {
 fn xor_a_c() {
     xor_r1_r2(&dev.r.a, &dev.r.c)
 }
+
+fn xor_a_n8() { xor_r1_n8(&dev.r.a) }
 
 fn push_hl() {
     push16(read_hl())
@@ -765,6 +797,17 @@ fn ccf() {
 fn rrca() {
     c_flag := dev.r.a & 0x01 == 1
     dev.r.a = dev.r.a >> 1
+
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, c_flag)
+    adv(1)
+}
+
+fn rlca() {
+    c_flag := dev.r.a & 0x80 == 0x80
+    dev.r.a = (dev.r.a << 1) | (dev.r.a >> 7)
 
     set_flag(.Zero, dev.r.a == 0)
     set_flag(.Subtract, false)
@@ -1057,6 +1100,90 @@ fn res_7_h() { res_reg(7, &dev.r.h) }
 fn res_7_l() { res_reg(7, &dev.r.l) }
 fn res_7_hl() { res_ind_hl(7) }
 fn res_7_a() { res_reg(7, &dev.r.a) }
+
+// -- SET n,r : set bit n of r. Does not affect flags.
+fn set_reg(bit: u8, r: &u8) {
+    *r = *r | (u8(1) << bit)
+    adv(2)
+}
+
+fn set_ind_hl(bit: u8) {
+    addr := read_hl()
+    dev.ram[addr] = dev.ram[addr] | (u8(1) << bit)
+    adv(2)
+}
+
+fn set_0_b() { set_reg(0, &dev.r.b) }
+fn set_0_c() { set_reg(0, &dev.r.c) }
+fn set_0_d() { set_reg(0, &dev.r.d) }
+fn set_0_e() { set_reg(0, &dev.r.e) }
+fn set_0_h() { set_reg(0, &dev.r.h) }
+fn set_0_l() { set_reg(0, &dev.r.l) }
+fn set_0_hl() { set_ind_hl(0) }
+fn set_0_a() { set_reg(0, &dev.r.a) }
+
+fn set_1_b() { set_reg(1, &dev.r.b) }
+fn set_1_c() { set_reg(1, &dev.r.c) }
+fn set_1_d() { set_reg(1, &dev.r.d) }
+fn set_1_e() { set_reg(1, &dev.r.e) }
+fn set_1_h() { set_reg(1, &dev.r.h) }
+fn set_1_l() { set_reg(1, &dev.r.l) }
+fn set_1_hl() { set_ind_hl(1) }
+fn set_1_a() { set_reg(1, &dev.r.a) }
+
+fn set_2_b() { set_reg(2, &dev.r.b) }
+fn set_2_c() { set_reg(2, &dev.r.c) }
+fn set_2_d() { set_reg(2, &dev.r.d) }
+fn set_2_e() { set_reg(2, &dev.r.e) }
+fn set_2_h() { set_reg(2, &dev.r.h) }
+fn set_2_l() { set_reg(2, &dev.r.l) }
+fn set_2_hl() { set_ind_hl(2) }
+fn set_2_a() { set_reg(2, &dev.r.a) }
+
+fn set_3_b() { set_reg(3, &dev.r.b) }
+fn set_3_c() { set_reg(3, &dev.r.c) }
+fn set_3_d() { set_reg(3, &dev.r.d) }
+fn set_3_e() { set_reg(3, &dev.r.e) }
+fn set_3_h() { set_reg(3, &dev.r.h) }
+fn set_3_l() { set_reg(3, &dev.r.l) }
+fn set_3_hl() { set_ind_hl(3) }
+fn set_3_a() { set_reg(3, &dev.r.a) }
+
+fn set_4_b() { set_reg(4, &dev.r.b) }
+fn set_4_c() { set_reg(4, &dev.r.c) }
+fn set_4_d() { set_reg(4, &dev.r.d) }
+fn set_4_e() { set_reg(4, &dev.r.e) }
+fn set_4_h() { set_reg(4, &dev.r.h) }
+fn set_4_l() { set_reg(4, &dev.r.l) }
+fn set_4_hl() { set_ind_hl(4) }
+fn set_4_a() { set_reg(4, &dev.r.a) }
+
+fn set_5_b() { set_reg(5, &dev.r.b) }
+fn set_5_c() { set_reg(5, &dev.r.c) }
+fn set_5_d() { set_reg(5, &dev.r.d) }
+fn set_5_e() { set_reg(5, &dev.r.e) }
+fn set_5_h() { set_reg(5, &dev.r.h) }
+fn set_5_l() { set_reg(5, &dev.r.l) }
+fn set_5_hl() { set_ind_hl(5) }
+fn set_5_a() { set_reg(5, &dev.r.a) }
+
+fn set_6_b() { set_reg(6, &dev.r.b) }
+fn set_6_c() { set_reg(6, &dev.r.c) }
+fn set_6_d() { set_reg(6, &dev.r.d) }
+fn set_6_e() { set_reg(6, &dev.r.e) }
+fn set_6_h() { set_reg(6, &dev.r.h) }
+fn set_6_l() { set_reg(6, &dev.r.l) }
+fn set_6_hl() { set_ind_hl(6) }
+fn set_6_a() { set_reg(6, &dev.r.a) }
+
+fn set_7_b() { set_reg(7, &dev.r.b) }
+fn set_7_c() { set_reg(7, &dev.r.c) }
+fn set_7_d() { set_reg(7, &dev.r.d) }
+fn set_7_e() { set_reg(7, &dev.r.e) }
+fn set_7_h() { set_reg(7, &dev.r.h) }
+fn set_7_l() { set_reg(7, &dev.r.l) }
+fn set_7_hl() { set_ind_hl(7) }
+fn set_7_a() { set_reg(7, &dev.r.a) }
 
 fn ei() {
     dev.ime = true

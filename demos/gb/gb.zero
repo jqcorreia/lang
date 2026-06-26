@@ -26,7 +26,7 @@ fn init_dev() {
     instructions[0x04] = Instruction{ execute = inc_b, cycles = 4, mnemonic = "INC B", operand_len = 0 } // INC B
     instructions[0x05] = Instruction{ execute = dec_b, cycles = 4, mnemonic = "DEC B", operand_len = 0 } // DEC B
     instructions[0x06] = Instruction{ execute = ld_b_n8, cycles = 8, mnemonic = "LD B,$%02X", operand_len = 1 } // LD B,n8
-    instructions[0x07] = Instruction{ execute = null, cycles = 4, mnemonic = "RLCA", operand_len = 0 } // RLCA
+    instructions[0x07] = Instruction{ execute = rlca, cycles = 4, mnemonic = "RLCA", operand_len = 0 } // RLCA
     instructions[0x08] = Instruction{ execute = null, cycles = 20, mnemonic = "LD $%04X,SP", operand_len = 2 } // LD a16,SP
     instructions[0x09] = Instruction{ execute = add_hl_bc, cycles = 8, mnemonic = "ADD HL,BC", operand_len = 0 } // ADD HL,BC
     instructions[0x0a] = Instruction{ execute = ld_a_bc, cycles = 8, mnemonic = "LD A,BC", operand_len = 0 } // LD A,BC
@@ -40,7 +40,7 @@ fn init_dev() {
     instructions[0x12] = Instruction{ execute = ld_de_a, cycles = 8, mnemonic = "LD DE,A", operand_len = 0 } // LD DE,A
     instructions[0x13] = Instruction{ execute = inc_de, cycles = 8, mnemonic = "INC DE", operand_len = 0 } // INC DE
     instructions[0x14] = Instruction{ execute = inc_d, cycles = 4, mnemonic = "INC D", operand_len = 0 } // INC D
-    instructions[0x15] = Instruction{ execute = null, cycles = 4, mnemonic = "DEC D", operand_len = 0 } // DEC D
+    instructions[0x15] = Instruction{ execute = dec_d, cycles = 4, mnemonic = "DEC D", operand_len = 0 } // DEC D
     instructions[0x16] = Instruction{ execute = ld_d_n8, cycles = 8, mnemonic = "LD D,$%02X", operand_len = 1 } // LD D,n8
     instructions[0x17] = Instruction{ execute = null, cycles = 4, mnemonic = "RLA", operand_len = 0 } // RLA
     instructions[0x18] = Instruction{ execute = jr, cycles = 12, mnemonic = "JR $%02X", operand_len = 1 } // JR e8
@@ -48,7 +48,7 @@ fn init_dev() {
     instructions[0x1a] = Instruction{ execute = ld_a_de, cycles = 8, mnemonic = "LD A,DE", operand_len = 0 } // LD A,DE
     instructions[0x1b] = Instruction{ execute = null, cycles = 8, mnemonic = "DEC DE", operand_len = 0 } // DEC DE
     instructions[0x1c] = Instruction{ execute = inc_e, cycles = 4, mnemonic = "INC E", operand_len = 0 } // INC E
-    instructions[0x1d] = Instruction{ execute = null, cycles = 4, mnemonic = "DEC E", operand_len = 0 } // DEC E
+    instructions[0x1d] = Instruction{ execute = dec_e, cycles = 4, mnemonic = "DEC E", operand_len = 0 } // DEC E
     instructions[0x1e] = Instruction{ execute = ld_e_n8, cycles = 8, mnemonic = "LD E,$%02X", operand_len = 1 } // LD E,n8
     instructions[0x1f] = Instruction{ execute = null, cycles = 4, mnemonic = "RRA", operand_len = 0 } // RRA
     instructions[0x20] = Instruction{ execute = jr_nz, cycles = 12, mnemonic = "JR NZ,$%02X", operand_len = 1 } // JR NZ,e8
@@ -147,7 +147,7 @@ fn init_dev() {
     instructions[0x7d] = Instruction{ execute = ld_a_l, cycles = 4, mnemonic = "LD A,L", operand_len = 0 } // LD A,L
     instructions[0x7e] = Instruction{ execute = ld_a_hl, cycles = 8, mnemonic = "LD A,HL", operand_len = 0 } // LD A,HL
     instructions[0x7f] = Instruction{ execute = ld_a_a, cycles = 4, mnemonic = "LD A,A", operand_len = 0 } // LD A,A
-    instructions[0x80] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,B", operand_len = 0 } // ADD A,B
+    instructions[0x80] = Instruction{ execute = add_a_b, cycles = 4, mnemonic = "ADD A,B", operand_len = 0 } // ADD A,B
     instructions[0x81] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,C", operand_len = 0 } // ADD A,C
     instructions[0x82] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,D", operand_len = 0 } // ADD A,D
     instructions[0x83] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,E", operand_len = 0 } // ADD A,E
@@ -156,7 +156,7 @@ fn init_dev() {
     instructions[0x86] = Instruction{ execute = null, cycles = 8, mnemonic = "ADD A,HL", operand_len = 0 } // ADD A,HL
     instructions[0x87] = Instruction{ execute = add_a_a, cycles = 4, mnemonic = "ADD A,A", operand_len = 0 } // ADD A,A
     instructions[0x88] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,B", operand_len = 0 } // ADC A,B
-    instructions[0x89] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,C", operand_len = 0 } // ADC A,C
+    instructions[0x89] = Instruction{ execute = add_a_c, cycles = 4, mnemonic = "ADC A,C", operand_len = 0 } // ADC A,C
     instructions[0x8a] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,D", operand_len = 0 } // ADC A,D
     instructions[0x8b] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,E", operand_len = 0 } // ADC A,E
     instructions[0x8c] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,H", operand_len = 0 } // ADC A,H
@@ -209,7 +209,7 @@ fn init_dev() {
     instructions[0xbb] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,E", operand_len = 0 } // CP A,E
     instructions[0xbc] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,H", operand_len = 0 } // CP A,H
     instructions[0xbd] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,L", operand_len = 0 } // CP A,L
-    instructions[0xbe] = Instruction{ execute = null, cycles = 8, mnemonic = "CP A,HL", operand_len = 0 } // CP A,HL
+    instructions[0xbe] = Instruction{ execute = cp_a_hl, cycles = 8, mnemonic = "CP A,HL", operand_len = 0 } // CP A,HL
     instructions[0xbf] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,A", operand_len = 0 } // CP A,A
     instructions[0xc0] = Instruction{ execute = ret_nz, cycles = 20, mnemonic = "RET NZ", operand_len = 0 } // RET NZ
     instructions[0xc1] = Instruction{ execute = pop_bc, cycles = 12, mnemonic = "POP BC", operand_len = 0 } // POP BC
@@ -233,7 +233,7 @@ fn init_dev() {
     instructions[0xd3] = Instruction{ execute = null, cycles = 4, mnemonic = "ILLEGAL_D3", operand_len = 0 } // ILLEGAL_D3
     instructions[0xd4] = Instruction{ execute = call_nc_a16, cycles = 24, mnemonic = "CALL NC,$%04X", operand_len = 2 } // CALL NC,a16
     instructions[0xd5] = Instruction{ execute = push_de, cycles = 16, mnemonic = "PUSH DE", operand_len = 0 } // PUSH DE
-    instructions[0xd6] = Instruction{ execute = null, cycles = 8, mnemonic = "SUB A,$%02X", operand_len = 1 } // SUB A,n8
+    instructions[0xd6] = Instruction{ execute = sub_a_n8, cycles = 8, mnemonic = "SUB A,$%02X", operand_len = 1 } // SUB A,n8
     instructions[0xd7] = Instruction{ execute = null, cycles = 16, mnemonic = "RST $10", operand_len = 0 } // RST $10
     instructions[0xd8] = Instruction{ execute = null, cycles = 20, mnemonic = "RET C", operand_len = 0 } // RET C
     instructions[0xd9] = Instruction{ execute = reti, cycles = 16, mnemonic = "RETI", operand_len = 0 } // RETI
@@ -257,7 +257,7 @@ fn init_dev() {
     instructions[0xeb] = Instruction{ execute = null, cycles = 4, mnemonic = "ILLEGAL_EB", operand_len = 0 } // ILLEGAL_EB
     instructions[0xec] = Instruction{ execute = null, cycles = 4, mnemonic = "ILLEGAL_EC", operand_len = 0 } // ILLEGAL_EC
     instructions[0xed] = Instruction{ execute = null, cycles = 4, mnemonic = "ILLEGAL_ED", operand_len = 0 } // ILLEGAL_ED
-    instructions[0xee] = Instruction{ execute = null, cycles = 8, mnemonic = "XOR A,$%02X", operand_len = 1 } // XOR A,n8
+    instructions[0xee] = Instruction{ execute = xor_a_n8, cycles = 8, mnemonic = "XOR A,$%02X", operand_len = 1 } // XOR A,n8
     instructions[0xef] = Instruction{ execute = rst, cycles = 16, mnemonic = "RST $28", operand_len = 0 } // RST $28
     instructions[0xf0] = Instruction{ execute = ldh_a_a8, cycles = 12, mnemonic = "LDH A,$%02X", operand_len = 1 } // LDH A,a8
     instructions[0xf1] = Instruction{ execute = pop_af, cycles = 12, mnemonic = "POP AF", operand_len = 0 } // POP AF
@@ -427,6 +427,79 @@ fn init_dev() {
     prefixed[0xbd] = Instruction{ execute = res_7_l, cycles = 8, mnemonic = "RES 7,L", operand_len = 0 }
     prefixed[0xbe] = Instruction{ execute = res_7_hl, cycles = 16, mnemonic = "RES 7,(HL)", operand_len = 0 }
     prefixed[0xbf] = Instruction{ execute = res_7_a, cycles = 8, mnemonic = "RES 7,A", operand_len = 0 }
+
+    // SET n,r (CB 0xC0-0xFF): reg ops 8 cycles, (HL) ops 16 cycles
+    prefixed[0xc0] = Instruction{ execute = set_0_b, cycles = 8, mnemonic = "SET 0,B", operand_len = 0 }
+    prefixed[0xc1] = Instruction{ execute = set_0_c, cycles = 8, mnemonic = "SET 0,C", operand_len = 0 }
+    prefixed[0xc2] = Instruction{ execute = set_0_d, cycles = 8, mnemonic = "SET 0,D", operand_len = 0 }
+    prefixed[0xc3] = Instruction{ execute = set_0_e, cycles = 8, mnemonic = "SET 0,E", operand_len = 0 }
+    prefixed[0xc4] = Instruction{ execute = set_0_h, cycles = 8, mnemonic = "SET 0,H", operand_len = 0 }
+    prefixed[0xc5] = Instruction{ execute = set_0_l, cycles = 8, mnemonic = "SET 0,L", operand_len = 0 }
+    prefixed[0xc6] = Instruction{ execute = set_0_hl, cycles = 16, mnemonic = "SET 0,(HL)", operand_len = 0 }
+    prefixed[0xc7] = Instruction{ execute = set_0_a, cycles = 8, mnemonic = "SET 0,A", operand_len = 0 }
+
+    prefixed[0xc8] = Instruction{ execute = set_1_b, cycles = 8, mnemonic = "SET 1,B", operand_len = 0 }
+    prefixed[0xc9] = Instruction{ execute = set_1_c, cycles = 8, mnemonic = "SET 1,C", operand_len = 0 }
+    prefixed[0xca] = Instruction{ execute = set_1_d, cycles = 8, mnemonic = "SET 1,D", operand_len = 0 }
+    prefixed[0xcb] = Instruction{ execute = set_1_e, cycles = 8, mnemonic = "SET 1,E", operand_len = 0 }
+    prefixed[0xcc] = Instruction{ execute = set_1_h, cycles = 8, mnemonic = "SET 1,H", operand_len = 0 }
+    prefixed[0xcd] = Instruction{ execute = set_1_l, cycles = 8, mnemonic = "SET 1,L", operand_len = 0 }
+    prefixed[0xce] = Instruction{ execute = set_1_hl, cycles = 16, mnemonic = "SET 1,(HL)", operand_len = 0 }
+    prefixed[0xcf] = Instruction{ execute = set_1_a, cycles = 8, mnemonic = "SET 1,A", operand_len = 0 }
+
+    prefixed[0xd0] = Instruction{ execute = set_2_b, cycles = 8, mnemonic = "SET 2,B", operand_len = 0 }
+    prefixed[0xd1] = Instruction{ execute = set_2_c, cycles = 8, mnemonic = "SET 2,C", operand_len = 0 }
+    prefixed[0xd2] = Instruction{ execute = set_2_d, cycles = 8, mnemonic = "SET 2,D", operand_len = 0 }
+    prefixed[0xd3] = Instruction{ execute = set_2_e, cycles = 8, mnemonic = "SET 2,E", operand_len = 0 }
+    prefixed[0xd4] = Instruction{ execute = set_2_h, cycles = 8, mnemonic = "SET 2,H", operand_len = 0 }
+    prefixed[0xd5] = Instruction{ execute = set_2_l, cycles = 8, mnemonic = "SET 2,L", operand_len = 0 }
+    prefixed[0xd6] = Instruction{ execute = set_2_hl, cycles = 16, mnemonic = "SET 2,(HL)", operand_len = 0 }
+    prefixed[0xd7] = Instruction{ execute = set_2_a, cycles = 8, mnemonic = "SET 2,A", operand_len = 0 }
+
+    prefixed[0xd8] = Instruction{ execute = set_3_b, cycles = 8, mnemonic = "SET 3,B", operand_len = 0 }
+    prefixed[0xd9] = Instruction{ execute = set_3_c, cycles = 8, mnemonic = "SET 3,C", operand_len = 0 }
+    prefixed[0xda] = Instruction{ execute = set_3_d, cycles = 8, mnemonic = "SET 3,D", operand_len = 0 }
+    prefixed[0xdb] = Instruction{ execute = set_3_e, cycles = 8, mnemonic = "SET 3,E", operand_len = 0 }
+    prefixed[0xdc] = Instruction{ execute = set_3_h, cycles = 8, mnemonic = "SET 3,H", operand_len = 0 }
+    prefixed[0xdd] = Instruction{ execute = set_3_l, cycles = 8, mnemonic = "SET 3,L", operand_len = 0 }
+    prefixed[0xde] = Instruction{ execute = set_3_hl, cycles = 16, mnemonic = "SET 3,(HL)", operand_len = 0 }
+    prefixed[0xdf] = Instruction{ execute = set_3_a, cycles = 8, mnemonic = "SET 3,A", operand_len = 0 }
+
+    prefixed[0xe0] = Instruction{ execute = set_4_b, cycles = 8, mnemonic = "SET 4,B", operand_len = 0 }
+    prefixed[0xe1] = Instruction{ execute = set_4_c, cycles = 8, mnemonic = "SET 4,C", operand_len = 0 }
+    prefixed[0xe2] = Instruction{ execute = set_4_d, cycles = 8, mnemonic = "SET 4,D", operand_len = 0 }
+    prefixed[0xe3] = Instruction{ execute = set_4_e, cycles = 8, mnemonic = "SET 4,E", operand_len = 0 }
+    prefixed[0xe4] = Instruction{ execute = set_4_h, cycles = 8, mnemonic = "SET 4,H", operand_len = 0 }
+    prefixed[0xe5] = Instruction{ execute = set_4_l, cycles = 8, mnemonic = "SET 4,L", operand_len = 0 }
+    prefixed[0xe6] = Instruction{ execute = set_4_hl, cycles = 16, mnemonic = "SET 4,(HL)", operand_len = 0 }
+    prefixed[0xe7] = Instruction{ execute = set_4_a, cycles = 8, mnemonic = "SET 4,A", operand_len = 0 }
+
+    prefixed[0xe8] = Instruction{ execute = set_5_b, cycles = 8, mnemonic = "SET 5,B", operand_len = 0 }
+    prefixed[0xe9] = Instruction{ execute = set_5_c, cycles = 8, mnemonic = "SET 5,C", operand_len = 0 }
+    prefixed[0xea] = Instruction{ execute = set_5_d, cycles = 8, mnemonic = "SET 5,D", operand_len = 0 }
+    prefixed[0xeb] = Instruction{ execute = set_5_e, cycles = 8, mnemonic = "SET 5,E", operand_len = 0 }
+    prefixed[0xec] = Instruction{ execute = set_5_h, cycles = 8, mnemonic = "SET 5,H", operand_len = 0 }
+    prefixed[0xed] = Instruction{ execute = set_5_l, cycles = 8, mnemonic = "SET 5,L", operand_len = 0 }
+    prefixed[0xee] = Instruction{ execute = set_5_hl, cycles = 16, mnemonic = "SET 5,(HL)", operand_len = 0 }
+    prefixed[0xef] = Instruction{ execute = set_5_a, cycles = 8, mnemonic = "SET 5,A", operand_len = 0 }
+
+    prefixed[0xf0] = Instruction{ execute = set_6_b, cycles = 8, mnemonic = "SET 6,B", operand_len = 0 }
+    prefixed[0xf1] = Instruction{ execute = set_6_c, cycles = 8, mnemonic = "SET 6,C", operand_len = 0 }
+    prefixed[0xf2] = Instruction{ execute = set_6_d, cycles = 8, mnemonic = "SET 6,D", operand_len = 0 }
+    prefixed[0xf3] = Instruction{ execute = set_6_e, cycles = 8, mnemonic = "SET 6,E", operand_len = 0 }
+    prefixed[0xf4] = Instruction{ execute = set_6_h, cycles = 8, mnemonic = "SET 6,H", operand_len = 0 }
+    prefixed[0xf5] = Instruction{ execute = set_6_l, cycles = 8, mnemonic = "SET 6,L", operand_len = 0 }
+    prefixed[0xf6] = Instruction{ execute = set_6_hl, cycles = 16, mnemonic = "SET 6,(HL)", operand_len = 0 }
+    prefixed[0xf7] = Instruction{ execute = set_6_a, cycles = 8, mnemonic = "SET 6,A", operand_len = 0 }
+
+    prefixed[0xf8] = Instruction{ execute = set_7_b, cycles = 8, mnemonic = "SET 7,B", operand_len = 0 }
+    prefixed[0xf9] = Instruction{ execute = set_7_c, cycles = 8, mnemonic = "SET 7,C", operand_len = 0 }
+    prefixed[0xfa] = Instruction{ execute = set_7_d, cycles = 8, mnemonic = "SET 7,D", operand_len = 0 }
+    prefixed[0xfb] = Instruction{ execute = set_7_e, cycles = 8, mnemonic = "SET 7,E", operand_len = 0 }
+    prefixed[0xfc] = Instruction{ execute = set_7_h, cycles = 8, mnemonic = "SET 7,H", operand_len = 0 }
+    prefixed[0xfd] = Instruction{ execute = set_7_l, cycles = 8, mnemonic = "SET 7,L", operand_len = 0 }
+    prefixed[0xfe] = Instruction{ execute = set_7_hl, cycles = 16, mnemonic = "SET 7,(HL)", operand_len = 0 }
+    prefixed[0xff] = Instruction{ execute = set_7_a, cycles = 8, mnemonic = "SET 7,A", operand_len = 0 }
 }
 
 // -- ops implementations
