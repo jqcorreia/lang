@@ -46,7 +46,7 @@ fn init_dev() {
     instructions[0x18] = Instruction{ execute = jr, cycles = 12, mnemonic = "JR $%02X", operand_len = 1 } // JR e8
     instructions[0x19] = Instruction{ execute = add_hl_de, cycles = 8, mnemonic = "ADD HL,DE", operand_len = 0 } // ADD HL,DE
     instructions[0x1a] = Instruction{ execute = ld_a_de, cycles = 8, mnemonic = "LD A,DE", operand_len = 0 } // LD A,DE
-    instructions[0x1b] = Instruction{ execute = null, cycles = 8, mnemonic = "DEC DE", operand_len = 0 } // DEC DE
+    instructions[0x1b] = Instruction{ execute = dec_de, cycles = 8, mnemonic = "DEC DE", operand_len = 0 } // DEC DE
     instructions[0x1c] = Instruction{ execute = inc_e, cycles = 4, mnemonic = "INC E", operand_len = 0 } // INC E
     instructions[0x1d] = Instruction{ execute = dec_e, cycles = 4, mnemonic = "DEC E", operand_len = 0 } // DEC E
     instructions[0x1e] = Instruction{ execute = ld_e_n8, cycles = 8, mnemonic = "LD E,$%02X", operand_len = 1 } // LD E,n8
@@ -75,7 +75,7 @@ fn init_dev() {
     instructions[0x35] = Instruction{ execute = dec_ind_hl, cycles = 12, mnemonic = "DEC HL", operand_len = 0 } // DEC HL
     instructions[0x36] = Instruction{ execute = ld_hl_n8, cycles = 12, mnemonic = "LD HL,$%02X", operand_len = 1 } // LD HL,n8
     instructions[0x37] = Instruction{ execute = null, cycles = 4, mnemonic = "SCF", operand_len = 0 } // SCF
-    instructions[0x38] = Instruction{ execute = null, cycles = 12, mnemonic = "JR C,$%02X", operand_len = 1 } // JR C,e8
+    instructions[0x38] = Instruction{ execute = jr_c, cycles = 12, mnemonic = "JR C,$%02X", operand_len = 1 } // JR C,e8
     instructions[0x39] = Instruction{ execute = null, cycles = 8, mnemonic = "ADD HL,SP", operand_len = 0 } // ADD HL,SP
     instructions[0x3a] = Instruction{ execute = ldd_a_hl, cycles = 8, mnemonic = "LD A,HL-", operand_len = 0 } // LD A,HL-
     instructions[0x3b] = Instruction{ execute = null, cycles = 8, mnemonic = "DEC SP", operand_len = 0 } // DEC SP
@@ -149,7 +149,7 @@ fn init_dev() {
     instructions[0x7f] = Instruction{ execute = ld_a_a, cycles = 4, mnemonic = "LD A,A", operand_len = 0 } // LD A,A
     instructions[0x80] = Instruction{ execute = add_a_b, cycles = 4, mnemonic = "ADD A,B", operand_len = 0 } // ADD A,B
     instructions[0x81] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,C", operand_len = 0 } // ADD A,C
-    instructions[0x82] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,D", operand_len = 0 } // ADD A,D
+    instructions[0x82] = Instruction{ execute = add_a_d, cycles = 4, mnemonic = "ADD A,D", operand_len = 0 } // ADD A,D
     instructions[0x83] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,E", operand_len = 0 } // ADD A,E
     instructions[0x84] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,H", operand_len = 0 } // ADD A,H
     instructions[0x85] = Instruction{ execute = add_a_l, cycles = 4, mnemonic = "ADD A,L", operand_len = 0 } // ADD A,L
@@ -169,7 +169,7 @@ fn init_dev() {
     instructions[0x93] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,E", operand_len = 0 } // SUB A,E
     instructions[0x94] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,H", operand_len = 0 } // SUB A,H
     instructions[0x95] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,L", operand_len = 0 } // SUB A,L
-    instructions[0x96] = Instruction{ execute = null, cycles = 8, mnemonic = "SUB A,HL", operand_len = 0 } // SUB A,HL
+    instructions[0x96] = Instruction{ execute = sub_a_hl, cycles = 8, mnemonic = "SUB A,HL", operand_len = 0 } // SUB A,HL
     instructions[0x97] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,A", operand_len = 0 } // SUB A,A
     instructions[0x98] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,B", operand_len = 0 } // SBC A,B
     instructions[0x99] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,C", operand_len = 0 } // SBC A,C

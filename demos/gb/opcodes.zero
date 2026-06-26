@@ -66,6 +66,19 @@ fn jr_nz() {
     }
 }
 
+fn jr_c() {
+    o := dev.r.pc
+    r := i16(i8(dev.ram[dev.r.pc + 1]))
+
+     // Since we need to jump from the next instruction,
+    // advance unconditionally
+    adv(2)
+    if get_flag(.Carry) {
+        dev.r.pc = u16(i16(dev.r.pc) + r)  
+    }
+}
+
+
 fn xor_a_a() { 
     dev.r.a = 0
     adv(1)
@@ -157,6 +170,11 @@ fn dec_l() { dec_reg(&(dev.r.l)) }
 
 fn dec_bc() {
     write_bc(read_bc() - 1)
+    adv(1)
+}
+
+fn dec_de() {
+    write_de(read_de() - 1)
     adv(1)
 }
 
@@ -667,6 +685,7 @@ fn and_r1_n8(r1: &u8) {
 fn add_a_a() { add_r1_r2(&dev.r.a, &dev.r.a) }
 fn add_a_b() { add_r1_r2(&dev.r.a, &dev.r.b) }
 fn add_a_c() { add_r1_r2(&dev.r.a, &dev.r.c) }
+fn add_a_d() { add_r1_r2(&dev.r.a, &dev.r.d) }
 fn add_a_n8() { add_r1_n8(&dev.r.a) }
 fn add_a_l() { add_r1_r2(&dev.r.a, &dev.r.l) }
 
@@ -698,6 +717,22 @@ fn add_hl_bc() {
 
 fn sub_a_n8() {
     sub_r1_n8(&dev.r.a)
+}
+
+// SUB A,(HL): subtract the byte at [HL] from A. Single-byte opcode (adv 1).
+fn sub_a_hl() {
+    val := dev.ram[read_hl()]
+    c_flag := val > dev.r.a
+    h_flag := h_flag_sub(dev.r.a, val)
+
+    dev.r.a = dev.r.a - val
+
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, h_flag)
+    set_flag(.Carry, c_flag)
+
+    adv(1)
 }
 
 fn or_a_c() {
