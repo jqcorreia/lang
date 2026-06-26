@@ -6,7 +6,10 @@ external "c" {
     fn fputc(char: i32, file: &FILE) -> i32
     fn fputs(string: cstr, file: &FILE) -> u64
     fn fclose(file: &FILE) -> u64
+    fn fflush(file: &FILE)
+
     fn random() -> i64
+
     fn sleep(secs: u64)
     fn nanosleep(spec: &timespec, rem: &timespec)
 }
