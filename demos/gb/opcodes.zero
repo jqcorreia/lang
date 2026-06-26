@@ -210,6 +210,11 @@ fn ld_e_a() {
     adv(1)
 }
 
+fn ld_e_l() {
+    dev.r.e = dev.r.l
+    adv(1)
+}
+
 fn ld_a_c() {
     dev.r.a = dev.r.c
     adv(1)
@@ -260,6 +265,10 @@ fn ld_c_hl() {
     adv(1)
 }
 
+fn ld_d_h() {
+    dev.r.d = dev.r.h 
+    adv(1)
+}
 fn ld_d_hl() {
     dev.r.d = dev.ram[read_hl()]
     adv(1)
@@ -494,6 +503,21 @@ fn add_r1_r2(r1: &u8, r2: &u8) {
     adv(1)
 }
 
+fn add_r1_n8(r1: &u8) {
+    r2 := dev.ram[dev.r.pc + 1]
+    c_flag := *r1 + r2 > 0xFF 
+    h_flag := h_flag_add(*r1, r2)
+
+    *r1 = *r1 + r2
+
+    set_flag(.Zero, *r1 == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, h_flag)
+    set_flag(.Carry, c_flag)
+
+    adv(2)
+}
+
 fn or_r1_r2(r1: &u8, r2: &u8) {
     *r1 = *r1 | *r2
     set_flag(.Zero, *r1 == 0)
@@ -537,6 +561,10 @@ fn and_r1_n8(r1: &u8) {
 
 fn add_a_a() {
     add_r1_r2(&dev.r.a, &dev.r.a)
+}
+
+fn add_a_n8() {
+    add_r1_n8(&dev.r.a)
 }
 
 fn add_a_l() {

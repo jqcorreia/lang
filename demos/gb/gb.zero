@@ -103,7 +103,7 @@ fn init_dev() {
     instructions[0x51] = Instruction{ execute = null, cycles = 4, mnemonic = "LD D,C", operand_len = 0 } // LD D,C
     instructions[0x52] = Instruction{ execute = null, cycles = 4, mnemonic = "LD D,D", operand_len = 0 } // LD D,D
     instructions[0x53] = Instruction{ execute = null, cycles = 4, mnemonic = "LD D,E", operand_len = 0 } // LD D,E
-    instructions[0x54] = Instruction{ execute = null, cycles = 4, mnemonic = "LD D,H", operand_len = 0 } // LD D,H
+    instructions[0x54] = Instruction{ execute = ld_d_h, cycles = 4, mnemonic = "LD D,H", operand_len = 0 } // LD D,H
     instructions[0x55] = Instruction{ execute = null, cycles = 4, mnemonic = "LD D,L", operand_len = 0 } // LD D,L
     instructions[0x56] = Instruction{ execute = ld_d_hl, cycles = 8, mnemonic = "LD D,HL", operand_len = 0 } // LD D,HL
     instructions[0x57] = Instruction{ execute = ld_d_a, cycles = 4, mnemonic = "LD D,A", operand_len = 0 } // LD D,A
@@ -112,7 +112,7 @@ fn init_dev() {
     instructions[0x5a] = Instruction{ execute = null, cycles = 4, mnemonic = "LD E,D", operand_len = 0 } // LD E,D
     instructions[0x5b] = Instruction{ execute = null, cycles = 4, mnemonic = "LD E,E", operand_len = 0 } // LD E,E
     instructions[0x5c] = Instruction{ execute = null, cycles = 4, mnemonic = "LD E,H", operand_len = 0 } // LD E,H
-    instructions[0x5d] = Instruction{ execute = null, cycles = 4, mnemonic = "LD E,L", operand_len = 0 } // LD E,L
+    instructions[0x5d] = Instruction{ execute = ld_e_l, cycles = 4, mnemonic = "LD E,L", operand_len = 0 } // LD E,L
     instructions[0x5e] = Instruction{ execute = ld_e_hl, cycles = 8, mnemonic = "LD E,HL", operand_len = 0 } // LD E,HL
     instructions[0x5f] = Instruction{ execute = ld_e_a, cycles = 4, mnemonic = "LD E,A", operand_len = 0 } // LD E,A
     instructions[0x60] = Instruction{ execute = ld_h_b, cycles = 4, mnemonic = "LD H,B", operand_len = 0 } // LD H,B
@@ -217,7 +217,7 @@ fn init_dev() {
     instructions[0xc3] = Instruction{ execute = jp, cycles = 16, mnemonic = "JP $%04X", operand_len = 2 } // JP a16
     instructions[0xc4] = Instruction{ execute = null, cycles = 24, mnemonic = "CALL NZ,$%04X", operand_len = 2 } // CALL NZ,a16
     instructions[0xc5] = Instruction{ execute = push_bc, cycles = 16, mnemonic = "PUSH BC", operand_len = 0 } // PUSH BC
-    instructions[0xc6] = Instruction{ execute = null, cycles = 8, mnemonic = "ADD A,$%02X", operand_len = 1 } // ADD A,n8
+    instructions[0xc6] = Instruction{ execute = add_a_n8, cycles = 8, mnemonic = "ADD A,$%02X", operand_len = 1 } // ADD A,n8
     instructions[0xc7] = Instruction{ execute = null, cycles = 16, mnemonic = "RST $00", operand_len = 0 } // RST $00
     instructions[0xc8] = Instruction{ execute = ret_z, cycles = 20, mnemonic = "RET Z", operand_len = 0 } // RET Z
     instructions[0xc9] = Instruction{ execute = ret, cycles = 16, mnemonic = "RET", operand_len = 0 } // RET
@@ -511,7 +511,7 @@ fn run_single_instruction() -> bool {
     } else {
         inst = instructions[u64(op_code)]
     }
-    disasm(dev.r.pc, inst)
+    // disasm(dev.r.pc, inst)
     if inst.execute == null {
         printf("pc: %x, opcode: %x (prefixed=%b) not implemented\n", dev.r.pc, op_code, prefix)
         return false
