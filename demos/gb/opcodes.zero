@@ -19,6 +19,17 @@ fn jp_z() {
     }
 }
 
+fn jp_nz() {
+    pc := u64(dev.r.pc)
+    addr := dev.ram[pc+1:pc+2]
+
+    if !get_flag(.Zero) {
+        dev.r.pc = cast(u16, addr)
+    } else {
+        adv(3)
+    }
+}
+
 fn jp_hl() {
     dev.r.pc = read_hl() // JP HL sets PC directly; no adv()
 }
@@ -148,6 +159,9 @@ fn dec_b() {
 fn dec_c() {
     dec_reg(&(dev.r.c))
 }
+fn dec_l() {
+    dec_reg(&(dev.r.l))
+}
 
 fn dec_bc() {
     write_bc(read_bc() - 1)
@@ -186,6 +200,11 @@ fn ld_c_a() {
     adv(1)
 }
 
+fn ld_d_a() {
+    dev.r.d = dev.r.a
+    adv(1)
+}
+
 fn ld_e_a() {
     dev.r.e = dev.r.a
     adv(1)
@@ -196,8 +215,23 @@ fn ld_a_c() {
     adv(1)
 }
 
+fn ld_a_d() {
+    dev.r.a = dev.r.d
+    adv(1)
+}
+
+fn ld_a_e() {
+    dev.r.a = dev.r.e
+    adv(1)
+}
+
 fn ld_a_h() {
     dev.r.a = dev.r.h
+    adv(1)
+}
+
+fn ld_a_bc() {
+    dev.r.a = dev.ram[read_bc()]
     adv(1)
 }
 
@@ -208,6 +242,11 @@ fn ld_a_de() {
 
 fn ld_a_hl() {
     dev.r.a = dev.ram[read_hl()]
+    adv(1)
+}
+
+fn ld_b_hl() {
+    dev.r.b = dev.ram[read_hl()]
     adv(1)
 }
 
@@ -224,6 +263,25 @@ fn ld_e_hl() {
     adv(1)
 }
 
+fn ld_h_a() {
+    dev.r.h = dev.r.a
+    adv(1)
+}
+fn ld_h_b() {
+    dev.r.h = dev.r.b
+    adv(1)
+}
+
+fn ld_l_a() {
+    dev.r.l = dev.r.a
+    adv(1)
+}
+
+fn ld_l_c() {
+    dev.r.l = dev.r.c
+    adv(1)
+}
+
 fn load_hl() {
     pc := u64(dev.r.pc)
     val := cast(u16, dev.ram[pc+1:pc+2])
@@ -234,6 +292,11 @@ fn load_hl() {
 
 fn ldd_hl_a() {
     dev.ram[read_hl()] = dev.r.a
+    write_hl(read_hl() - 1)
+    adv(1)
+}
+fn ldd_a_hl() {
+    dev.r.a = dev.ram[read_hl()]
     write_hl(read_hl() - 1)
     adv(1)
 }
@@ -361,6 +424,36 @@ fn ld_de_a() {
     adv(1)
 }
 
+fn ld_hl_a() {
+    dev.ram[read_hl()] = dev.r.a
+    adv(1)
+}
+
+fn ld_hl_b() {
+    dev.ram[read_hl()] = dev.r.b
+    adv(1)
+}
+
+fn ld_hl_c() {
+    dev.ram[read_hl()] = dev.r.c
+    adv(1)
+}
+
+fn ld_hl_d() {
+    dev.ram[read_hl()] = dev.r.d
+    adv(1)
+}
+
+fn ld_hl_e() {
+    dev.ram[read_hl()] = dev.r.e
+    adv(1)
+}
+
+fn inc_bc() {
+    write_bc(read_bc() + 1)
+    adv(1)
+}
+
 fn inc_de() {
     write_de(read_de() + 1)
     adv(1)
@@ -438,6 +531,10 @@ fn add_a_a() {
     add_r1_r2(&dev.r.a, &dev.r.a)
 }
 
+fn add_a_l() {
+    add_r1_r2(&dev.r.a, &dev.r.l)
+}
+
 fn add_hl_de() {
     hl := read_hl()
     de := read_de()
@@ -445,6 +542,19 @@ fn add_hl_de() {
 
     set_flag(.Subtract, false)
     set_flag(.HalfCarry, (hl & 0x0FFF) + (de & 0x0FFF) > 0x0FFF)
+    set_flag(.Carry, sum > 0xFFFF)
+
+    write_hl(u16(sum))
+    adv(1)
+}
+
+fn add_hl_bc() {
+    hl := read_hl()
+    bc := read_bc()
+    sum := u32(hl) + u32(bc)
+
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, (hl & 0x0FFF) + (bc & 0x0FFF) > 0x0FFF)
     set_flag(.Carry, sum > 0xFFFF)
 
     write_hl(u16(sum))
@@ -547,18 +657,16 @@ fn ret() {
 }
 
 fn ret_z() {
-    addr := pop16()
     if get_flag(.Zero) {
-        dev.r.pc = addr
+        dev.r.pc = pop16()
     } else {
         adv(1)
     }
 }
 
 fn ret_nz() {
-    addr := pop16()
     if !get_flag(.Zero) {
-        dev.r.pc = addr
+        dev.r.pc = pop16()
     } else {
         adv(1)
     }
@@ -607,6 +715,22 @@ fn swap_8(reg: &u8) {
     set_flag(.Subtract, false)
     set_flag(.Carry, false)
     set_flag(.HalfCarry, false)
+    adv(2)
+}
+
+fn sla_a() { sla_8(&dev.r.a) }
+
+fn sla_8(reg: &u8) {
+    v := *reg
+    c_flag := (v & 0x80) != 0
+    nv := v << 1 // bit 0 becomes 0, old bit 7 goes to carry
+
+    *reg = nv
+
+    set_flag(.Zero, nv == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, c_flag)
     adv(2)
 }
 
