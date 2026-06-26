@@ -179,10 +179,42 @@ fn cpl() {
     set_flag(.HalfCarry, true)
     adv(1)
 }
+
+// DAA: adjust A into valid BCD using the flags left by the previous add/sub.
+fn daa() {
+    correction := u8(0)
+    set_carry := false
+
+    // Low nibble overflowed (or a half-borrow happened): fix the low digit.
+    if get_flag(.HalfCarry) || (!get_flag(.Subtract) && (dev.r.a & 0x0F) > 0x09) {
+        correction = correction | 0x06
+    }
+    // High nibble overflowed (or a full borrow happened): fix the high digit.
+    if get_flag(.Carry) || (!get_flag(.Subtract) && dev.r.a > 0x99) {
+        correction = correction | 0x60
+        set_carry = true // carry stays set on subtraction, gets set on addition overflow
+    }
+
+    if get_flag(.Subtract) {
+        dev.r.a = dev.r.a - correction
+    } else {
+        dev.r.a = dev.r.a + correction
+    }
+
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, set_carry)
+    adv(1)
+}
 fn rst() {
     opcode := dev.ram[dev.r.pc]
     push16(dev.r.pc + 1) // return address = instruction after RST
     dev.r.pc = u16(opcode & 0x38) // Formula to calculate the reset vector
+}
+
+fn ld_a_a() {
+    dev.r.a = dev.r.a
+    adv(1)
 }
 
 fn ld_a_b() {
@@ -192,6 +224,11 @@ fn ld_a_b() {
 
 fn ld_b_a() {
     dev.r.b = dev.r.a
+    adv(1)
+}
+
+fn ld_b_b() {
+    dev.r.b = dev.r.b
     adv(1)
 }
 
@@ -288,6 +325,10 @@ fn ld_h_b() {
     dev.r.h = dev.r.b
     adv(1)
 }
+fn ld_h_d() {
+    dev.r.h = dev.r.d
+    adv(1)
+}
 
 fn ld_l_a() {
     dev.r.l = dev.r.a
@@ -296,6 +337,11 @@ fn ld_l_a() {
 
 fn ld_l_c() {
     dev.r.l = dev.r.c
+    adv(1)
+}
+
+fn ld_l_e() {
+    dev.r.l = dev.r.e
     adv(1)
 }
 
@@ -368,6 +414,18 @@ fn ld_d_n8() {
     pc := u64(dev.r.pc)
     val := dev.ram[pc + 1]
     dev.r.d = val
+    adv(2)
+}
+fn ld_e_n8() {
+    pc := u64(dev.r.pc)
+    val := dev.ram[pc + 1]
+    dev.r.e = val
+    adv(2)
+}
+fn ld_h_n8() {
+    pc := u64(dev.r.pc)
+    val := dev.ram[pc + 1]
+    dev.r.h = val
     adv(2)
 }
 
@@ -476,6 +534,10 @@ fn inc_de() {
     adv(1)
 }
 
+fn inc_sp() {
+    dev.r.sp = dev.r.sp + 1
+}
+
 fn cp_a_n8() {
     pc := u64(dev.r.pc)
     im := dev.ram[pc + 1]
@@ -526,6 +588,17 @@ fn or_r1_r2(r1: &u8, r2: &u8) {
     set_flag(.Carry, false)
 
     adv(1)
+}
+
+fn or_r1_n8(r1: &u8) {
+    val := dev.ram[dev.r.pc + 1]
+    *r1 = *r1 | val
+    set_flag(.Zero, *r1 == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false) // Halfcarry is false in case of OR
+    set_flag(.Carry, false)
+
+    adv(2)
 }
 
 fn xor_r1_r2(r1: &u8, r2: &u8) {
@@ -605,6 +678,10 @@ fn or_a_b() {
     or_r1_r2(&dev.r.a, &dev.r.b)
 }
 
+fn or_a_n8() {
+    or_r1_n8(&dev.r.a)
+}
+
 fn and_a_a() {
    and_r1_r2(&dev.r.a, &dev.r.a)
 }
@@ -676,6 +753,15 @@ fn pop_hl() {
     adv(1)
 }
 
+fn ccf() {
+    c_flag := get_flag(.Carry)
+    set_flag(.Zero, false)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, !c_flag)
+    adv(1)
+}
+
 fn rrca() {
     c_flag := dev.r.a & 0x01 == 1
     dev.r.a = dev.r.a >> 1
@@ -739,6 +825,7 @@ fn swap_a() { swap_8(&dev.r.a) }
 fn swap_b() { swap_8(&dev.r.b) }
 fn swap_c() { swap_8(&dev.r.c) }
 fn swap_d() { swap_8(&dev.r.d) }
+fn swap_e() { swap_8(&dev.r.e) }
 
 fn swap_8(reg: &u8) {
     v := *reg
@@ -770,7 +857,124 @@ fn sla_8(reg: &u8) {
     adv(2)
 }
 
-// -- RES n,r : reset bit n of r. Does not affect flags.
+fn sra_a() { sra_8(&dev.r.a) }
+
+fn sra_8(reg: &u8) {
+    v := *reg
+    c_flag := (v & 0x01) != 0
+    nv := (v >> 1) | (v & 0x80) // bit 0 goes to carry, bit 7 (sign) is preserved
+
+    *reg = nv
+
+    set_flag(.Zero, nv == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, c_flag)
+    adv(2)
+}
+
+fn srl_a() { srl_8(&dev.r.a) }
+
+fn srl_8(reg: &u8) {
+    v := *reg
+    c_flag := (v & 0x01) != 0
+    nv := v >> 1 // bit 0 goes to carry, bit 7 becomes 0
+
+    *reg = nv
+
+    set_flag(.Zero, nv == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, false)
+    set_flag(.Carry, c_flag)
+    adv(2)
+}
+
+fn bit_reg(bit: u8, r: &u8) {
+    set_flag(.Zero, (*r >> bit) & 0x1 == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, true)
+    adv(2)
+}
+
+fn bit_ind_hl(bit: u8) {
+    set_flag(.Zero, (dev.ram[read_hl()] >> bit) & 0x1 == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, true)
+    adv(2)
+}
+
+fn bit_0_b() { bit_reg(0, &dev.r.b) }
+fn bit_0_c() { bit_reg(0, &dev.r.c) }
+fn bit_0_d() { bit_reg(0, &dev.r.d) }
+fn bit_0_e() { bit_reg(0, &dev.r.e) }
+fn bit_0_h() { bit_reg(0, &dev.r.h) }
+fn bit_0_l() { bit_reg(0, &dev.r.l) }
+fn bit_0_hl() { bit_ind_hl(0) }
+fn bit_0_a() { bit_reg(0, &dev.r.a) }
+
+fn bit_1_b() { bit_reg(1, &dev.r.b) }
+fn bit_1_c() { bit_reg(1, &dev.r.c) }
+fn bit_1_d() { bit_reg(1, &dev.r.d) }
+fn bit_1_e() { bit_reg(1, &dev.r.e) }
+fn bit_1_h() { bit_reg(1, &dev.r.h) }
+fn bit_1_l() { bit_reg(1, &dev.r.l) }
+fn bit_1_hl() { bit_ind_hl(1) }
+fn bit_1_a() { bit_reg(1, &dev.r.a) }
+
+fn bit_2_b() { bit_reg(2, &dev.r.b) }
+fn bit_2_c() { bit_reg(2, &dev.r.c) }
+fn bit_2_d() { bit_reg(2, &dev.r.d) }
+fn bit_2_e() { bit_reg(2, &dev.r.e) }
+fn bit_2_h() { bit_reg(2, &dev.r.h) }
+fn bit_2_l() { bit_reg(2, &dev.r.l) }
+fn bit_2_hl() { bit_ind_hl(2) }
+fn bit_2_a() { bit_reg(2, &dev.r.a) }
+
+fn bit_3_b() { bit_reg(3, &dev.r.b) }
+fn bit_3_c() { bit_reg(3, &dev.r.c) }
+fn bit_3_d() { bit_reg(3, &dev.r.d) }
+fn bit_3_e() { bit_reg(3, &dev.r.e) }
+fn bit_3_h() { bit_reg(3, &dev.r.h) }
+fn bit_3_l() { bit_reg(3, &dev.r.l) }
+fn bit_3_hl() { bit_ind_hl(3) }
+fn bit_3_a() { bit_reg(3, &dev.r.a) }
+
+fn bit_4_b() { bit_reg(4, &dev.r.b) }
+fn bit_4_c() { bit_reg(4, &dev.r.c) }
+fn bit_4_d() { bit_reg(4, &dev.r.d) }
+fn bit_4_e() { bit_reg(4, &dev.r.e) }
+fn bit_4_h() { bit_reg(4, &dev.r.h) }
+fn bit_4_l() { bit_reg(4, &dev.r.l) }
+fn bit_4_hl() { bit_ind_hl(4) }
+fn bit_4_a() { bit_reg(4, &dev.r.a) }
+
+fn bit_5_b() { bit_reg(5, &dev.r.b) }
+fn bit_5_c() { bit_reg(5, &dev.r.c) }
+fn bit_5_d() { bit_reg(5, &dev.r.d) }
+fn bit_5_e() { bit_reg(5, &dev.r.e) }
+fn bit_5_h() { bit_reg(5, &dev.r.h) }
+fn bit_5_l() { bit_reg(5, &dev.r.l) }
+fn bit_5_hl() { bit_ind_hl(5) }
+fn bit_5_a() { bit_reg(5, &dev.r.a) }
+
+fn bit_6_b() { bit_reg(6, &dev.r.b) }
+fn bit_6_c() { bit_reg(6, &dev.r.c) }
+fn bit_6_d() { bit_reg(6, &dev.r.d) }
+fn bit_6_e() { bit_reg(6, &dev.r.e) }
+fn bit_6_h() { bit_reg(6, &dev.r.h) }
+fn bit_6_l() { bit_reg(6, &dev.r.l) }
+fn bit_6_hl() { bit_ind_hl(6) }
+fn bit_6_a() { bit_reg(6, &dev.r.a) }
+
+fn bit_7_b() { bit_reg(7, &dev.r.b) }
+fn bit_7_c() { bit_reg(7, &dev.r.c) }
+fn bit_7_d() { bit_reg(7, &dev.r.d) }
+fn bit_7_e() { bit_reg(7, &dev.r.e) }
+fn bit_7_h() { bit_reg(7, &dev.r.h) }
+fn bit_7_l() { bit_reg(7, &dev.r.l) }
+fn bit_7_hl() { bit_ind_hl(7) }
+fn bit_7_a() { bit_reg(7, &dev.r.a) }
+
 fn res_reg(bit: u8, r: &u8) {
     *r = *r & (0xFF ^ (u8(1) << bit))
     adv(2)
