@@ -7,8 +7,14 @@ external "c" {
     fn fputs(string: cstr, file: &FILE) -> u64
     fn fclose(file: &FILE) -> u64
     fn random() -> i64
-
+    fn sleep(secs: u64)
+    fn nanosleep(spec: &timespec, rem: &timespec)
 }
 
 size_t :: i64
 struct FILE {}
+
+struct timespec {
+    tv_sec: u32
+    tv_nsec: u32
+}
