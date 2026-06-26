@@ -17,6 +17,16 @@ fn ppu_tick(cycles: u16) {
     }
 }
 
+fn clear() {
+    for y in 0..144 {
+        for x in 0..160 {
+            dev.framebuffer[(SCREEN_W * y + x) * 3]     = shades[0].r
+            dev.framebuffer[(SCREEN_W * y + x) * 3 + 1] = shades[0].g
+            dev.framebuffer[(SCREEN_W * y + x) * 3 + 2] = shades[0].b
+        }
+    }
+
+}
 fn draw_tile_id(base: u16, signed_ids: bool, id: u16, x: u32, y: u32) {
     // In the 0x8800 mode tile ids are signed and addressed relative to 0x9000;
     // in the 0x8000 mode they are unsigned offsets from 0x8000.
@@ -66,12 +76,18 @@ fn draw_window() {
     }
 }
 
+dbg_prev_lcdc: u8 = 0xAA
 fn draw() {
     reg := dev.ram[0xFF40]
     lcd_c = convert_to_lcd_control(reg)
-    // printf("LCD reg = %02x\n", reg)
-    // printf("window_tilemap_base = %04x\n", lcd_c.window_tile_map_base)
-    // printf("bg_tilemap_base = %04x\n", lcd_c.bg_tile_map_base)
+    if reg != dbg_prev_lcdc {
+        printf("LCDC change: %02x -> %02x  enabled=%d bg_map=%04x tile_data=%04x signed=%d win_en=%d win_map=%04x\n", dbg_prev_lcdc, reg, reg >> 7 & 1, lcd_c.bg_tile_map_base, lcd_c.tile_data_base, lcd_c.signed_ids, lcd_c.window_enabled, lcd_c.window_tile_map_base)
+        dbg_prev_lcdc = reg
+    }
+    if !lcd_c.enabled {
+        clear()
+        return 
+    }
 
     draw_background()
     // draw_window()

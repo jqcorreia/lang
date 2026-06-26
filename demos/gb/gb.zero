@@ -723,11 +723,20 @@ fn main() {
 
     fb_tex := LoadTextureFromImage(img)
 
+    dbg_frames := 0
     for !WindowShouldClose(){
         // run_until_vblank()
         if !run_until_vblank() {
             break
         }
+
+        dbg_frames = dbg_frames + 1
+        if dbg_frames > 20000 {
+            printf("END pc=%x FFE1=%x IME=%d\n", dev.r.pc, dev.ram[0xFFE1], dev.ime)
+            printf("IE=%x IF=%x\n", dev.ram[0xFFFF], dev.ram[0xFF0F])
+            printf("TAC=%x TIMA=%x TMA=%x\n", dev.ram[0xFF07], dev.ram[0xFF05], dev.ram[0xFF06])
+            break
+        } // DBG: clean exit so stdout flushes
 
         draw()
 
