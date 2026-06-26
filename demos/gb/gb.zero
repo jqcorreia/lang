@@ -122,7 +122,7 @@ fn init_dev() {
     instructions[0x64] = Instruction{ execute = null, cycles = 4, mnemonic = "LD H,H", operand_len = 0 } // LD H,H
     instructions[0x65] = Instruction{ execute = null, cycles = 4, mnemonic = "LD H,L", operand_len = 0 } // LD H,L
     instructions[0x66] = Instruction{ execute = null, cycles = 8, mnemonic = "LD H,HL", operand_len = 0 } // LD H,HL
-    instructions[0x67] = Instruction{ execute = null, cycles = 4, mnemonic = "LD H,A", operand_len = 0 } // LD H,A
+    instructions[0x67] = Instruction{ execute = ld_h_a, cycles = 4, mnemonic = "LD H,A", operand_len = 0 } // LD H,A
     instructions[0x68] = Instruction{ execute = null, cycles = 4, mnemonic = "LD L,B", operand_len = 0 } // LD L,B
     instructions[0x69] = Instruction{ execute = ld_l_c, cycles = 4, mnemonic = "LD L,C", operand_len = 0 } // LD L,C
     instructions[0x6a] = Instruction{ execute = null, cycles = 4, mnemonic = "LD L,D", operand_len = 0 } // LD L,D

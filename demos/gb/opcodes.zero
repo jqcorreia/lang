@@ -254,10 +254,12 @@ fn ld_c_hl() {
     dev.r.c = dev.ram[read_hl()]
     adv(1)
 }
+
 fn ld_d_hl() {
     dev.r.d = dev.ram[read_hl()]
     adv(1)
 }
+
 fn ld_e_hl() {
     dev.r.e = dev.ram[read_hl()]
     adv(1)
@@ -267,6 +269,7 @@ fn ld_h_a() {
     dev.r.h = dev.r.a
     adv(1)
 }
+
 fn ld_h_b() {
     dev.r.h = dev.r.b
     adv(1)
