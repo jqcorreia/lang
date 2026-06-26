@@ -245,7 +245,7 @@ flow_for_parse :: proc(p: ^Parser) -> ^Ast_For {
 	}
 
 	if current(p).kind != .LBrace && current(p).kind != .NewLine {
-		stmt.cond = parse_expression(p, 0)
+		stmt.cond = parse_expression(p, 0, false)
 	}
 
 	stmt.body = parse_block(p)
