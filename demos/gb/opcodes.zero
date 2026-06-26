@@ -164,7 +164,7 @@ fn dec_reg(r: &u8) {
 fn dec_a() { dec_reg(&(dev.r.a)) }
 fn dec_b() { dec_reg(&(dev.r.b)) }
 fn dec_c() { dec_reg(&(dev.r.c)) }
-fn dec_d() { dec_reg(&(dev.r.e)) }
+fn dec_d() { dec_reg(&(dev.r.d)) }
 fn dec_e() { dec_reg(&(dev.r.e)) }
 fn dec_l() { dec_reg(&(dev.r.l)) }
 
@@ -772,7 +772,7 @@ fn and_r1_hl(r1: &u8) {
     set_flag(.HalfCarry, true) // Halfcarry is true in case of AND
     set_flag(.Carry, false)
 
-    adv(2)
+    adv(1) // AND A,(HL) (0xA6) is a single-byte opcode
 }
 
 fn xor_a_c() {

@@ -1,5 +1,5 @@
-SCX_ADDR :: 0xFF41
 SCY_ADDR :: 0xFF42
+SCX_ADDR :: 0xFF43
 
 fn ppu_tick(cycles: u16) {
     dev.ppu.dots = dev.ppu.dots + cycles
@@ -17,10 +17,18 @@ fn ppu_tick(cycles: u16) {
     }
 }
 
-fn draw_tile_id(id: u16, x: u32, y: u32) {
+fn draw_tile_id(base: u16, signed_ids: bool, id: u16, x: u32, y: u32) {
+    // In the 0x8800 mode tile ids are signed and addressed relative to 0x9000;
+    // in the 0x8000 mode they are unsigned offsets from 0x8000.
+    tile_addr: u16
+    if signed_ids {
+        tile_addr = u16(0x9000 + i16(i8(u8(id))) * 16)
+    } else {
+        tile_addr = base + (id * 16)
+    }
     for ty in 0..8 {
-        lo := dev.ram[0x8000 + (id * 16) + (ty * 2)]
-        hi := dev.ram[0x8000 + (id * 16) + (ty * 2) + 1]
+        lo := dev.ram[tile_addr + (ty * 2)]
+        hi := dev.ram[tile_addr + (ty * 2) + 1]
         for tx in 0..8 {
             bit := 7 - tx
             color := (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1)
@@ -38,52 +46,82 @@ fn draw_background() {
 
     for by in 0..(144 / 8) {
         for bx in 0..(160 / 8){
-            tile_id := u16(dev.ram[0x9800 + (by * 32 + bx)])
-            draw_tile_id(tile_id, bx * 8, by * 8)
+            tile_id := u16(dev.ram[lcd_c.bg_tile_map_base + (by * 32 + bx)])
+            draw_tile_id(lcd_c.tile_data_base, lcd_c.signed_ids, tile_id, bx * 8, by * 8)
         }
     }
 }
 
 fn draw_window() {
+    wx := dev.ram[0xFF4B]
+    wy := dev.ram[0xFF4A]
+
+    printf("wx = %d, wy = %d\n", wx, wy)
+
     for by in 0..(144 / 8) {
         for bx in 0..(160 / 8){
-            tile_id := u16(dev.ram[0x9C00 + (by * 32 + bx)])
-            draw_tile_id(tile_id, bx * 8, by * 8)
+            tile_id := u16(dev.ram[lcd_c.window_tile_map_base + (by * 32 + bx)])
+            draw_tile_id(lcd_c.tile_data_base, lcd_c.signed_ids, tile_id, bx * 8, by * 8)
         }
     }
-
 }
 
 fn draw() {
     reg := dev.ram[0xFF40]
-    lcd_c := convert_to_lcd_control(reg)
-    printf("LCD reg = %02x\n", reg)
-    printf("tilemap_base = %04x\n", lcd_c.window_tile_map_base)
+    lcd_c = convert_to_lcd_control(reg)
+    // printf("LCD reg = %02x\n", reg)
+    // printf("window_tilemap_base = %04x\n", lcd_c.window_tile_map_base)
+    // printf("bg_tilemap_base = %04x\n", lcd_c.bg_tile_map_base)
 
     draw_background()
+    // draw_window()
 }
 
 struct LCDControl {
     enabled: bool
     window_tile_map_base: u16
-    window_enable: bool
+    window_enabled: bool
     tile_data_base: u16
+    signed_ids: bool // true in the 0x8800 mode: tile ids are signed, relative to 0x9000
     bg_tile_map_base: u16
     obj_size: bool // false = 8x8, true = 8 x 16 
-    obj_enable: bool
-    bg_window_enable: bool
+    obj_enabled: bool
+    bg_window_enabled: bool
 }
+
+lcd_c: LCDControl
 
 fn convert_to_lcd_control(b: u8) -> LCDControl {
 
     res := LCDControl{}
 
     res.enabled = b >> 7 & 1 == 1
+
     if b >> 6 & 1 == 0 {
         res.window_tile_map_base = 0x9800
     } else {
         res.window_tile_map_base = 0x9c00
     }
+
+    res.window_enabled = b >> 5 & 1 == 1
+
+    if b >> 4 & 1 == 0 {
+        res.tile_data_base = 0x8800
+        res.signed_ids = true
+    } else {
+        res.tile_data_base = 0x8000
+        res.signed_ids = false
+    }
+
+    if b >> 3 & 1 == 0 {
+        res.bg_tile_map_base = 0x9800
+    } else {
+        res.bg_tile_map_base = 0x9c00
+    }
+
+    res.obj_size = b >> 2 & 1 == 1
+    res.obj_enabled = b >> 1 & 1 == 1
+    res.bg_window_enabled = b >> 0 & 1 == 1
 
     return res
 }
