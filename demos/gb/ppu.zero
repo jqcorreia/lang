@@ -76,17 +76,12 @@ fn draw_window() {
     }
 }
 
-dbg_prev_lcdc: u8 = 0xAA
 fn draw() {
     reg := dev.ram[0xFF40]
     lcd_c = convert_to_lcd_control(reg)
-    if reg != dbg_prev_lcdc {
-        printf("LCDC change: %02x -> %02x  enabled=%d bg_map=%04x tile_data=%04x signed=%d win_en=%d win_map=%04x\n", dbg_prev_lcdc, reg, reg >> 7 & 1, lcd_c.bg_tile_map_base, lcd_c.tile_data_base, lcd_c.signed_ids, lcd_c.window_enabled, lcd_c.window_tile_map_base)
-        dbg_prev_lcdc = reg
-    }
     if !lcd_c.enabled {
         clear()
-        return 
+        return
     }
 
     draw_background()

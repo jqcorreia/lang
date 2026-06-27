@@ -56,7 +56,7 @@ fn init_dev() {
     instructions[0x22] = Instruction{ execute = ldi_hl_a, cycles = 8, mnemonic = "LD HL+,A", operand_len = 0 } // LD HL+,A
     instructions[0x23] = Instruction{ execute = inc_hl, cycles = 8, mnemonic = "INC HL", operand_len = 0 } // INC HL
     instructions[0x24] = Instruction{ execute = null, cycles = 4, mnemonic = "INC H", operand_len = 0 } // INC H
-    instructions[0x25] = Instruction{ execute = null, cycles = 4, mnemonic = "DEC H", operand_len = 0 } // DEC H
+    instructions[0x25] = Instruction{ execute = dec_h, cycles = 4, mnemonic = "DEC H", operand_len = 0 } // DEC H
     instructions[0x26] = Instruction{ execute = ld_h_n8, cycles = 8, mnemonic = "LD H,$%02X", operand_len = 1 } // LD H,n8
     instructions[0x27] = Instruction{ execute = daa, cycles = 4, mnemonic = "DAA", operand_len = 0 } // DAA
     instructions[0x28] = Instruction{ execute = jr_z, cycles = 12, mnemonic = "JR Z,$%02X", operand_len = 1 } // JR Z,e8
@@ -65,9 +65,9 @@ fn init_dev() {
     instructions[0x2b] = Instruction{ execute = dec_hl, cycles = 8, mnemonic = "DEC HL", operand_len = 0 } // DEC HL
     instructions[0x2c] = Instruction{ execute = inc_l, cycles = 4, mnemonic = "INC L", operand_len = 0 } // INC L
     instructions[0x2d] = Instruction{ execute = dec_l, cycles = 4, mnemonic = "DEC L", operand_len = 0 } // DEC L
-    instructions[0x2e] = Instruction{ execute = null, cycles = 8, mnemonic = "LD L,$%02X", operand_len = 1 } // LD L,n8
+    instructions[0x2e] = Instruction{ execute = ld_l_n8, cycles = 8, mnemonic = "LD L,$%02X", operand_len = 1 } // LD L,n8
     instructions[0x2f] = Instruction{ execute = cpl, cycles = 4, mnemonic = "CPL", operand_len = 0 } // CPL
-    instructions[0x30] = Instruction{ execute = null, cycles = 12, mnemonic = "JR NC,$%02X", operand_len = 1 } // JR NC,e8
+    instructions[0x30] = Instruction{ execute = jr_nc, cycles = 12, mnemonic = "JR NC,$%02X", operand_len = 1 } // JR NC,e8
     instructions[0x31] = Instruction{ execute = ld_sp_n16, cycles = 12, mnemonic = "LD SP,$%04X", operand_len = 2 } // LD SP,n16
     instructions[0x32] = Instruction{ execute = ldd_hl_a, cycles = 8, mnemonic = "LD HL-,A", operand_len = 0 } // LD HL-,A
     instructions[0x33] = Instruction{ execute = inc_sp, cycles = 8, mnemonic = "INC SP", operand_len = 0 } // INC SP
@@ -116,7 +116,7 @@ fn init_dev() {
     instructions[0x5e] = Instruction{ execute = ld_e_hl, cycles = 8, mnemonic = "LD E,HL", operand_len = 0 } // LD E,HL
     instructions[0x5f] = Instruction{ execute = ld_e_a, cycles = 4, mnemonic = "LD E,A", operand_len = 0 } // LD E,A
     instructions[0x60] = Instruction{ execute = ld_h_b, cycles = 4, mnemonic = "LD H,B", operand_len = 0 } // LD H,B
-    instructions[0x61] = Instruction{ execute = null, cycles = 4, mnemonic = "LD H,C", operand_len = 0 } // LD H,C
+    instructions[0x61] = Instruction{ execute = ld_h_c, cycles = 4, mnemonic = "LD H,C", operand_len = 0 } // LD H,C
     instructions[0x62] = Instruction{ execute = ld_h_d, cycles = 4, mnemonic = "LD H,D", operand_len = 0 } // LD H,D
     instructions[0x63] = Instruction{ execute = null, cycles = 4, mnemonic = "LD H,E", operand_len = 0 } // LD H,E
     instructions[0x64] = Instruction{ execute = null, cycles = 4, mnemonic = "LD H,H", operand_len = 0 } // LD H,H
@@ -153,7 +153,7 @@ fn init_dev() {
     instructions[0x83] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,E", operand_len = 0 } // ADD A,E
     instructions[0x84] = Instruction{ execute = null, cycles = 4, mnemonic = "ADD A,H", operand_len = 0 } // ADD A,H
     instructions[0x85] = Instruction{ execute = add_a_l, cycles = 4, mnemonic = "ADD A,L", operand_len = 0 } // ADD A,L
-    instructions[0x86] = Instruction{ execute = null, cycles = 8, mnemonic = "ADD A,HL", operand_len = 0 } // ADD A,HL
+    instructions[0x86] = Instruction{ execute = add_a_hl, cycles = 8, mnemonic = "ADD A,HL", operand_len = 0 } // ADD A,HL
     instructions[0x87] = Instruction{ execute = add_a_a, cycles = 4, mnemonic = "ADD A,A", operand_len = 0 } // ADD A,A
     instructions[0x88] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,B", operand_len = 0 } // ADC A,B
     instructions[0x89] = Instruction{ execute = add_a_c, cycles = 4, mnemonic = "ADC A,C", operand_len = 0 } // ADC A,C
@@ -161,7 +161,7 @@ fn init_dev() {
     instructions[0x8b] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,E", operand_len = 0 } // ADC A,E
     instructions[0x8c] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,H", operand_len = 0 } // ADC A,H
     instructions[0x8d] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,L", operand_len = 0 } // ADC A,L
-    instructions[0x8e] = Instruction{ execute = null, cycles = 8, mnemonic = "ADC A,HL", operand_len = 0 } // ADC A,HL
+    instructions[0x8e] = Instruction{ execute = adc_a_hl, cycles = 8, mnemonic = "ADC A,HL", operand_len = 0 } // ADC A,HL
     instructions[0x8f] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,A", operand_len = 0 } // ADC A,A
     instructions[0x90] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,B", operand_len = 0 } // SUB A,B
     instructions[0x91] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,C", operand_len = 0 } // SUB A,C
@@ -179,15 +179,15 @@ fn init_dev() {
     instructions[0x9d] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,L", operand_len = 0 } // SBC A,L
     instructions[0x9e] = Instruction{ execute = null, cycles = 8, mnemonic = "SBC A,HL", operand_len = 0 } // SBC A,HL
     instructions[0x9f] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,A", operand_len = 0 } // SBC A,A
-    instructions[0xa0] = Instruction{ execute = null, cycles = 4, mnemonic = "AND A,B", operand_len = 0 } // AND A,B
+    instructions[0xa0] = Instruction{ execute = and_a_b, cycles = 4, mnemonic = "AND A,B", operand_len = 0 } // AND A,B
     instructions[0xa1] = Instruction{ execute = and_a_c, cycles = 4, mnemonic = "AND A,C", operand_len = 0 } // AND A,C
-    instructions[0xa2] = Instruction{ execute = null, cycles = 4, mnemonic = "AND A,D", operand_len = 0 } // AND A,D
-    instructions[0xa3] = Instruction{ execute = null, cycles = 4, mnemonic = "AND A,E", operand_len = 0 } // AND A,E
-    instructions[0xa4] = Instruction{ execute = null, cycles = 4, mnemonic = "AND A,H", operand_len = 0 } // AND A,H
-    instructions[0xa5] = Instruction{ execute = null, cycles = 4, mnemonic = "AND A,L", operand_len = 0 } // AND A,L
+    instructions[0xa2] = Instruction{ execute = and_a_d, cycles = 4, mnemonic = "AND A,D", operand_len = 0 } // AND A,D
+    instructions[0xa3] = Instruction{ execute = and_a_e, cycles = 4, mnemonic = "AND A,E", operand_len = 0 } // AND A,E
+    instructions[0xa4] = Instruction{ execute = and_a_h, cycles = 4, mnemonic = "AND A,H", operand_len = 0 } // AND A,H
+    instructions[0xa5] = Instruction{ execute = and_a_l, cycles = 4, mnemonic = "AND A,L", operand_len = 0 } // AND A,L
     instructions[0xa6] = Instruction{ execute = and_a_hl, cycles = 8, mnemonic = "AND A,HL", operand_len = 0 } // AND A,HL
     instructions[0xa7] = Instruction{ execute = and_a_a, cycles = 4, mnemonic = "AND A,A", operand_len = 0 } // AND A,A
-    instructions[0xa8] = Instruction{ execute = null, cycles = 4, mnemonic = "XOR A,B", operand_len = 0 } // XOR A,B
+    instructions[0xa8] = Instruction{ execute = xor_a_b, cycles = 4, mnemonic = "XOR A,B", operand_len = 0 } // XOR A,B
     instructions[0xa9] = Instruction{ execute = xor_a_c, cycles = 4, mnemonic = "XOR A,C", operand_len = 0 } // XOR A,C
     instructions[0xaa] = Instruction{ execute = null, cycles = 4, mnemonic = "XOR A,D", operand_len = 0 } // XOR A,D
     instructions[0xab] = Instruction{ execute = null, cycles = 4, mnemonic = "XOR A,E", operand_len = 0 } // XOR A,E
@@ -197,18 +197,18 @@ fn init_dev() {
     instructions[0xaf] = Instruction{ execute = xor_a_a, cycles = 4, mnemonic = "XOR A,A", operand_len = 0 } // XOR A,A
     instructions[0xb0] = Instruction{ execute = or_a_b, cycles = 4, mnemonic = "OR A,B", operand_len = 0 } // OR A,B
     instructions[0xb1] = Instruction{ execute = or_a_c, cycles = 4, mnemonic = "OR A,C", operand_len = 0 } // OR A,C
-    instructions[0xb2] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,D", operand_len = 0 } // OR A,D
+    instructions[0xb2] = Instruction{ execute = or_a_d, cycles = 4, mnemonic = "OR A,D", operand_len = 0 } // OR A,D
     instructions[0xb3] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,E", operand_len = 0 } // OR A,E
     instructions[0xb4] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,H", operand_len = 0 } // OR A,H
     instructions[0xb5] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,L", operand_len = 0 } // OR A,L
     instructions[0xb6] = Instruction{ execute = null, cycles = 8, mnemonic = "OR A,HL", operand_len = 0 } // OR A,HL
     instructions[0xb7] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,A", operand_len = 0 } // OR A,A
-    instructions[0xb8] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,B", operand_len = 0 } // CP A,B
-    instructions[0xb9] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,C", operand_len = 0 } // CP A,C
-    instructions[0xba] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,D", operand_len = 0 } // CP A,D
-    instructions[0xbb] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,E", operand_len = 0 } // CP A,E
-    instructions[0xbc] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,H", operand_len = 0 } // CP A,H
-    instructions[0xbd] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,L", operand_len = 0 } // CP A,L
+    instructions[0xb8] = Instruction{ execute = cp_a_b, cycles = 4, mnemonic = "CP A,B", operand_len = 0 } // CP A,B
+    instructions[0xb9] = Instruction{ execute = cp_a_c, cycles = 4, mnemonic = "CP A,C", operand_len = 0 } // CP A,C
+    instructions[0xba] = Instruction{ execute = cp_a_d, cycles = 4, mnemonic = "CP A,D", operand_len = 0 } // CP A,D
+    instructions[0xbb] = Instruction{ execute = cp_a_e, cycles = 4, mnemonic = "CP A,E", operand_len = 0 } // CP A,E
+    instructions[0xbc] = Instruction{ execute = cp_a_h, cycles = 4, mnemonic = "CP A,H", operand_len = 0 } // CP A,H
+    instructions[0xbd] = Instruction{ execute = cp_a_l, cycles = 4, mnemonic = "CP A,L", operand_len = 0 } // CP A,L
     instructions[0xbe] = Instruction{ execute = cp_a_hl, cycles = 8, mnemonic = "CP A,HL", operand_len = 0 } // CP A,HL
     instructions[0xbf] = Instruction{ execute = null, cycles = 4, mnemonic = "CP A,A", operand_len = 0 } // CP A,A
     instructions[0xc0] = Instruction{ execute = ret_nz, cycles = 20, mnemonic = "RET NZ", operand_len = 0 } // RET NZ
@@ -227,7 +227,7 @@ fn init_dev() {
     instructions[0xcd] = Instruction{ execute = call_a16, cycles = 24, mnemonic = "CALL $%04X", operand_len = 2 } // CALL a16
     instructions[0xce] = Instruction{ execute = null, cycles = 8, mnemonic = "ADC A,$%02X", operand_len = 1 } // ADC A,n8
     instructions[0xcf] = Instruction{ execute = null, cycles = 16, mnemonic = "RST $08", operand_len = 0 } // RST $08
-    instructions[0xd0] = Instruction{ execute = null, cycles = 20, mnemonic = "RET NC", operand_len = 0 } // RET NC
+    instructions[0xd0] = Instruction{ execute = ret_nc, cycles = 20, mnemonic = "RET NC", operand_len = 0 } // RET NC
     instructions[0xd1] = Instruction{ execute = pop_de, cycles = 12, mnemonic = "POP DE", operand_len = 0 } // POP DE
     instructions[0xd2] = Instruction{ execute = null, cycles = 16, mnemonic = "JP NC,$%04X", operand_len = 2 } // JP NC,a16
     instructions[0xd3] = Instruction{ execute = null, cycles = 4, mnemonic = "ILLEGAL_D3", operand_len = 0 } // ILLEGAL_D3
@@ -502,7 +502,6 @@ fn init_dev() {
     prefixed[0xff] = Instruction{ execute = set_7_a, cycles = 8, mnemonic = "SET 7,A", operand_len = 0 }
 }
 
-// -- ops implementations
 // -------- Utils ------------
 fn adv(n: u16) {
     dev.r.pc = dev.r.pc + n
@@ -613,11 +612,11 @@ fn h_flag_add(v1: u8, v2: u8) -> bool {
     return (v1 & 0x0F) + (v2 & 0x0F) > 0x0F
 }
 
-fn interrupt(vector: IRQ_Vector) {
-    dev.ram[0xFF0F] = dev.ram[0xFF0F] & 0xFE 
+fn interrupt(bit: u8, vector: IRQ_Vector) {
+    dev.ram[0xFF0F] = dev.ram[0xFF0F] & (0xFF ^ (u8(1) << bit))
     push16(dev.r.pc)
     dev.ime = false
-    dev.r.pc = vector 
+    dev.r.pc = vector
 }
 
 // Print the instruction at pc using its mnemonic format string. Read-only: does
@@ -642,11 +641,45 @@ fn disasm(pc: u16, inst: Instruction) {
     printf("\n")
 }
 
-fn run_single_instruction() -> bool {
-    pending := false
+fn timer_tick(cycles: u16) {
+    // DIV (0xFF04): +1 every 256 cycles, free-running
+    dev.div_acc = dev.div_acc + cycles
+    for dev.div_acc >= 256 {
+        dev.div_acc = dev.div_acc - 256
+        dev.ram[0xFF04] = dev.ram[0xFF04] + 1
+    }
+  
+    tac := dev.ram[0xFF07]
+    if tac & 0x04 == 0 { return }   // TIMA disabled
+  
+    period: u32
+    sel := tac & 0x03
 
+    match sel {
+        0 => { period = 1024 }
+        1 => { period = 16 }
+        2 => { period = 64 }
+        3 => { period = 256 }
+    }
+  
+    dev.tima_acc = dev.tima_acc + u32(cycles)
+    for dev.tima_acc >= period {
+        dev.tima_acc = dev.tima_acc - period
+        if dev.ram[0xFF05] == 0xFF {
+            dev.ram[0xFF05] = dev.ram[0xFF06]          // reload TMA
+            dev.ram[0xFF0F] = dev.ram[0xFF0F] | 0x04   // request Timer IRQ
+        } else {
+            dev.ram[0xFF05] = dev.ram[0xFF05] + 1
+        }
+    }
+}
+
+fn run_single_instruction() -> bool {
     if dev.ime && (dev.ram[0xFFFF] & dev.ram[0xFF0F] & 0x01) != 0 {
-        interrupt(.VBlank)
+        interrupt(0, .VBlank)
+    }
+    if dev.ime && (dev.ram[0xFFFF] & dev.ram[0xFF0F] & 0x04) != 0 {
+        interrupt(2, .Timer)
     }
     
     prefix := false
@@ -670,6 +703,7 @@ fn run_single_instruction() -> bool {
     dev.cycles = dev.cycles + u64(inst.cycles)
 
     ppu_tick(inst.cycles)
+    timer_tick(inst.cycles)
 
     return true
 }
@@ -723,20 +757,10 @@ fn main() {
 
     fb_tex := LoadTextureFromImage(img)
 
-    dbg_frames := 0
     for !WindowShouldClose(){
-        // run_until_vblank()
         if !run_until_vblank() {
             break
         }
-
-        dbg_frames = dbg_frames + 1
-        if dbg_frames > 20000 {
-            printf("END pc=%x FFE1=%x IME=%d\n", dev.r.pc, dev.ram[0xFFE1], dev.ime)
-            printf("IE=%x IF=%x\n", dev.ram[0xFFFF], dev.ram[0xFF0F])
-            printf("TAC=%x TIMA=%x TMA=%x\n", dev.ram[0xFF07], dev.ram[0xFF05], dev.ram[0xFF06])
-            break
-        } // DBG: clean exit so stdout flushes
 
         draw()
 

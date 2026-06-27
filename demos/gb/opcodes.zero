@@ -78,6 +78,18 @@ fn jr_c() {
     }
 }
 
+fn jr_nc() {
+    o := dev.r.pc
+    r := i16(i8(dev.ram[dev.r.pc + 1]))
+
+     // Since we need to jump from the next instruction,
+    // advance unconditionally
+    adv(2)
+    if !get_flag(.Carry) {
+        dev.r.pc = u16(i16(dev.r.pc) + r)  
+    }
+}
+
 
 fn xor_a_a() { 
     dev.r.a = 0
@@ -128,7 +140,7 @@ fn inc_hl() {
 fn inc_ind_hl() {
     val := dev.ram[read_hl()] 
     h_flag := val & 0x0F == 0x0F
-    dev.ram[read_hl()] = val + 1 
+    write8(read_hl(), val + 1)
 
     set_flag(.Zero, val + 1 == 0)
     set_flag(.Subtract, false)
@@ -139,7 +151,7 @@ fn inc_ind_hl() {
 fn dec_ind_hl() {
     val := dev.ram[read_hl()] 
     h_flag := (val & 0x0F) == 0
-    dev.ram[read_hl()] = val - 1 
+    write8(read_hl(), val - 1)
 
     set_flag(.Zero, val - 1 == 0)
     set_flag(.Subtract, true)
@@ -166,6 +178,7 @@ fn dec_b() { dec_reg(&(dev.r.b)) }
 fn dec_c() { dec_reg(&(dev.r.c)) }
 fn dec_d() { dec_reg(&(dev.r.d)) }
 fn dec_e() { dec_reg(&(dev.r.e)) }
+fn dec_h() { dec_reg(&(dev.r.h)) }
 fn dec_l() { dec_reg(&(dev.r.l)) }
 
 fn dec_bc() {
@@ -336,6 +349,10 @@ fn ld_h_b() {
     dev.r.h = dev.r.b
     adv(1)
 }
+fn ld_h_c() {
+    dev.r.h = dev.r.b
+    adv(1)
+}
 fn ld_h_d() {
     dev.r.h = dev.r.d
     adv(1)
@@ -365,7 +382,7 @@ fn load_hl() {
 }
 
 fn ldd_hl_a() {
-    dev.ram[read_hl()] = dev.r.a
+    write8(read_hl(), dev.r.a)
     write_hl(read_hl() - 1)
     adv(1)
 }
@@ -387,7 +404,7 @@ fn ldi_a_hl() {
 fn ldi_hl_a() {
     hl := read_hl()
 
-    dev.ram[hl] = dev.r.a
+    write8(hl, dev.r.a)
 
     write_hl(hl + 1)
     adv(1)
@@ -396,7 +413,7 @@ fn ldi_hl_a() {
 fn ld_hl_n8() {
     pc := u64(dev.r.pc)
     val := dev.ram[pc + 1]
-    dev.ram[read_hl()] = val
+    write8(read_hl(), val)
     adv(2)
 }
 
@@ -440,10 +457,17 @@ fn ld_h_n8() {
     adv(2)
 }
 
+fn ld_l_n8() {
+    pc := u64(dev.r.pc)
+    val := dev.ram[pc + 1]
+    dev.r.l = val
+    adv(2)
+}
+
 fn ldh_a8_a() {
     pc := u64(dev.r.pc)
     offset := dev.ram[pc + 1]
-    dev.ram[0xFF00 + u16(offset)] = dev.r.a
+    write8(0xFF00 + u16(offset), dev.r.a)
     adv(2)
 }
 
@@ -455,14 +479,14 @@ fn ldh_a_a8() {
 }
 
 fn ldh_c_a() {
-    dev.ram[0xFF00 + u16(dev.r.c)] = dev.r.a
+    write8(0xFF00 + u16(dev.r.c), dev.r.a)
     adv(1)
 }
 
 fn ld_a16_a() {
     pc := u64(dev.r.pc)
     val := cast(u16, dev.ram[pc+1:pc+2])
-    dev.ram[val] = dev.r.a
+    write8(val, dev.r.a)
 
     adv(3)
 }
@@ -500,37 +524,37 @@ fn ld_bc_n16() {
 }
 
 fn ld_bc_a() {
-    dev.ram[read_bc()] = dev.r.a
+    write8(read_bc(), dev.r.a)
     adv(1)
 }
 
 fn ld_de_a() {
-    dev.ram[read_de()] = dev.r.a
+    write8(read_de(), dev.r.a)
     adv(1)
 }
 
 fn ld_hl_a() {
-    dev.ram[read_hl()] = dev.r.a
+    write8(read_hl(), dev.r.a)
     adv(1)
 }
 
 fn ld_hl_b() {
-    dev.ram[read_hl()] = dev.r.b
+    write8(read_hl(), dev.r.b)
     adv(1)
 }
 
 fn ld_hl_c() {
-    dev.ram[read_hl()] = dev.r.c
+    write8(read_hl(), dev.r.c)
     adv(1)
 }
 
 fn ld_hl_d() {
-    dev.ram[read_hl()] = dev.r.d
+    write8(read_hl(), dev.r.d)
     adv(1)
 }
 
 fn ld_hl_e() {
-    dev.ram[read_hl()] = dev.r.e
+    write8(read_hl(), dev.r.e)
     adv(1)
 }
 
@@ -548,6 +572,19 @@ fn inc_sp() {
     dev.r.sp = dev.r.sp + 1
 }
 
+fn cp_a_r1(r1: &u8) {
+    pc := u64(dev.r.pc)
+    im := *r1
+    val := dev.r.a
+
+    set_flag(.Zero, im == val)
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, h_flag_sub(val, im))
+    set_flag(.Carry, val < im)
+
+    adv(1)
+}
+
 fn cp_a_n8() {
     pc := u64(dev.r.pc)
     im := dev.ram[pc + 1]
@@ -560,6 +597,13 @@ fn cp_a_n8() {
 
     adv(2)
 }
+
+fn cp_a_b() { cp_a_r1(&dev.r.b) }
+fn cp_a_c() { cp_a_r1(&dev.r.b) }
+fn cp_a_d() { cp_a_r1(&dev.r.d) }
+fn cp_a_e() { cp_a_r1(&dev.r.e) }
+fn cp_a_h() { cp_a_r1(&dev.r.h) }
+fn cp_a_l() { cp_a_r1(&dev.r.l) }
 
 fn cp_a_hl() {
     pc := u64(dev.r.pc)
@@ -601,6 +645,44 @@ fn add_r1_n8(r1: &u8) {
     set_flag(.Carry, c_flag)
 
     adv(2)
+}
+
+fn add_a_hl() {
+    r2 := dev.ram[read_hl()]
+    r1 := dev.r.a
+    c_flag := r1 + r2 > 0xFF 
+    h_flag := h_flag_add(r1, r2)
+
+    dev.r.a = r1 + r2
+
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, h_flag)
+    set_flag(.Carry, c_flag)
+
+    adv(1)
+}
+
+fn adc_a_hl() {
+    r2 := dev.ram[read_hl()]
+    r1 := dev.r.a
+    carry: u8 = 0
+
+    if get_flag(.Carry) {
+        carry = 1
+    }
+
+    c_flag := r1 + r2 + carry > 0xFF 
+    h_flag := h_flag_add(r1, r2 + carry)
+
+    dev.r.a = r1 + r2 + carry
+
+    set_flag(.Zero, dev.r.a == 0)
+    set_flag(.Subtract, false)
+    set_flag(.HalfCarry, h_flag)
+    set_flag(.Carry, c_flag)
+
+    adv(1)
 }
 
 fn sub_r1_n8(r1: &u8) {
@@ -736,12 +818,16 @@ fn sub_a_hl() {
     adv(1)
 }
 
+fn or_a_b() {
+    or_r1_r2(&dev.r.a, &dev.r.b)
+}
+
 fn or_a_c() {
    or_r1_r2(&dev.r.a, &dev.r.c)
 }
 
-fn or_a_b() {
-    or_r1_r2(&dev.r.a, &dev.r.b)
+fn or_a_d() {
+   or_r1_r2(&dev.r.a, &dev.r.d)
 }
 
 fn or_a_n8() {
@@ -752,8 +838,28 @@ fn and_a_a() {
    and_r1_r2(&dev.r.a, &dev.r.a)
 }
 
+fn and_a_b() {
+   and_r1_r2(&dev.r.a, &dev.r.b)
+}
+
 fn and_a_c() {
    and_r1_r2(&dev.r.a, &dev.r.c)
+}
+
+fn and_a_d() {
+   and_r1_r2(&dev.r.a, &dev.r.d)
+}
+
+fn and_a_e() {
+   and_r1_r2(&dev.r.a, &dev.r.e)
+}
+
+fn and_a_h() {
+   and_r1_r2(&dev.r.a, &dev.r.h)
+}
+
+fn and_a_l() {
+   and_r1_r2(&dev.r.a, &dev.r.l)
 }
 
 fn and_a_n8() {
@@ -773,6 +879,10 @@ fn and_r1_hl(r1: &u8) {
     set_flag(.Carry, false)
 
     adv(1) // AND A,(HL) (0xA6) is a single-byte opcode
+}
+
+fn xor_a_b() {
+    xor_r1_r2(&dev.r.a, &dev.r.b)
 }
 
 fn xor_a_c() {
@@ -867,6 +977,14 @@ fn ret_z() {
 
 fn ret_nz() {
     if !get_flag(.Zero) {
+        dev.r.pc = pop16()
+    } else {
+        adv(1)
+    }
+}
+
+fn ret_nc() {
+    if !get_flag(.Carry) {
         dev.r.pc = pop16()
     } else {
         adv(1)
@@ -1061,7 +1179,7 @@ fn res_reg(bit: u8, r: &u8) {
 
 fn res_ind_hl(bit: u8) {
     addr := read_hl()
-    dev.ram[addr] = dev.ram[addr] & (0xFF ^ (u8(1) << bit))
+    write8(addr, dev.ram[addr] & (0xFF ^ (u8(1) << bit)))
     adv(2)
 }
 
@@ -1145,7 +1263,7 @@ fn set_reg(bit: u8, r: &u8) {
 
 fn set_ind_hl(bit: u8) {
     addr := read_hl()
-    dev.ram[addr] = dev.ram[addr] | (u8(1) << bit)
+    write8(addr, dev.ram[addr] | (u8(1) << bit))
     adv(2)
 }
 

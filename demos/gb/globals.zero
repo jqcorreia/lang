@@ -28,6 +28,8 @@ struct Dev {
     ppu: PPU
     cycles: u64
     framebuffer: [3 * SCREEN_W * SCREEN_H]u8
+    div_acc: u16
+    tima_acc: u32
 }
 
 struct PPU {
@@ -55,7 +57,7 @@ enum IRQ_Vector {
     Joypad = 0x60   
 }
 
-// indexed by tile color 0..3, RGB8
+// indexed by tile color 0..3, RGB8, these are the "classic" Gameboy colors
 shades: [4]Color = [
   Color{155, 188, 15, 255},
   Color{139, 172, 15, 255},
