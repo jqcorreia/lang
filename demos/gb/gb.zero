@@ -155,14 +155,14 @@ fn init_dev() {
     instructions[0x85] = Instruction{ execute = add_a_l, cycles = 4, mnemonic = "ADD A,L", operand_len = 0 } // ADD A,L
     instructions[0x86] = Instruction{ execute = add_a_hl, cycles = 8, mnemonic = "ADD A,HL", operand_len = 0 } // ADD A,HL
     instructions[0x87] = Instruction{ execute = add_a_a, cycles = 4, mnemonic = "ADD A,A", operand_len = 0 } // ADD A,A
-    instructions[0x88] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,B", operand_len = 0 } // ADC A,B
-    instructions[0x89] = Instruction{ execute = add_a_c, cycles = 4, mnemonic = "ADC A,C", operand_len = 0 } // ADC A,C
-    instructions[0x8a] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,D", operand_len = 0 } // ADC A,D
-    instructions[0x8b] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,E", operand_len = 0 } // ADC A,E
-    instructions[0x8c] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,H", operand_len = 0 } // ADC A,H
-    instructions[0x8d] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,L", operand_len = 0 } // ADC A,L
+    instructions[0x88] = Instruction{ execute = adc_a_b, cycles = 4, mnemonic = "ADC A,B", operand_len = 0 } // ADC A,B
+    instructions[0x89] = Instruction{ execute = adc_a_c, cycles = 4, mnemonic = "ADC A,C", operand_len = 0 } // ADC A,C
+    instructions[0x8a] = Instruction{ execute = adc_a_d, cycles = 4, mnemonic = "ADC A,D", operand_len = 0 } // ADC A,D
+    instructions[0x8b] = Instruction{ execute = adc_a_e, cycles = 4, mnemonic = "ADC A,E", operand_len = 0 } // ADC A,E
+    instructions[0x8c] = Instruction{ execute = adc_a_h, cycles = 4, mnemonic = "ADC A,H", operand_len = 0 } // ADC A,H
+    instructions[0x8d] = Instruction{ execute = adc_a_l, cycles = 4, mnemonic = "ADC A,L", operand_len = 0 } // ADC A,L
     instructions[0x8e] = Instruction{ execute = adc_a_hl, cycles = 8, mnemonic = "ADC A,HL", operand_len = 0 } // ADC A,HL
-    instructions[0x8f] = Instruction{ execute = null, cycles = 4, mnemonic = "ADC A,A", operand_len = 0 } // ADC A,A
+    instructions[0x8f] = Instruction{ execute = adc_a_a, cycles = 4, mnemonic = "ADC A,A", operand_len = 0 } // ADC A,A
     instructions[0x90] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,B", operand_len = 0 } // SUB A,B
     instructions[0x91] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,C", operand_len = 0 } // SUB A,C
     instructions[0x92] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,D", operand_len = 0 } // SUB A,D
@@ -225,7 +225,7 @@ fn init_dev() {
     instructions[0xcb] = Instruction{ execute = null, cycles = 4, mnemonic = "PREFIX", operand_len = 0 } // PREFIX
     instructions[0xcc] = Instruction{ execute = null, cycles = 24, mnemonic = "CALL Z,$%04X", operand_len = 2 } // CALL Z,a16
     instructions[0xcd] = Instruction{ execute = call_a16, cycles = 24, mnemonic = "CALL $%04X", operand_len = 2 } // CALL a16
-    instructions[0xce] = Instruction{ execute = null, cycles = 8, mnemonic = "ADC A,$%02X", operand_len = 1 } // ADC A,n8
+    instructions[0xce] = Instruction{ execute = adc_a_n8, cycles = 8, mnemonic = "ADC A,$%02X", operand_len = 1 } // ADC A,n8
     instructions[0xcf] = Instruction{ execute = null, cycles = 16, mnemonic = "RST $08", operand_len = 0 } // RST $08
     instructions[0xd0] = Instruction{ execute = ret_nc, cycles = 20, mnemonic = "RET NC", operand_len = 0 } // RET NC
     instructions[0xd1] = Instruction{ execute = pop_de, cycles = 12, mnemonic = "POP DE", operand_len = 0 } // POP DE
@@ -555,7 +555,7 @@ fn read8(addr: u16) -> u8 {
             if IsKeyDown(i32(KeyboardKey.Z))         { pressed = pressed | 0x01 } // A
             if IsKeyDown(i32(KeyboardKey.X))         { pressed = pressed | 0x02 } // B
             if IsKeyDown(i32(KeyboardKey.BACKSPACE)) { pressed = pressed | 0x04 } // Select
-            if IsKeyDown(i32(KeyboardKey.ENTER))     { pressed = pressed | 0x08 } // Start
+                    if IsKeyDown(i32(KeyboardKey.ENTER))     { pressed = pressed | 0x08 } // Start
         }
 
         // Keep the select bits, force unused bits 6-7 high, invert button bits.

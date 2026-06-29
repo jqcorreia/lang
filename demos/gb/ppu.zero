@@ -27,6 +27,7 @@ fn clear() {
     }
 
 }
+
 fn draw_tile_id(base: u16, signed_ids: bool, id: u16, x: u32, y: u32) {
     // In the 0x8800 mode tile ids are signed and addressed relative to 0x9000;
     // in the 0x8000 mode they are unsigned offsets from 0x8000.

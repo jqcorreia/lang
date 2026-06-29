@@ -599,7 +599,7 @@ fn cp_a_n8() {
 }
 
 fn cp_a_b() { cp_a_r1(&dev.r.b) }
-fn cp_a_c() { cp_a_r1(&dev.r.b) }
+fn cp_a_c() { cp_a_r1(&dev.r.c) }
 fn cp_a_d() { cp_a_r1(&dev.r.d) }
 fn cp_a_e() { cp_a_r1(&dev.r.e) }
 fn cp_a_h() { cp_a_r1(&dev.r.h) }
@@ -619,7 +619,7 @@ fn cp_a_hl() {
 }
 
 fn add_r1_r2(r1: &u8, r2: &u8) {
-    c_flag := *r1 + *r2 > 0xFF 
+    c_flag := u16(*r1) + u16(*r2) > 0xFF
     h_flag := h_flag_add(*r1, *r2)
 
     *r1 = *r1 + *r2
@@ -634,7 +634,7 @@ fn add_r1_r2(r1: &u8, r2: &u8) {
 
 fn add_r1_n8(r1: &u8) {
     r2 := dev.ram[dev.r.pc + 1]
-    c_flag := *r1 + r2 > 0xFF 
+    c_flag := u16(*r1) + u16(r2) > 0xFF
     h_flag := h_flag_add(*r1, r2)
 
     *r1 = *r1 + r2
@@ -650,7 +650,7 @@ fn add_r1_n8(r1: &u8) {
 fn add_a_hl() {
     r2 := dev.ram[read_hl()]
     r1 := dev.r.a
-    c_flag := r1 + r2 > 0xFF 
+    c_flag := u16(r1) + u16(r2) > 0xFF
     h_flag := h_flag_add(r1, r2)
 
     dev.r.a = r1 + r2
@@ -663,25 +663,37 @@ fn add_a_hl() {
     adv(1)
 }
 
-fn adc_a_hl() {
-    r2 := dev.ram[read_hl()]
+// ADC core: A = A + val + carry-in, setting flags. Caller advances PC.
+fn adc_a_val(val: u8) {
     r1 := dev.r.a
     carry: u8 = 0
-
     if get_flag(.Carry) {
         carry = 1
     }
 
-    c_flag := r1 + r2 + carry > 0xFF 
-    h_flag := h_flag_add(r1, r2 + carry)
+    c_flag := u16(r1) + u16(val) + u16(carry) > 0xFF
+    h_flag := (r1 & 0x0F) + (val & 0x0F) + carry > 0x0F
 
-    dev.r.a = r1 + r2 + carry
+    dev.r.a = r1 + val + carry
 
     set_flag(.Zero, dev.r.a == 0)
     set_flag(.Subtract, false)
     set_flag(.HalfCarry, h_flag)
     set_flag(.Carry, c_flag)
+}
 
+fn adc_a_r1(r1: &u8) {
+    adc_a_val(*r1)
+    adv(1)
+}
+
+fn adc_a_n8() {
+    adc_a_val(dev.ram[dev.r.pc + 1])
+    adv(2)
+}
+
+fn adc_a_hl() {
+    adc_a_val(dev.ram[read_hl()])
     adv(1)
 }
 
@@ -771,6 +783,14 @@ fn add_a_c() { add_r1_r2(&dev.r.a, &dev.r.c) }
 fn add_a_d() { add_r1_r2(&dev.r.a, &dev.r.d) }
 fn add_a_n8() { add_r1_n8(&dev.r.a) }
 fn add_a_l() { add_r1_r2(&dev.r.a, &dev.r.l) }
+
+fn adc_a_a() { adc_a_r1(&dev.r.a) }
+fn adc_a_b() { adc_a_r1(&dev.r.b) }
+fn adc_a_c() { adc_a_r1(&dev.r.c) }
+fn adc_a_d() { adc_a_r1(&dev.r.d) }
+fn adc_a_e() { adc_a_r1(&dev.r.e) }
+fn adc_a_h() { adc_a_r1(&dev.r.h) }
+fn adc_a_l() { adc_a_r1(&dev.r.l) }
 
 fn add_hl_de() {
     hl := read_hl()
