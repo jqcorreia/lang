@@ -1,3 +1,39 @@
+<a name="v0.0.7"></a>
+### v0.0.7 (2026-06-29)
+
+
+#### Bug Fixes
+
+*   Stop compilation on function re-declaration. ([caaece0b](caaece0b))
+*   allow positional arguments for global constant structs. ([a4d8dcfd](a4d8dcfd))
+*   Fix enum cast to integers. ([b1c0b499](b1c0b499))
+*   fix array index widening that was making invalid accesses via GEP ([58603214](58603214))
+*   Change caret to bitwise XOR and add  as the exponentiation operator. ([70361e3a](70361e3a))
+*   Wide indexes to 64 bits before bound checking. ([f153d079](f153d079))
+*   properly pass single line statement blocks ([3e6b8679](3e6b8679))
+*   allow type aliases to be based on custom types. ([5bbcbc92](5bbcbc92))
+*   return nil if there are more fields than positional arguments. ([5e3dc1ca](5e3dc1ca))
+*   Do a memset for aggregate types. ([889c5f27](889c5f27))
+
+#### Features
+
+*   Add support for conditional loops. ([88601302](88601302))
+*   Implement assignment operators. ([069054d3](069054d3))
+*   Add bitwise NOT ([888edbbd](888edbbd))
+*   add bitwise operation - shift, and & or ([1e23c535](1e23c535))
+*   change 'nil' keyword to 'null'. ([58477aa2](58477aa2))
+*   Ranged indexes on arrays ([fcdc707d](fcdc707d))
+*   Ranged indexes on slices ([466d0687](466d0687))
+*   Primitive support for array and slice runtime bounds check. ([ee3afd9c](ee3afd9c))
+*   Add support for variadic arguments as a slice inside the function ([4954c39f](4954c39f))
+*   Implement len() builtin for arrays and slices. ([17540e63](17540e63))
+*   Add primitive support for slices ([ec61e21c](ec61e21c))
+*   Basic switch/match ([7e3adeda](7e3adeda))
+*   Implement 'continue' keyword. ([c6254e5c](c6254e5c))
+*   validate CLI options. ([ba12c02c](ba12c02c))
+
+
+
 <a name="v0.0.6"></a>
 ### v0.0.6 (2026-06-07)
 
