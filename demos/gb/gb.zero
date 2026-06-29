@@ -163,14 +163,14 @@ fn init_dev() {
     instructions[0x8d] = Instruction{ execute = adc_a_l, cycles = 4, mnemonic = "ADC A,L", operand_len = 0 } // ADC A,L
     instructions[0x8e] = Instruction{ execute = adc_a_hl, cycles = 8, mnemonic = "ADC A,HL", operand_len = 0 } // ADC A,HL
     instructions[0x8f] = Instruction{ execute = adc_a_a, cycles = 4, mnemonic = "ADC A,A", operand_len = 0 } // ADC A,A
-    instructions[0x90] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,B", operand_len = 0 } // SUB A,B
-    instructions[0x91] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,C", operand_len = 0 } // SUB A,C
-    instructions[0x92] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,D", operand_len = 0 } // SUB A,D
-    instructions[0x93] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,E", operand_len = 0 } // SUB A,E
-    instructions[0x94] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,H", operand_len = 0 } // SUB A,H
-    instructions[0x95] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,L", operand_len = 0 } // SUB A,L
+    instructions[0x90] = Instruction{ execute = sub_a_b, cycles = 4, mnemonic = "SUB A,B", operand_len = 0 } // SUB A,B
+    instructions[0x91] = Instruction{ execute = sub_a_c, cycles = 4, mnemonic = "SUB A,C", operand_len = 0 } // SUB A,C
+    instructions[0x92] = Instruction{ execute = sub_a_d, cycles = 4, mnemonic = "SUB A,D", operand_len = 0 } // SUB A,D
+    instructions[0x93] = Instruction{ execute = sub_a_e, cycles = 4, mnemonic = "SUB A,E", operand_len = 0 } // SUB A,E
+    instructions[0x94] = Instruction{ execute = sub_a_h, cycles = 4, mnemonic = "SUB A,H", operand_len = 0 } // SUB A,H
+    instructions[0x95] = Instruction{ execute = sub_a_l, cycles = 4, mnemonic = "SUB A,L", operand_len = 0 } // SUB A,L
     instructions[0x96] = Instruction{ execute = sub_a_hl, cycles = 8, mnemonic = "SUB A,HL", operand_len = 0 } // SUB A,HL
-    instructions[0x97] = Instruction{ execute = null, cycles = 4, mnemonic = "SUB A,A", operand_len = 0 } // SUB A,A
+    instructions[0x97] = Instruction{ execute = sub_a_a, cycles = 4, mnemonic = "SUB A,A", operand_len = 0 } // SUB A,A
     instructions[0x98] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,B", operand_len = 0 } // SBC A,B
     instructions[0x99] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,C", operand_len = 0 } // SBC A,C
     instructions[0x9a] = Instruction{ execute = null, cycles = 4, mnemonic = "SBC A,D", operand_len = 0 } // SBC A,D

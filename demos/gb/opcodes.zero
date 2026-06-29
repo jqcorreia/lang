@@ -697,6 +697,20 @@ fn adc_a_hl() {
     adv(1)
 }
 
+fn sub_r1_r2(r1: &u8, r2: &u8) {
+    c_flag := *r2 > *r1 
+    h_flag := h_flag_sub(*r1, *r2)
+
+    *r1 = *r1 - *r2
+
+    set_flag(.Zero, *r1 == 0)
+    set_flag(.Subtract, true)
+    set_flag(.HalfCarry, h_flag)
+    set_flag(.Carry, c_flag)
+
+    adv(1)
+}
+
 fn sub_r1_n8(r1: &u8) {
     r2 := dev.ram[dev.r.pc + 1]
     c_flag := r2 > *r1 
@@ -821,6 +835,14 @@ fn add_hl_bc() {
 fn sub_a_n8() {
     sub_r1_n8(&dev.r.a)
 }
+
+fn sub_a_a() { sub_r1_r2(&dev.r.a, &dev.r.a) }
+fn sub_a_b() { sub_r1_r2(&dev.r.a, &dev.r.b) }
+fn sub_a_c() { sub_r1_r2(&dev.r.a, &dev.r.c) }
+fn sub_a_d() { sub_r1_r2(&dev.r.a, &dev.r.d) }
+fn sub_a_e() { sub_r1_r2(&dev.r.a, &dev.r.e) }
+fn sub_a_h() { sub_r1_r2(&dev.r.a, &dev.r.h) }
+fn sub_a_l() { sub_r1_r2(&dev.r.a, &dev.r.l) }
 
 // SUB A,(HL): subtract the byte at [HL] from A. Single-byte opcode (adv 1).
 fn sub_a_hl() {
