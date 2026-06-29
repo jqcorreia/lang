@@ -524,6 +524,17 @@ fn write8(addr: u16, val: u8) {
     if addr < 0x8000 {
         return // ROM region is read-only (no MBC); ignore writes
     }
+
+    // OAM DMA register
+    if addr == 0xFF46 {
+        src := u16(val) << 8
+        i: u16 = 0
+        for i < 0xA0 {
+            dev.ram[0xFE00 + i] = dev.ram[src + i]
+            i = i + 1
+        }
+    }
+
     dev.ram[addr] = val
 }
 
@@ -742,6 +753,7 @@ fn main() {
     init_dev()
 
     InitWindow(SCREEN_W * 4, SCREEN_H * 4, "Zero GB")
+    SetTargetFPS(60)
     rom_file := load_rom("demos/gb/tetris.gb")
     if rom_file == null {
         exit(1)

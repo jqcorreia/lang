@@ -76,6 +76,21 @@ fn draw_window() {
     }
 }
 
+fn draw_objects() {
+    base: u16 = 0xFE00
+    for idx in 0..40 {
+        addr := base + (idx * 4)
+
+        y := u32(dev.ram[addr])
+        x := u32(dev.ram[addr + 1])
+        tile_id := u16(dev.ram[addr + 2])
+        if y > 0 && y - 16< SCREEN_H - 8 {
+            // printf("addr: %04x, idx %d, y = %d, x = %d\n", addr, idx, y - 16, x - 8)
+            draw_tile_id(0x8000, false, tile_id, x - 8, y - 16)
+        }
+    }
+}
+
 fn draw() {
     reg := dev.ram[0xFF40]
     lcd_c = convert_to_lcd_control(reg)
@@ -86,6 +101,7 @@ fn draw() {
 
     draw_background()
     // draw_window()
+    draw_objects()
 }
 
 struct LCDControl {
