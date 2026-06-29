@@ -202,7 +202,7 @@ fn init_dev() {
     instructions[0xb4] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,H", operand_len = 0 } // OR A,H
     instructions[0xb5] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,L", operand_len = 0 } // OR A,L
     instructions[0xb6] = Instruction{ execute = null, cycles = 8, mnemonic = "OR A,HL", operand_len = 0 } // OR A,HL
-    instructions[0xb7] = Instruction{ execute = null, cycles = 4, mnemonic = "OR A,A", operand_len = 0 } // OR A,A
+    instructions[0xb7] = Instruction{ execute = or_a_a, cycles = 4, mnemonic = "OR A,A", operand_len = 0 } // OR A,A
     instructions[0xb8] = Instruction{ execute = cp_a_b, cycles = 4, mnemonic = "CP A,B", operand_len = 0 } // CP A,B
     instructions[0xb9] = Instruction{ execute = cp_a_c, cycles = 4, mnemonic = "CP A,C", operand_len = 0 } // CP A,C
     instructions[0xba] = Instruction{ execute = cp_a_d, cycles = 4, mnemonic = "CP A,D", operand_len = 0 } // CP A,D
@@ -235,7 +235,7 @@ fn init_dev() {
     instructions[0xd5] = Instruction{ execute = push_de, cycles = 16, mnemonic = "PUSH DE", operand_len = 0 } // PUSH DE
     instructions[0xd6] = Instruction{ execute = sub_a_n8, cycles = 8, mnemonic = "SUB A,$%02X", operand_len = 1 } // SUB A,n8
     instructions[0xd7] = Instruction{ execute = null, cycles = 16, mnemonic = "RST $10", operand_len = 0 } // RST $10
-    instructions[0xd8] = Instruction{ execute = null, cycles = 20, mnemonic = "RET C", operand_len = 0 } // RET C
+    instructions[0xd8] = Instruction{ execute = ret_c, cycles = 20, mnemonic = "RET C", operand_len = 0 } // RET C
     instructions[0xd9] = Instruction{ execute = reti, cycles = 16, mnemonic = "RETI", operand_len = 0 } // RETI
     instructions[0xda] = Instruction{ execute = null, cycles = 16, mnemonic = "JP C,$%04X", operand_len = 2 } // JP C,a16
     instructions[0xdb] = Instruction{ execute = null, cycles = 4, mnemonic = "ILLEGAL_DB", operand_len = 0 } // ILLEGAL_DB

@@ -838,6 +838,10 @@ fn sub_a_hl() {
     adv(1)
 }
 
+fn or_a_a() {
+    or_r1_r2(&dev.r.a, &dev.r.a)
+}
+
 fn or_a_b() {
     or_r1_r2(&dev.r.a, &dev.r.b)
 }
@@ -997,6 +1001,14 @@ fn ret_z() {
 
 fn ret_nz() {
     if !get_flag(.Zero) {
+        dev.r.pc = pop16()
+    } else {
+        adv(1)
+    }
+}
+
+fn ret_c() {
+    if get_flag(.Carry) {
         dev.r.pc = pop16()
     } else {
         adv(1)
