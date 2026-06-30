@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Builtin_Funcs :: struct {
 	create:  proc(scope: ^Scope),
 	resolve: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type,
