@@ -1,0 +1,7 @@
+import "std:c"
+
+fn main() {
+    printf("len args = %d\n", len(__args))
+    printf("args[0] = %s\n", __args[0])
+    printf("args[1] = %s", __args[1])
+}

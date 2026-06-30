@@ -15,6 +15,7 @@ builtins_init :: proc "contextless" () {
 	builtins_map["new"] = {builtin_create_new_func, builtin_new_resolve, builtin_new_emit}
 	builtins_map["len"] = {builtin_len_create, builtin_len_resolve, builtin_len_emit}
 	builtins_map["cast"] = {builtin_cast_create, builtin_cast_resolve, builtin_cast_emit}
+	builtins_map["slice"] = {builtin_slice_create, builtin_slice_resolve, builtin_slice_emit}
 }
 
 add_builtins :: proc(scope: ^Scope) {
@@ -195,4 +196,61 @@ builtin_len_emit :: proc(gen: ^Generator, expr: Expr_Call, scope: ^Scope, span: 
 	}
 
 	return nil
+}
+
+builtin_slice_create :: proc(scope: ^Scope) {
+	sym := make_symbol(.Function)
+	sym.name = "slice"
+	scope.symbols["slice"] = sym
+}
+
+builtin_slice_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
+	// This is a function so it needs to be used on a call
+	data := expr.data.(Expr_Call)
+
+	for arg in data.args {
+		resolve_expr_type(arg, scope, span)
+	}
+
+	if data.args[0].type.kind != .Pointer {
+		error_span(span, "First argument of slice must be a pointer")
+		expr.type = &error_type
+		return expr.type
+	}
+
+	if len(data.args) != 2 {
+		error_span(span, "slice() takes 2 arguments")
+		expr.type = &error_type
+		return expr.type
+	}
+
+	slice_type := new(Type)
+	slice_type.kind = .Slice
+	slice_type.elem_type = data.args[0].type.pointee_type // Infer slice element type from the pointee type
+	expr.type = slice_type
+	return expr.type
+}
+
+builtin_slice_emit :: proc(
+	gen: ^Generator,
+	expr: Expr_Call,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
+	slice_type := new(Type)
+	slice_type.kind = .Slice
+	slice_type.elem_type = expr.args[0].type.pointee_type // Infer slice element type from the pointee type
+
+	ptr := emit_value(gen, expr.args[0], scope, span)
+	size := emit_value(gen, expr.args[1], scope, span)
+
+	slice_ty := get_llvm_type(gen, slice_type)
+	slot := build_entry_alloca(gen, slice_ty, "")
+
+	p0 := BuildStructGEP2(gen.builder, slice_ty, slot, 0, "")
+	BuildStore(gen.builder, ptr, p0)
+	p1 := BuildStructGEP2(gen.builder, slice_ty, slot, 1, "")
+	BuildStore(gen.builder, size, p1)
+
+	return BuildLoad2(gen.builder, slice_ty, slot, "")
 }
