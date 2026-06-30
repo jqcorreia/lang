@@ -239,7 +239,7 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 			return BuildLoad2(gen.builder, get_llvm_type(gen, expr.type), ptr, "")
 		}
 	case Expr_Call:
-		return function_call_emit_sysv(gen, e, scope, span)
+		return function_call_emit_sysv(gen, expr, scope, span)
 	case Expr_Cast:
 		return cast_emit_value(gen, expr, scope, span)
 	case Expr_Identifier:

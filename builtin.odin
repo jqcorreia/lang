@@ -5,7 +5,7 @@ import "core:fmt"
 Builtin_Funcs :: struct {
 	create:  proc(scope: ^Scope),
 	resolve: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type,
-	emit:    proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef,
+	emit:    proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef,
 }
 
 builtins_map: map[string]Builtin_Funcs
@@ -50,7 +50,8 @@ builtin_new_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span
 	return ptr_type
 }
 
-builtin_new_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
+builtin_new_emit :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
+	e := expr.data.(Expr_Call)
 	name := e.args[0].data.(Expr_Identifier).value
 
 	sym, ok := resolve_symbol(scope, name)
@@ -115,7 +116,9 @@ builtin_cast_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Spa
 	return expr.type
 }
 
-builtin_cast_emit :: proc(gen: ^Generator, e: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
+builtin_cast_emit :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
+	e := expr.data.(Expr_Call)
+
 	i64_t := Int64TypeInContext(gen.ctx)
 	ptr_t := PointerTypeInContext(gen.ctx, 0)
 
@@ -179,8 +182,9 @@ builtin_len_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span
 	return expr.type
 }
 
-builtin_len_emit :: proc(gen: ^Generator, expr: Expr_Call, scope: ^Scope, span: Span) -> ValueRef {
-	arg0 := expr.args[0]
+builtin_len_emit :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
+	e := expr.data.(Expr_Call)
+	arg0 := e.args[0]
 	#partial switch arg0.type.kind {
 	case .Slice:
 		struct_ty := get_llvm_type(gen, arg0.type)
@@ -231,18 +235,12 @@ builtin_slice_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Sp
 	return expr.type
 }
 
-builtin_slice_emit :: proc(
-	gen: ^Generator,
-	expr: Expr_Call,
-	scope: ^Scope,
-	span: Span,
-) -> ValueRef {
-	slice_type := new(Type)
-	slice_type.kind = .Slice
-	slice_type.elem_type = expr.args[0].type.pointee_type // Infer slice element type from the pointee type
+builtin_slice_emit :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> ValueRef {
+	e := expr.data.(Expr_Call)
+	slice_type := expr.type
 
-	ptr := emit_value(gen, expr.args[0], scope, span)
-	size := emit_value(gen, expr.args[1], scope, span)
+	ptr := emit_value(gen, e.args[0], scope, span)
+	size := emit_value(gen, e.args[1], scope, span)
 
 	slice_ty := get_llvm_type(gen, slice_type)
 	slot := build_entry_alloca(gen, slice_ty, "")

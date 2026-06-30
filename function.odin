@@ -544,13 +544,14 @@ build_variadic_slice :: proc(gen: ^Generator, slice_type: ^Type, vals: []ValueRe
 
 function_call_emit_sysv :: proc(
 	gen: ^Generator,
-	e: Expr_Call,
+	expr: ^Expr,
 	scope: ^Scope,
 	span: Span,
 ) -> ValueRef {
 	indirect := false
 	direct_sym: ^Symbol
 	fn_type: ^Type
+	e := expr.data.(Expr_Call)
 
 	#partial switch data in e.callee.data {
 	case Expr_Identifier:
@@ -560,7 +561,7 @@ function_call_emit_sysv :: proc(
 		assert(sym != nil)
 
 		if builtin, builtin_ok := builtins_map[sym.name]; builtin_ok {
-			return builtin.emit(gen, e, scope, span)
+			return builtin.emit(gen, expr, scope, span)
 		}
 		if sym.kind == .Function {
 			indirect = false
@@ -645,7 +646,11 @@ function_call_emit_sysv :: proc(
 			copy := build_entry_alloca(gen, l.struct_type, "byval_copy")
 			// Use the real (padded) LLVM struct size: get_type_byte_size is
 			// padding-free and would truncate the copy, corrupting later fields.
-			size := ConstInt(Int64TypeInContext(gen.ctx), u64(ABISizeOfType(gen.data_layout, l.struct_type)), 0)
+			size := ConstInt(
+				Int64TypeInContext(gen.ctx),
+				u64(ABISizeOfType(gen.data_layout, l.struct_type)),
+				0,
+			)
 			BuildMemCpy(gen.builder, copy, 8, src, 8, size)
 			append(&byval_arg_idxs, u32(len(args)))
 			append(&byval_arg_tys, l.struct_type)
