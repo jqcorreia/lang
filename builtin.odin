@@ -214,17 +214,18 @@ builtin_slice_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Sp
 		resolve_expr_type(arg, scope, span)
 	}
 
+	if len(data.args) != 2 {
+		error_span(span, "slice() takes 2 arguments")
+		expr.type = &error_type
+		return expr.type
+	}
+
 	if data.args[0].type.kind != .Pointer {
 		error_span(span, "First argument of slice must be a pointer")
 		expr.type = &error_type
 		return expr.type
 	}
 
-	if len(data.args) != 2 {
-		error_span(span, "slice() takes 2 arguments")
-		expr.type = &error_type
-		return expr.type
-	}
 
 	slice_type := new(Type)
 	slice_type.kind = .Slice
