@@ -74,6 +74,8 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 		struct_bind(node, cur_scope)
 	case Ast_Enum_Decl:
 		enum_bind(node, cur_scope)
+	case Ast_Union_Decl:
+		union_bind(node, cur_scope)
 	case Ast_Function:
 		function_bind(node, cur_scope)
 	case Ast_If:

@@ -1,0 +1,7 @@
+union Foo {
+    u64
+    f64
+}
+
+fn main() {
+}

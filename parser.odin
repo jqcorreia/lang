@@ -198,6 +198,9 @@ parse_statement :: proc(p: ^Parser) -> ^Ast_Node {
 	case t.kind == .Enum_Keyword:
 		advance(p)
 		data^ = enum_decl_parse(p)^
+	case t.kind == .Union_Keyword:
+		advance(p)
+		data^ = union_decl_parse(p)^
 	case t.kind == .For_Keyword:
 		advance(p)
 		data^ = flow_for_parse(p)^

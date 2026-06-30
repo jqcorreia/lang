@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 
 Ast_Union_Decl :: struct {
 	name:     string,
@@ -34,5 +35,9 @@ union_decl_parse :: proc(p: ^Parser) -> ^Ast_Union_Decl {
 		advance(p)
 	}
 
+	fmt.println(decl)
 	return decl
+}
+
+union_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 }

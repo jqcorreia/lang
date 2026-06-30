@@ -24,6 +24,7 @@ Ast_Data :: union {
 	Ast_Continue,
 	Ast_Struct_Decl,
 	Ast_Enum_Decl,
+	Ast_Union_Decl,
 	Ast_Import,
 }
 
