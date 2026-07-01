@@ -1,8 +1,17 @@
-union Foo {
+import "std:c"
+
+union U {
     u64
     f64
 }
 
 fn main() {
-    f: Foo = f64(100.0)
+    u: U = f64(100.0)
+
+    printf("%f\n", u)
+
+    match u as v {
+        u64 => { }
+        f64 => { }
+    }
 }

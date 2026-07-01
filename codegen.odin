@@ -59,7 +59,7 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 		i8_t := Int8TypeInContext(gen.ctx)
 		elems: []TypeRef = {
 			Int64TypeInContext(gen.ctx),
-			ArrayType2(i8_t, u64(get_type_byte_size(type) - 4)),
+			ArrayType2(i8_t, u64(get_type_byte_size(type) - size_of(u64))),
 		}
 		return StructTypeInContext(gen.ctx, raw_data(elems), 2, 0)
 	}

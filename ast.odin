@@ -181,6 +181,11 @@ Expr_Array_To_Slice :: struct {
 	original: ^Expr,
 }
 
+Expr_To_Union :: struct {
+	original: ^Expr,
+	tag:      u64,
+}
+
 // Generic AST traverse function
 traverse_ast :: proc(
 	ast: ^Ast_Node,
