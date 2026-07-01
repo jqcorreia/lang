@@ -60,6 +60,8 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 		struct_decl_check(c, &data, node.scope, node.span)
 	case Ast_Enum_Decl:
 		enum_decl_check(c, &data, node.scope, node.span)
+	case Ast_Union_Decl:
+		union_decl_check(c, &data, node.scope, node.span)
 	case Ast_Return:
 		flow_return_check(c, &data, node.scope, node.span)
 	case Ast_If:

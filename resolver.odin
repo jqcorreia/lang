@@ -65,6 +65,8 @@ resolve_types :: proc(node: ^Ast_Node) {
 		struct_decl_resolve(node)
 	case Ast_Enum_Decl:
 		enum_resolve(node)
+	case Ast_Union_Decl:
+		union_decl_resolve(node)
 	case Ast_Function:
 		function_resolve(node)
 	case Ast_Expr:

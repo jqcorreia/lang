@@ -52,6 +52,18 @@ get_llvm_type :: proc(gen: ^Generator, type: ^Type) -> TypeRef {
 		return StructTypeInContext(gen.ctx, raw_data(elems), 2, 0)
 	}
 
+	// Unions are structs {tag(u32), data }
+	// Field 0 is tag
+	// Field 1 is array of bytes
+	if type.kind == .Union {
+		i8_t := Int8TypeInContext(gen.ctx)
+		elems: []TypeRef = {
+			Int64TypeInContext(gen.ctx),
+			ArrayType2(i8_t, u64(get_type_byte_size(type) - 4)),
+		}
+		return StructTypeInContext(gen.ctx, raw_data(elems), 2, 0)
+	}
+
 	return gen.primitive_types[type]
 }
 
@@ -74,7 +86,7 @@ build_entry_alloca :: proc(gen: ^Generator, type: TypeRef, name: cstring) -> Val
 
 emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	#partial switch &data in node.data {
-	case Ast_Block, Ast_Import, Ast_Enum_Decl, Ast_Const_Decl:
+	case Ast_Block, Ast_Import, Ast_Enum_Decl, Ast_Const_Decl, Ast_Union_Decl:
 	// Do nothing
 	case Ast_Expr:
 		emit_value(gen, data.expr, node.scope, node.span)

@@ -11,6 +11,7 @@ Type :: struct {
 	numeric_float:   bool,
 	fields:          [dynamic]Struct_Field,
 	enum_variants:   [dynamic]Enum_Variant,
+	union_variants:  [dynamic]Union_Variant,
 	size:            u64,
 	elem_type:       ^Type,
 	pointee_type:    ^Type, // Maybe not needed, could use elem_type, for now use a different field for clarity
@@ -33,6 +34,11 @@ Struct_Field :: struct {
 Enum_Variant :: struct {
 	name:  string,
 	value: i64,
+}
+
+Union_Variant :: struct {
+	type:  ^Type,
+	index: int,
 }
 
 Compiled_Type :: union {
@@ -63,6 +69,7 @@ Type_Kind :: enum {
 	CString,
 	Struct,
 	Enum,
+	Union,
 	Array,
 	Slice,
 	Pointer,
@@ -196,6 +203,21 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 
 	if from.kind == .Untyped_Enum_Variant && to.kind == .Enum {
 		return to
+	}
+
+	if to.kind == .Union && from.kind == .Union {
+		return to == from ? to : nil
+	}
+
+	if to.kind == .Union {
+		count := 0
+		for v in to.union_variants {
+			if coerce(from, v.type, scope) != nil {
+				count += 1
+			}
+		}
+		if count == 1 do return to
+		return nil
 	}
 
 	if from.kind == to.kind {
@@ -468,6 +490,13 @@ get_type_byte_size :: proc(type: ^Type) -> u32 {
 		return 8 // function values are pointers internally
 	case .Enum:
 		return 8
+	case .Union:
+		max_variant_size: u32 = 0
+		for variant in type.union_variants {
+			max_variant_size = max(max_variant_size, get_type_byte_size(variant.type))
+		}
+		return size_of(u64) + max_variant_size // Assume tag is an u64
+
 	case .Struct:
 		total: u32 = 0
 		for field in type.fields {

@@ -237,6 +237,8 @@ traverse_ast :: proc(
 		func(ast, userdata)
 	case Ast_Enum_Decl:
 		func(ast, userdata)
+	case Ast_Union_Decl:
+		func(ast, userdata)
 	case Ast_Const_Decl:
 		func(ast, userdata)
 	case:

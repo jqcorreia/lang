@@ -259,7 +259,7 @@ stmt_priority :: proc(node: ^Ast_Node) -> int {
 		return 0
 	case Ast_Block:
 		return 1
-	case Ast_Struct_Decl:
+	case Ast_Struct_Decl, Ast_Union_Decl:
 		return 2
 	case Ast_Var_Decl:
 		return 3
