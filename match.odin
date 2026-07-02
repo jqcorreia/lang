@@ -7,8 +7,10 @@ Ast_Match :: struct {
 }
 
 Ast_Match_Clause :: struct {
-	expr:  ^Expr,
-	block: ^Ast_Block,
+	expr:   ^Expr,
+	block:  ^Ast_Block,
+	binder: ^Symbol,
+	tag:    u64,
 }
 
 match_parse :: proc(p: ^Parser) -> ^Ast_Match {
@@ -52,6 +54,11 @@ match_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 	data := node.data.(Ast_Match)
 	for &clause in data.clauses {
 		new_scope := make_scope(.Block, parent = scope)
+		if data.variant_identifier != "" {
+			variant_sym := make_symbol(.Variable)
+			new_scope.symbols[data.variant_identifier] = variant_sym
+			clause.binder = variant_sym
+		}
 		get_block_symbols(clause.block, new_scope)
 	}
 }
@@ -64,6 +71,34 @@ match_resolve :: proc(node: ^Ast_Node) {
 		data.expr.type = &error_type
 		return
 	}
+
+	if expr_type.kind == .Union {
+		for &clause in data.clauses {
+			type_expr, _ := expr_to_type_expr(clause.expr)
+			type := resolve_type_expr(&type_expr, node.scope, node.span)
+
+			clause.expr.type = type
+			clause.binder.type = type
+
+			// The tag is the variant's index *within the union declaration*,
+			// which must match what construction stores (see coerce_expr).
+			found := false
+			for variant, v_idx in expr_type.union_variants {
+				if variant.type == type {
+					clause.tag = u64(v_idx)
+					found = true
+					break
+				}
+			}
+			if !found {
+				error_span(clause.expr.span, "type is not a variant of the union")
+			}
+
+			resolve_block_types(clause.block)
+		}
+		return
+	}
+
 	for &clause in data.clauses {
 		clause_type := resolve_expr_type(clause.expr, node.scope, node.span)
 		coerced_type := coerce(clause_type, expr_type, node.scope)
@@ -90,10 +125,26 @@ match_check :: proc(c: ^Checker, node: ^Ast_Node) {
 	}
 }
 
-match_emit :: proc(gen: ^Generator, s: ^Ast_Match, scope: ^Scope, span: Span) {
-	entry := GetBasicBlockParent(GetInsertBlock(gen.builder))
 
-	match_val := emit_value(gen, s.expr, scope, span)
+match_emit :: proc(gen: ^Generator, s: ^Ast_Match, scope: ^Scope, span: Span) {
+	is_union :: proc(e: ^Expr) -> bool {
+		return e.type.kind == .Union
+	}
+
+	entry := GetBasicBlockParent(GetInsertBlock(gen.builder))
+	match_val: ValueRef
+	payload_ptr: ValueRef
+
+	if is_union(s.expr) {
+		union_ptr := emit_address(gen, s.expr, scope, span)
+		union_ty := get_llvm_type(gen, s.expr.type)
+
+		tag_ptr := BuildStructGEP2(gen.builder, union_ty, union_ptr, 0, "")
+		match_val = BuildLoad2(gen.builder, Int64TypeInContext(gen.ctx), tag_ptr, "")
+		payload_ptr = BuildStructGEP2(gen.builder, union_ty, union_ptr, 1, "")
+	} else {
+		match_val = emit_value(gen, s.expr, scope, span)
+	}
 
 	else_bb := AppendBasicBlock(entry, "else")
 	merge_bb := AppendBasicBlock(entry, "merge")
@@ -102,12 +153,20 @@ match_emit :: proc(gen: ^Generator, s: ^Ast_Match, scope: ^Scope, span: Span) {
 	for clause in s.clauses {
 		bb := AppendBasicBlock(entry, "")
 		PositionBuilderAtEnd(gen.builder, bb)
+
+		if is_union(s.expr) {
+			gen.values[clause.binder] = payload_ptr
+			AddCase(sw, ConstInt(Int64TypeInContext(gen.ctx), clause.tag, 0), bb)
+		} else {
+			AddCase(sw, emit_value(gen, clause.expr, scope, span), bb)
+		}
+
 		emit_block(gen, clause.block)
-		AddCase(sw, emit_value(gen, clause.expr, scope, span), bb)
 		BuildBr(gen.builder, merge_bb)
 	}
 
 	{
+		//TODO: right now the else clause goes straight to merge, we should implement the catch-all here
 		PositionBuilderAtEnd(gen.builder, else_bb)
 		BuildBr(gen.builder, merge_bb)
 	}

@@ -221,6 +221,12 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	}
 
 	if from.kind == to.kind {
+		// We need to check identity check for structs and enums
+		#partial switch from.kind {
+		case .Struct, .Enum:
+			return from == to ? from : nil
+		}
+
 		return from
 	}
 

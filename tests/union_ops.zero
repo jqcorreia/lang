@@ -1,0 +1,132 @@
+import "std:c"
+
+// Union test suite. Exercises the currently-working union surface:
+//   - multi-variant primitive unions
+//   - construction via var-decl init, assignment, `:=` inference, and return
+//   - reassignment switching the active variant
+//   - passing unions to functions and returning them
+//   - single struct-typed variant with field access after match
+//   - multiple struct-typed variants (disambiguated by coerce identity)
+//
+// NOTE (known gaps, intentionally not tested here):
+//   - match catch-all / exhaustiveness checking
+
+union Num {
+    u64
+    f64
+}
+
+struct Point {
+    x: i64
+    y: i64
+}
+
+union Shape {
+    u64
+    Point
+}
+
+struct Named {
+    id: i64
+    tag: i64
+}
+
+// Two struct variants in one union: selection must disambiguate by exact
+// type identity, not just "both are structs".
+union Multi {
+    Point
+    Named
+    i64
+}
+
+// --- helpers ---------------------------------------------------------------
+
+fn describe(n: Num) {
+    match v in n {
+        u64 => { printf("  u64=%d\n", v) }
+        f64 => { printf("  f64=%f\n", v) }
+    }
+}
+
+fn pick(flag: i64) -> Num {
+    if flag == 0 {
+        return u64(7)
+    }
+    return f64(3.5)
+}
+
+// --- tests -----------------------------------------------------------------
+
+fn test_construct_and_match() {
+    printf("construct_and_match:\n")
+    a: Num = u64(42)
+    describe(a)              // expect u64=42
+
+    b: Num = f64(1.5)
+    describe(b)              // expect f64=1.500000
+}
+
+fn test_reassign_switches_variant() {
+    printf("reassign_switches_variant:\n")
+    n: Num = u64(1)
+    describe(n)              // expect u64=1
+    n = f64(2.25)
+    describe(n)              // expect f64=2.250000
+    n = u64(9)
+    describe(n)              // expect u64=9
+}
+
+fn test_infer_from_return() {
+    printf("infer_from_return:\n")
+    x := pick(0)
+    describe(x)              // expect u64=7
+    y := pick(1)
+    describe(y)              // expect f64=3.500000
+}
+
+fn test_struct_variant() {
+    printf("struct_variant:\n")
+    s: Shape = Point{ x = 3, y = 4 }
+    match v in s {
+        u64   => { printf("  u64=%d\n", v) }
+        Point => { printf("  point=%d,%d\n", v.x, v.y) }   // expect point=3,4
+    }
+
+    s = u64(100)
+    match v in s {
+        u64   => { printf("  u64=%d\n", v) }               // expect u64=100
+        Point => { printf("  point=%d,%d\n", v.x, v.y) }
+    }
+}
+
+fn test_multi_struct_variants() {
+    printf("multi_struct_variants:\n")
+    m: Multi = Point{ x = 3, y = 4 }
+    match v in m {
+        Point => { printf("  point=%d,%d\n", v.x, v.y) }   // expect point=3,4
+        Named => { printf("  named=%d,%d\n", v.id, v.tag) }
+        i64   => { printf("  int=%d\n", v) }
+    }
+
+    m = Named{ id = 11, tag = 22 }
+    match v in m {
+        Point => { printf("  point=%d,%d\n", v.x, v.y) }
+        Named => { printf("  named=%d,%d\n", v.id, v.tag) } // expect named=11,22
+        i64   => { printf("  int=%d\n", v) }
+    }
+
+    m = i64(99)
+    match v in m {
+        Point => { printf("  point=%d,%d\n", v.x, v.y) }
+        Named => { printf("  named=%d,%d\n", v.id, v.tag) }
+        i64   => { printf("  int=%d\n", v) }                // expect int=99
+    }
+}
+
+fn main() {
+    test_construct_and_match()
+    test_reassign_switches_variant()
+    test_infer_from_return()
+    test_struct_variant()
+    test_multi_struct_variants()
+}

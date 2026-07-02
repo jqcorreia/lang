@@ -5,16 +5,35 @@ union U {
     f64
 }
 
+fn union_match(val: U) {
+    match v in val {
+        f64 => { printf("function float: %f\n", v) }
+        u64 => { printf("function int: %d\n", v) }
+    }
+}
+
 fn main() {
     u: U = f64(100.0)
 
-    printf("%f\n", u)
-
     match v in u {
-        f64 => { printf("%f\n", v) }
+        f64 => { printf("float: %f\n", v) }
+        u64 => { printf("int: %d\n", v) }
     }
-    // match u as v {
-    //     u64 => { }
-    //     f64 => { }
-    // }
+
+    w: U = u64(100)
+    match v in w {
+        f64 => { printf("float: %f\n", v) }
+        u64 => { printf("int: %d\n", v) }
+    }
+
+    u = u64(100)
+    match v in u {
+        f64 => { printf("float: %f\n", v) }
+        u64 => { printf("int: %d\n", v) }
+    }
+    
+    printf("Testing function prints\n")
+    union_match(u)
+    u = f64(12335.09)
+    union_match(u)
 }
