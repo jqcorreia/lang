@@ -40,6 +40,7 @@ fn main() {
     s.x = 200
     s.y = 42
     printf("x = %d, y = %d\n", s.x, s.y)
+    free(s)
 
     b := good()
     printf("x = %d, y = %d\n", b.x, b.y)
@@ -47,4 +48,5 @@ fn main() {
     bp := bad()
     stomp()
     printf("x = %d, y = %d\n", bp.x, bp.y)
+
 }
