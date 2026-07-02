@@ -67,7 +67,7 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 	case Ast_If:
 		flow_if_check(c, node)
 	case Ast_Match:
-		flow_match_check(c, node)
+		match_check(c, node)
 	case Ast_For:
 		flow_for_check(c, node, node.span)
 	case Ast_Break:

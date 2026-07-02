@@ -81,7 +81,7 @@ bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	case Ast_If:
 		flow_if_bind(node, cur_scope)
 	case Ast_Match:
-		flow_match_bind(node, cur_scope)
+		match_bind(node, cur_scope)
 	case Ast_For:
 		flow_for_bind(node, cur_scope)
 	case Ast_Error, Ast_Expr, Ast_Var_Assign, Ast_Return, Ast_Break, Ast_Continue, Ast_Import:

@@ -10,6 +10,9 @@ fn main() {
 
     printf("%f\n", u)
 
+    match v in u {
+        f64 => { printf("%f\n", v) }
+    }
     // match u as v {
     //     u64 => { }
     //     f64 => { }

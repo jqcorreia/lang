@@ -1,7 +1,5 @@
 package main
 
-import "core:fmt"
-
 Ast_Union_Decl :: struct {
 	name:     string,
 	variants: [dynamic]Ast_Union_Variant,

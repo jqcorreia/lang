@@ -74,7 +74,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 	case Ast_If:
 		flow_if_resolve(node)
 	case Ast_Match:
-		flow_match_resolve(node)
+		match_resolve(node)
 	case Ast_For:
 		flow_for_resolve(node)
 	case Ast_Return:
