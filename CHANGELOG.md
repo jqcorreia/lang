@@ -1,3 +1,19 @@
+<a name="v0.0.8"></a>
+### v0.0.8 (2026-07-02)
+
+
+#### Bug Fixes
+
+*   revert to using  as the compiler instead of using  directly ([9909b98f](9909b98f))
+
+#### Features
+
+*   Support match else clause ([83ed59cf](83ed59cf))
+*   Add union support ([b770e0a0](b770e0a0))
+*   Add proper support for command line arguments and slice() constructor ([c9dea970](c9dea970))
+
+
+
 <a name="v0.0.7"></a>
 ### v0.0.7 (2026-06-29)
 
