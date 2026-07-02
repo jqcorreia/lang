@@ -14,6 +14,11 @@ builtins_init :: proc "contextless" () {
 	builtins_map["len"] = {builtin_len_create, builtin_len_resolve, builtin_len_emit}
 	builtins_map["cast"] = {builtin_cast_create, builtin_cast_resolve, builtin_cast_emit}
 	builtins_map["slice"] = {builtin_slice_create, builtin_slice_resolve, builtin_slice_emit}
+	builtins_map["type_info"] = {
+		builtin_type_info_create,
+		builtin_type_info_resolve,
+		builtin_type_info_emit,
+	}
 }
 
 add_builtins :: proc(scope: ^Scope) {
@@ -250,4 +255,51 @@ builtin_slice_emit :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Sp
 	BuildStore(gen.builder, size, p1)
 
 	return BuildLoad2(gen.builder, slice_ty, slot, "")
+}
+
+builtin_type_info_create :: proc(scope: ^Scope) {
+	sym := make_symbol(.Function)
+	sym.name = "type_info"
+	scope.symbols["type_info"] = sym
+}
+
+builtin_type_info_resolve :: proc(sym: ^Symbol, expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
+	type_info_t, _ := resolve_symbol(scope, "Type_Info")
+
+	// This is a function so it needs to be used on a call
+	data := expr.data.(Expr_Call)
+
+	for arg in data.args {
+		resolve_expr_type(arg, scope, span)
+	}
+
+	expr.type = type_info_t.type
+	return expr.type
+}
+
+builtin_type_info_emit :: proc(
+	gen: ^Generator,
+	expr: ^Expr,
+	scope: ^Scope,
+	span: Span,
+) -> ValueRef {
+	e := expr.data.(Expr_Call)
+	type_info_type := expr.type
+	ty := get_llvm_type(gen, type_info_type)
+	slot := build_entry_alloca(gen, ty, "")
+
+	arg_type := e.args[0].type
+
+	is_float: u64 = arg_type.numeric_float ? 1 : 0
+	is_int: u64 = arg_type.numeric_integer ? 1 : 0
+	is_string: u64 = arg_type.kind == .CString ? 1 : 0
+
+	p0 := BuildStructGEP2(gen.builder, ty, slot, 0, "")
+	BuildStore(gen.builder, ConstInt(Int1TypeInContext(gen.ctx), is_int, 0), p0)
+	p1 := BuildStructGEP2(gen.builder, ty, slot, 1, "")
+	BuildStore(gen.builder, ConstInt(Int1TypeInContext(gen.ctx), is_float, 0), p1)
+	p2 := BuildStructGEP2(gen.builder, ty, slot, 2, "")
+	BuildStore(gen.builder, ConstInt(Int1TypeInContext(gen.ctx), is_string, 0), p2)
+
+	return BuildLoad2(gen.builder, ty, slot, "")
 }

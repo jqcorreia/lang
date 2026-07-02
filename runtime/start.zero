@@ -34,6 +34,11 @@ external "c" {
     fn puts(string: cstr)
 }
 
+struct Type_Info {
+    is_int: bool
+    is_float: bool
+    is_string: bool
+}
 fn segfault_handler(sig: i32) {
     write(2, "Segmentation fault\n", 19)
     exit(139)

@@ -1,0 +1,26 @@
+import "std:c"
+
+fn print(val: anytype) {
+    t := type_info(val)
+
+    if t.is_float {
+        printf("%f\n", val)
+    }
+    if t.is_int {
+        printf("%d\n", val)
+    }
+    if t.is_string {
+        printf("%s\n", val)
+    }
+}
+
+fn main() {
+    f: f32 = 42.24
+
+    print(f)
+    // t := type_info(f)
+
+    // printf("is float  = %d\n", t.is_float)
+    // printf("is int    = %d\n", t.is_int)
+    // printf("is string = %d\n", t.is_string)
+}
