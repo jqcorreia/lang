@@ -45,7 +45,8 @@ Tests can also be compiled individually using `zero` as normal programs.
 
 # Dependencies
 - `linux` at least until we properly know what we are doing
-- `ld` as the linker
+- `LLVM 21.x` currently the compiler uses this specific version of LLVM.
+- `cc` to be used as the linker
 - `raylib` in order to run the demos in `demos/`
 
 # LLM usage

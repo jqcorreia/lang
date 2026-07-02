@@ -148,6 +148,9 @@ match_check :: proc(c: ^Checker, node: ^Ast_Node) {
 		check_expr(c, clause.expr, node.scope, node.span)
 		check_block(c, clause.block, node.span)
 	}
+	if data.else_clause.block != nil {
+		check_block(c, data.else_clause.block, node.span)
+	}
 }
 
 

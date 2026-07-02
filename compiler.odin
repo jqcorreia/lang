@@ -202,8 +202,21 @@ build :: proc() -> (ok: bool) {
 			for lib in compiler.external_linker_libs {
 				fmt.sbprintf(&linker_libs, "-l%s ", lib)
 			}
+
+			// Delegate final linking to the C compiler driver. It resolves the
+			// crt objects, dynamic linker, multilib dirs and libc for the host,
+			// so we don't hand-track platform-specific paths. Override with
+			// ZERO_CC (or the conventional CC) for clang/musl/cross toolchains.
+			cc := os.get_env("ZERO_CC", context.allocator)
+			if cc == "" {
+				cc = os.get_env("CC", context.allocator)
+			}
+			if cc == "" {
+				cc = "cc"
+			}
 			build_command := fmt.tprintf(
-				"ld -o %s /usr/lib/crt1.o /usr/lib/crti.o /usr/lib/crtn.o %s %s -lc -dynamic-linker /lib64/ld-linux-x86-64.so.2",
+				"%s -o %s %s %s",
+				cc,
 				compiler.out_file,
 				compiler.object_filepath,
 				strings.to_string(linker_libs),

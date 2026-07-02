@@ -7,9 +7,7 @@ import "std:c"
 //   - passing unions to functions and returning them
 //   - single struct-typed variant with field access after match
 //   - multiple struct-typed variants (disambiguated by coerce identity)
-//
-// NOTE (known gaps, intentionally not tested here):
-//   - match catch-all / exhaustiveness checking
+//   - match catch-all (bare `=>`) on an uncovered variant
 
 union Num {
     u64
@@ -123,10 +121,29 @@ fn test_multi_struct_variants() {
     }
 }
 
+fn test_else_catch_all() {
+    printf("else_catch_all:\n")
+
+    // Active variant is NOT covered by an arm -> else fires.
+    a: Num = f64(3.5)
+    match v in a {
+        u64 => { printf("  u64=%d\n", v) }
+        => { printf("  else fired\n") }                    // expect else fired
+    }
+
+    // Active variant IS covered -> the arm wins, else stays quiet.
+    b: Num = u64(7)
+    match v in b {
+        u64 => { printf("  u64=%d\n", v) }                 // expect u64=7
+        => { printf("  else fired\n") }
+    }
+}
+
 fn main() {
     test_construct_and_match()
     test_reassign_switches_variant()
     test_infer_from_return()
     test_struct_variant()
     test_multi_struct_variants()
+    test_else_catch_all()
 }
