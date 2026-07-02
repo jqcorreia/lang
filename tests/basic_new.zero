@@ -44,6 +44,7 @@ fn main() {
 
     b := good()
     printf("x = %d, y = %d\n", b.x, b.y)
+    free(b)
 
     bp := bad()
     stomp()
