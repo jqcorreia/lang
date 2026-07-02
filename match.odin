@@ -4,6 +4,7 @@ Ast_Match :: struct {
 	expr:               ^Expr,
 	clauses:            [dynamic]Ast_Match_Clause,
 	variant_identifier: string,
+	else_clause:        Ast_Match_Clause,
 }
 
 Ast_Match_Clause :: struct {
@@ -35,6 +36,22 @@ match_parse :: proc(p: ^Parser) -> ^Ast_Match {
 			advance(p)
 			continue
 		}
+		if current(p).kind == .FatRightArrow {
+			advance(p)
+			// else clause
+			block := parse_block(p)
+
+			// Check on the block field if the else clause was 
+			// already parsed and err on duplication
+			if st.else_clause.block != nil {
+				continue // Fow now just ignore
+
+			}
+			st.else_clause = Ast_Match_Clause {
+				block = block,
+			}
+			continue
+		}
 
 		clause_expr := parse_expression(p, 0)
 		expect(p, .FatRightArrow)
@@ -60,6 +77,10 @@ match_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 			clause.binder = variant_sym
 		}
 		get_block_symbols(clause.block, new_scope)
+	}
+	if data.else_clause.block != nil {
+		new_scope := make_scope(.Block, parent = scope)
+		get_block_symbols(data.else_clause.block, new_scope)
 	}
 }
 
@@ -113,6 +134,10 @@ match_resolve :: proc(node: ^Ast_Node) {
 		// Resolve the block even on error so the checker sees fully-typed
 		// statements instead of crashing on nil expr types.
 		resolve_block_types(clause.block)
+	}
+
+	if data.else_clause.block != nil {
+		resolve_block_types(data.else_clause.block)
 	}
 }
 
@@ -168,6 +193,9 @@ match_emit :: proc(gen: ^Generator, s: ^Ast_Match, scope: ^Scope, span: Span) {
 	{
 		//TODO: right now the else clause goes straight to merge, we should implement the catch-all here
 		PositionBuilderAtEnd(gen.builder, else_bb)
+		if s.else_clause.block != nil {
+			emit_block(gen, s.else_clause.block)
+		}
 		BuildBr(gen.builder, merge_bb)
 	}
 

@@ -32,6 +32,19 @@ fn main() {
             b := 42
             printf("ONE BUT IN BIG and a forty two: %d\n", b) 
         }
+        => {
+            printf("Anything else")
+        }
+    }
+    n = .Two
+    match n {
+        .One => {
+            b := 42
+            printf("ONE BUT IN BIG and a forty two: %d\n", b) 
+        }
+        => {
+            printf("Anything else\n")
+        }
     }
 
 }
