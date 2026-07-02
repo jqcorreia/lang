@@ -152,6 +152,7 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 		return function_call_resolve(expr, scope, span)
 
 	case Expr_Array_To_Slice:
+	case Expr_To_Union:
 	case Expr_Cast:
 	// Nothing is needed here since everything is done via the resolve branch of Expr_Call
 	case Expr_Member:

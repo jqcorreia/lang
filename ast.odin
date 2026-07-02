@@ -121,6 +121,7 @@ Expr_Data :: union {
 	Expr_Array_Type,
 	Expr_Function,
 	Expr_Array_To_Slice,
+	Expr_To_Union,
 }
 
 Expr_Null :: struct {}

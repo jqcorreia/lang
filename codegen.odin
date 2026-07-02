@@ -136,6 +136,8 @@ emit_into :: proc(gen: ^Generator, expr: ^Expr, dest: ValueRef, scope: ^Scope, s
 		BuildStore(gen.builder, val, dest)
 	case Expr_Array_To_Slice:
 		array_to_slice_emit_into(gen, e, dest, expr.type, scope, span)
+	case Expr_To_Union:
+		union_expr_emit_into(gen, e, dest, expr.type, scope, span)
 	case:
 		// General fallback: emit value and store into dest
 		val := emit_value(gen, expr, scope, span)
@@ -229,6 +231,14 @@ emit_value :: proc(gen: ^Generator, expr: ^Expr, scope: ^Scope, span: Span) -> V
 		slot := build_entry_alloca(gen, slice_type, "")
 		array_to_slice_emit_into(gen, e, slot, expr.type, scope, span)
 		return BuildLoad2(gen.builder, slice_type, slot, "")
+
+	case Expr_To_Union:
+		union_type := get_llvm_type(gen, expr.type)
+		slot := build_entry_alloca(gen, union_type, "")
+		union_expr_emit_into(gen, e, slot, expr.type, scope, span)
+		return BuildLoad2(gen.builder, union_type, slot, "")
+
+
 	case Expr_Struct_Literal:
 		return struct_emit_value(gen, expr, scope, span)
 	case Expr_Member:

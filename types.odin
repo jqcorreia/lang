@@ -325,6 +325,25 @@ coerce_expr :: proc(expr: ^Expr, target: ^Type, scope: ^Scope) -> ^Type {
 		}
 		expr.type = coerced_type
 	}
+	if coerced_type.kind == .Union && expr.type.kind != .Union {
+		// find variant index
+		idx: i64 = -1
+		for variant, v_idx in coerced_type.union_variants {
+			if coerce(expr.type, variant.type, scope) != nil {
+				idx = i64(v_idx)
+			}
+		}
+
+		if idx == -1 do return nil
+
+		inner := new(Expr)
+		inner^ = expr^
+		expr.data = Expr_To_Union {
+			original = inner,
+			tag      = u64(idx),
+		}
+		expr.type = coerced_type
+	}
 
 	set_expr_type(expr, coerced_type, scope)
 	return coerced_type

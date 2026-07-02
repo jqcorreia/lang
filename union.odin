@@ -91,5 +91,21 @@ union_decl_check :: proc(c: ^Checker, s: ^Ast_Union_Decl, scope: ^Scope, span: S
 	}
 }
 
-union_emit_decl :: proc(gen: ^Generator, s: ^Ast_Union_Decl, scope: ^Scope, span: Span) {
+union_expr_emit_into :: proc(
+	gen: ^Generator,
+	expr: Expr_To_Union,
+	dst: ValueRef,
+	union_type: ^Type,
+	scope: ^Scope,
+	span: Span,
+) {
+	inner_value := emit_value(gen, expr.original, scope, span)
+	union_type := get_llvm_type(gen, union_type)
+	u64_t := Int64TypeInContext(gen.ctx)
+
+	tag_ptr := BuildStructGEP2(gen.builder, union_type, dst, 0, "")
+	BuildStore(gen.builder, ConstInt(u64_t, expr.tag, 0), tag_ptr)
+
+	payload_ptr := BuildStructGEP2(gen.builder, union_type, dst, 1, "")
+	BuildStore(gen.builder, inner_value, payload_ptr)
 }
