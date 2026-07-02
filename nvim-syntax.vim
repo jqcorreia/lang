@@ -4,7 +4,7 @@ if exists("b:current_syntax")
 endif
 
 " Keywords
-syntax keyword zeroKeyword fn struct enum external for if else break continue match return import in true false
+syntax keyword zeroKeyword fn struct enum union external for if else break continue match return import in true false
 syntax keyword zeroType i32 u8 str 
 
 " Strings

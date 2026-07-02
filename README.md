@@ -6,25 +6,12 @@ Aims to be explicit but to not sacrifice all the creature comforts of a modern l
 Right now this is an LLVM project and it will be for a while. Trying not to tie the code to much to that.
 Potentially this README can look a lot different in a couple of months if this becomes a serious project.
 
-# Latest and upcoming work
-- [x] Constants with eager eval, usable everywhere 
-- [x] Array programming (element-wise operations), only Array x Array
-- [x] Function pointers / Functions as values
-- [x] Scalar x Array operations (splat)
-- [x] Type alias, `typedef` like syntax
-- [x] API and code cleanups after a first working pass
-- [x] Primitive memory managemet (new(), free())
-- [x] Missing 'continue' construct
-- [x] Slices support
-- [x] Properly support varargs.
-- [x] Runtime bounds checking for array access
-- [x] Ranged indexes for arrays and slices.
+# Upcoming work
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Struct untyped literals
 - [ ] Array swizzling
 - [ ] Issue warning for return of local addresses
 - [ ] Error on untyped constant overflow when coerced to a smaller type (currently wraps silently, e.g. `5000000000` into an `i32`)
-- [ ] Tagged Unions
 - [ ] Make `external` blocks its own AST node kind, in order to have linking rules and prefixes
 - [ ] Make sure that lexer is UTF-8 compliant
 - [ ] Add check for cyclic import
