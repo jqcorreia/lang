@@ -31,6 +31,7 @@ Scope :: struct {
 
 ScopeKind :: enum {
 	Global,
+	Package,
 	Function,
 	Block,
 	Loop,

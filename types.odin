@@ -116,8 +116,7 @@ create_primitive_types :: proc(scope: ^Scope) {
 	create_type(.CString, "cstr", scope)
 	create_type(.RawPointer, "rawptr", scope)
 	create_type(.CVarArgs, "c_vararg", scope)
-	// create_type(.Array, "array", scope)
-	// create_type(.Slice, "slice", scope)
+	create_type(.Any, "anytype", scope)
 }
 
 coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
