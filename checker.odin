@@ -39,6 +39,9 @@ check :: proc(c: ^Checker, nodes: []^Ast_Node) {
 	for node in nodes {
 		resolve_types(node)
 	}
+	if len(compiler.errors) > 0 {
+		return
+	}
 	for node in nodes {
 		check_stmt(c, node)
 	}

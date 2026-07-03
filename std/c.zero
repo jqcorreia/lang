@@ -1,6 +1,6 @@
 external "c" {
-    fn sprintf(dest: cstr, format: cstr, args: ...anytype) -> i32
-    fn printf(format: cstr, args: ...anytype) -> i32
+    fn sprintf(dest: cstr, format: cstr, args: ...c_vararg) -> i32
+    fn printf(format: cstr, args: ...c_vararg) -> i32
     fn fopen(filename: cstr, mode: cstr) -> &FILE
     fn fread(ptr: rawptr, n: size_t, size: size_t, file: &FILE) -> size_t
     fn fwrite(ptr: rawptr, size: size_t, n: size_t, file: &FILE) -> size_t

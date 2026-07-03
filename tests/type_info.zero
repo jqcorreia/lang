@@ -1,6 +1,6 @@
 import "std:c"
 
-fn print(val: anytype) {
+fn print(val: c_vararg) {
     t := type_info(val)
 
     if t.is_float {

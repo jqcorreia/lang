@@ -51,6 +51,7 @@ Type_Kind :: enum {
 	Error,
 	Void,
 	Any,
+    CVarArgs,
 	Bool,
 	Untyped_Int,
 	Untyped_Float,
@@ -114,14 +115,14 @@ create_primitive_types :: proc(scope: ^Scope) {
 	create_type(.Float64, "f64", scope, signed = true, numeric_float = true)
 	create_type(.CString, "cstr", scope)
 	create_type(.RawPointer, "rawptr", scope)
-	create_type(.Any, "anytype", scope)
+	create_type(.CVarArgs, "c_vararg", scope)
 	// create_type(.Array, "array", scope)
 	// create_type(.Slice, "slice", scope)
 }
 
 coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
-	// In case the destination is Any just return `from` unconditionally since every type should override `any`
-	if to.kind == .Any {
+	// In case the destination is .CVarArgs just return `from` unconditionally 
+	if to.kind == .CVarArgs {
 		return from
 	}
 	if from.kind == .Function && to.kind == .Function {

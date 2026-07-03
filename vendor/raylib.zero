@@ -789,7 +789,7 @@ external "raylib" {
     fn SetConfigFlags(flags: u32)
     fn OpenURL(url: cstr)
     fn SetTraceLogLevel(logLevel: i32)
-    fn TraceLog(logLevel: i32, text: cstr, args: ...anytype)
+    fn TraceLog(logLevel: i32, text: cstr, args: ...c_vararg)
     // fn SetTraceLogCallback(callback: TraceLogCallback)  // function pointer, not supported
     fn MemAlloc(size: u32) -> cstr
     fn MemRealloc(ptr: cstr, size: u32) -> cstr
@@ -1124,7 +1124,7 @@ external "raylib" {
     fn TextCopy(dst: cstr, src: cstr) -> i32
     fn TextIsEqual(text1: cstr, text2: cstr) -> bool
     fn TextLength(text: cstr) -> u32
-    fn TextFormat(text: cstr, args: ...anytype) -> cstr
+    fn TextFormat(text: cstr, args: ...c_vararg) -> cstr
     fn TextSubtext(text: cstr, position: i32, length: i32) -> cstr
     fn TextRemoveSpaces(text: cstr) -> cstr
     fn GetTextBetween(text: cstr, begin: cstr, end: cstr) -> cstr
