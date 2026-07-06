@@ -754,7 +754,7 @@ fn main() {
 
     InitWindow(SCREEN_W * 4, SCREEN_H * 4, "Zero GB")
     SetTargetFPS(60)
-    rom_file := load_rom("demos/gb/tetris.gb")
+    rom_file := load_rom(__args[1])
     if rom_file == null {
         exit(1)
     }

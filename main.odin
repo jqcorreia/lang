@@ -13,6 +13,7 @@ Options :: struct {
 	out:          string `args:"name=out"`,
 	print_tokens: bool `args:"name=print-tokens"`,
 	backend:      string `args:"name=backend"`,
+	overflow:     [dynamic]string,
 }
 
 supported_commands :: []string{"lsp", "check", "build", "run"}
@@ -64,7 +65,12 @@ main :: proc() {
 		if !build() do os.exit(1)
 	case "run":
 		if !build() do os.exit(1)
-		posix.system(strings.clone_to_cstring(fmt.tprintf("./%s", compiler.out_file)))
+		sb := strings.builder_make()
+		fmt.sbprintf(&sb, "./%s ", compiler.out_file)
+		for extra_arg in opt.overflow {
+			fmt.sbprintf(&sb, "%s ", extra_arg)
+		}
+		posix.system(strings.to_cstring(&sb))
 	}
 
 	os.exit(0)
