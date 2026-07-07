@@ -161,7 +161,7 @@ digit_count :: proc(n: int) -> int {
 	v := n
 	if v <= 0 {return 1}
 	count := 0
-	for v > 0 {count += 1; v /= 10}
+	for v > 0 {count += 1;v /= 10}
 	return count
 }
 
@@ -329,4 +329,45 @@ span_to_location :: proc(span: Span) -> (line: int, col: int) {
 		}
 	}
 	return result_line + 1, pos - starts[result_line] + 1
+}
+span_to_location_full :: proc(
+	span: Span,
+) -> (
+	line_start: int,
+	col_start: int,
+	line_end: int,
+	col_end: int,
+) {
+	starts := compiler.line_starts[span.filename]
+	if len(starts) == 0 {
+		// Span without a known file, usually an Ast_Node whose `.span` was
+		// never populated. Return a sentinel so error reporting doesn't crash;
+		// grep error output for `:1:1` to find the offending construction site.
+		return 1, 1, 2, 1
+	}
+	pos_start := span.start
+	// Find the last line_start that is <= pos
+	result_line_start := 0
+	for i in 0 ..< len(starts) {
+		if starts[i] <= pos_start {
+			result_line_start = i
+		} else {
+			break
+		}
+	}
+
+	pos_end := span.end
+	// Find the last line_start that is <= pos
+	result_line_end := 0
+	for i in 0 ..< len(starts) {
+		if starts[i] <= pos_end {
+			result_line_end = i
+		} else {
+			break
+		}
+	}
+	return result_line_start + 1,
+		pos_start - starts[result_line_start] + 1,
+		result_line_end + 1,
+		pos_end - starts[result_line_end] + 1
 }

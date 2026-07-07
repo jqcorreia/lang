@@ -123,12 +123,17 @@ lsp_publish_diagnostics :: proc(uri: string, source: string) {
 			strings.write_string(&diagnostics_sb, ",")
 		}
 
-		line, col := span_to_location(error.span)
+		line, col, line2, col2 := span_to_location_full(error.span)
 		// LSP uses 0-based line/col
 		lsp_line := line - 1
 		lsp_col := col - 1
 		if lsp_line < 0 {lsp_line = 0}
 		if lsp_col < 0 {lsp_col = 0}
+
+		lsp_line2 := line2 - 1
+		lsp_col2 := col2 - 1
+		if lsp_line2 < 0 {lsp_line2 = 0}
+		if lsp_col2 < 0 {lsp_col2 = 0}
 
 		// Escape the message for JSON
 		escaped_msg := json_escape_string(error.message)
@@ -137,8 +142,8 @@ lsp_publish_diagnostics :: proc(uri: string, source: string) {
 			`{{"range":{{"start":{{"line":%d,"character":%d}},"end":{{"line":%d,"character":%d}}}},"severity":1,"source":"zero","message":"%s"}}`,
 			lsp_line,
 			lsp_col,
-			lsp_line,
-			lsp_col + 1,
+			lsp_line2,
+			lsp_col2,
 			escaped_msg,
 		)
 		strings.write_string(&diagnostics_sb, diag)
