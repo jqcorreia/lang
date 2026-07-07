@@ -14,6 +14,14 @@ on:
 
 jobs:
   build:
+    # workflow_call input defaults are NOT applied to push/pull_request runs
+    # (inputs.static is null there). Fall back to 'true' so those runs also build
+    # static; a caller can still pass static explicitly. Note: because GitHub
+    # coerces null == false, an explicit `static: false` from a caller cannot be
+    # distinguished from "unset" via ||, so this effectively makes static the
+    # default everywhere (the only caller, release.yml, passes true anyway).
+    env:
+      STATIC: ${{ inputs.static || 'true' }}
     strategy:
       matrix:
         include:
@@ -43,7 +51,7 @@ jobs:
           sudo apt-get install -y llvm-21-dev
 
       - name: Install static link dependencies (Linux)
-        if: ${{ runner.os == 'Linux' && inputs.static }}
+        if: ${{ runner.os == 'Linux' && env.STATIC == 'true' }}
         run: sudo apt-get install -y zlib1g-dev libzstd-dev libtinfo-dev libxml2-dev
 
       - name: Install LLVM (macOS)
@@ -51,11 +59,11 @@ jobs:
         run: brew install llvm@21
 
       - name: Build (dynamic)
-        if: ${{ ! inputs.static }}
+        if: ${{ env.STATIC != 'true' }}
         run: odin build . -out:zero -o:speed
 
       - name: Build (static LLVM)
-        if: ${{ inputs.static }}
+        if: ${{ env.STATIC == 'true' }}
         run: LLVM_CONFIG=llvm-config-21 bash build-static.sh
 
       - name: Package
