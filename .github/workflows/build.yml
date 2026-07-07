@@ -10,7 +10,7 @@ on:
       static:
         description: 'Link LLVM statically (used for release artifacts)'
         type: boolean
-        default: false
+        default: true
 
 jobs:
   build:
