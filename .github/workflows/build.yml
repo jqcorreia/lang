@@ -52,7 +52,7 @@ jobs:
 
       - name: Install static link dependencies (Linux)
         if: ${{ runner.os == 'Linux' && env.STATIC == 'true' }}
-        run: sudo apt-get install -y zlib1g-dev libzstd-dev libtinfo-dev libxml2-dev
+        run: sudo apt-get install -y zlib1g-dev libzstd-dev libtinfo-dev
 
       - name: Install LLVM (macOS)
         if: runner.os == 'macOS'

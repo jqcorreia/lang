@@ -52,11 +52,20 @@ done
 # libs (e.g. a Debian zstd path) that may not exist on the build host. Convert
 # every "/path/libNAME.a" to "-lNAME" so they resolve dynamically against the
 # system; we only require LLVM itself to be static.
+#
+# libxml2 is only referenced by LLVM components zero never uses (WindowsManifest,
+# Apple TextAPI). Linking it left the binary depending on libxml2.so.2 at runtime,
+# which breaks on hosts with a different libxml2 SONAME. Since demand-driven
+# linking never pulls those members, we drop -lxml2 entirely for portability.
 SYS_LIBS=""
 for tok in $("$LLVM_CONFIG" --link-static --system-libs); do
+    # normalize "/path/libNAME.a" to "-lNAME"
     case "$tok" in
-        /*.a) name="$(basename "$tok")"; name="${name#lib}"; SYS_LIBS="$SYS_LIBS -l${name%.a}" ;;
-        *)    SYS_LIBS="$SYS_LIBS $tok" ;;
+        /*.a) name="$(basename "$tok")"; name="${name#lib}"; tok="-l${name%.a}" ;;
+    esac
+    case "$tok" in
+        -lxml2) echo "  dropping $tok (unused by zero; avoids libxml2.so version dependency)" ;;
+        *)      SYS_LIBS="$SYS_LIBS $tok" ;;
     esac
 done
 SYS_LIBS="$SYS_LIBS -lstdc++"
