@@ -14,6 +14,8 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     secrets: inherit
+    with:
+      static: true
 
   release:
     needs: build

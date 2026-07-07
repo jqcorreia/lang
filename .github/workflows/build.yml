@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_call:
+    inputs:
+      static:
+        description: 'Link LLVM statically (used for release artifacts)'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -37,12 +42,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y llvm-21-dev
 
+      - name: Install static link dependencies (Linux)
+        if: ${{ runner.os == 'Linux' && inputs.static }}
+        run: sudo apt-get install -y zlib1g-dev libzstd-dev libtinfo-dev libxml2-dev
+
       - name: Install LLVM (macOS)
         if: runner.os == 'macOS'
         run: brew install llvm@21
 
-      - name: Build
+      - name: Build (dynamic)
+        if: ${{ ! inputs.static }}
         run: odin build . -out:zero -o:speed
+
+      - name: Build (static LLVM)
+        if: ${{ inputs.static }}
+        run: LLVM_CONFIG=llvm-config-21 bash build-static.sh
 
       - name: Package
         run: |

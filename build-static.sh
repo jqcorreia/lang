@@ -9,28 +9,46 @@
 #      (contributing no symbols) instead of the system shared object; then
 #   2. resolves the real LLVM C-API symbols from the static component archives.
 #
-# LLVM 21 static libs are expected under $LLVM_DIR (override via env).
+# Works both with an extracted LLVM.org release (set LLVM_DIR, archives are LTO
+# bitcode and need lld) and with a distro's llvm-21-dev packages (archives are
+# native objects, no lld needed) — it auto-detects which.
 set -euo pipefail
 
-LLVM_DIR="${LLVM_DIR:-$HOME/llvm/LLVM-21.1.8-Linux-X64}"
-LLVM_CONFIG="$LLVM_DIR/bin/llvm-config"
-
-if [[ ! -x "$LLVM_CONFIG" ]]; then
-    echo "llvm-config not found at $LLVM_CONFIG" >&2
-    echo "Set LLVM_DIR to your extracted LLVM 21 directory." >&2
+# Locate llvm-config: explicit env, an extracted release dir, or a PATH lookup.
+if [[ -n "${LLVM_CONFIG:-}" ]]; then
+    :
+elif [[ -n "${LLVM_DIR:-}" && -x "$LLVM_DIR/bin/llvm-config" ]]; then
+    LLVM_CONFIG="$LLVM_DIR/bin/llvm-config"
+elif [[ -x "$HOME/llvm/LLVM-21.1.8-Linux-X64/bin/llvm-config" ]]; then
+    LLVM_CONFIG="$HOME/llvm/LLVM-21.1.8-Linux-X64/bin/llvm-config"
+elif command -v llvm-config-21 >/dev/null 2>&1; then
+    LLVM_CONFIG="llvm-config-21"
+elif command -v llvm-config >/dev/null 2>&1; then
+    LLVM_CONFIG="llvm-config"
+else
+    echo "llvm-config not found. Set LLVM_CONFIG or LLVM_DIR." >&2
     exit 1
 fi
 
-LIBDIR="$($LLVM_CONFIG --libdir)"
-LLVM_LIBS="$($LLVM_CONFIG --link-static --libs)"
+LIBDIR="$("$LLVM_CONFIG" --libdir)"
+LLVM_LIBS="$("$LLVM_CONFIG" --link-static --libs)"
 
-# System libs. llvm-config may emit distro-specific absolute paths (e.g. a
-# Debian zstd path); use plain -l flags that resolve against the system.
-SYS_LIBS="-lrt -lstdc++ -lz -lzstd"
+# System libs. llvm-config emits distro-specific absolute paths for some static
+# libs (e.g. a Debian zstd path) that may not exist on the build host. Convert
+# every "/path/libNAME.a" to "-lNAME" so they resolve dynamically against the
+# system; we only require LLVM itself to be static.
+SYS_LIBS=""
+for tok in $("$LLVM_CONFIG" --link-static --system-libs); do
+    case "$tok" in
+        /*.a) name="$(basename "$tok")"; name="${name#lib}"; SYS_LIBS="$SYS_LIBS -l${name%.a}" ;;
+        *)    SYS_LIBS="$SYS_LIBS $tok" ;;
+    esac
+done
+SYS_LIBS="$SYS_LIBS -lstdc++"
 
 # 1) Stub archive to shadow the system libLLVM-21.so that Odin's -lLLVM-21 would
-#    otherwise pull in. An explicit -L is searched before the system dirs, so a
-#    (empty) libLLVM-21.a here wins over /usr/lib/libLLVM-21.so.
+#    otherwise pull in. An explicit -L is searched before the system dirs, so an
+#    (empty) libLLVM-21.a here wins over the shared object.
 SHADOW_DIR="$(mktemp -d)"
 trap 'rm -rf "$SHADOW_DIR"' EXIT
 : > "$SHADOW_DIR/_stub.c"
@@ -41,9 +59,22 @@ ar rcs "$SHADOW_DIR/libLLVM-21.a" "$SHADOW_DIR/_stub.o"
 #    link group. The stub -L comes first; the real symbols come from the group.
 LINK_FLAGS="-L$SHADOW_DIR -L$LIBDIR -Wl,--start-group $LLVM_LIBS -Wl,--end-group $SYS_LIBS"
 
+# LLVM.org release archives contain LLVM IR bitcode (LTO build), which the
+# default GNU ld cannot consume; lld links bitcode directly (built-in LTO).
+# Distro llvm-dev archives are native objects and link with the default linker.
+# Detect which by inspecting a member of a known component archive.
+LINKER_FLAG=""
+CORE_LIB="$LIBDIR/libLLVMCore.a"
+if [[ -f "$CORE_LIB" ]]; then
+    member="$(ar t "$CORE_LIB" 2>/dev/null | head -1 || true)"
+    # Read only the first 4 bytes; tolerate the SIGPIPE this induces under pipefail.
+    magic="$( { ar p "$CORE_LIB" "$member" 2>/dev/null || true; } | od -An -tx1 -N4 2>/dev/null || true)"
+    if [[ "$magic" == *"42 43 c0 de"* ]]; then
+        echo "Archives are LLVM bitcode (LTO) -> linking with lld"
+        LINKER_FLAG="-linker:lld"
+    fi
+fi
+
 echo "Linking against static LLVM in $LIBDIR"
-# The LLVM.org release archives contain LLVM IR bitcode (LTO build), which the
-# default GNU ld cannot consume. lld links bitcode directly (built-in LTO), so
-# force it. System lld must be >= the LLVM version that produced the bitcode.
-odin build . -out:zero -linker:lld -extra-linker-flags:"$LINK_FLAGS" "$@"
+odin build . -out:zero -o:speed $LINKER_FLAG -extra-linker-flags:"$LINK_FLAGS" "$@"
 echo "Built ./zero"
