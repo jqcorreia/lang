@@ -31,7 +31,22 @@ else
 fi
 
 LIBDIR="$("$LLVM_CONFIG" --libdir)"
-LLVM_LIBS="$("$LLVM_CONFIG" --link-static --libs)"
+
+# llvm-config lists every component it knows about, but some (e.g. Polly) may not
+# be shipped as static archives by all distros' -dev packages. Keep only the -l
+# flags whose libNAME.a actually exists; the LLVM C API zero uses doesn't depend
+# on the optional ones. Non -l tokens are passed through untouched.
+LLVM_LIBS=""
+for tok in $("$LLVM_CONFIG" --link-static --libs); do
+    case "$tok" in
+        -l*) if [[ -f "$LIBDIR/lib${tok#-l}.a" ]]; then
+                 LLVM_LIBS="$LLVM_LIBS $tok"
+             else
+                 echo "  skipping $tok (no static archive present)"
+             fi ;;
+        *)   LLVM_LIBS="$LLVM_LIBS $tok" ;;
+    esac
+done
 
 # System libs. llvm-config emits distro-specific absolute paths for some static
 # libs (e.g. a Debian zstd path) that may not exist on the build host. Convert
