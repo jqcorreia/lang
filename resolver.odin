@@ -1,6 +1,5 @@
 package main
 
-
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Const_Decl:
@@ -52,6 +51,12 @@ resolve_types :: proc(node: ^Ast_Node) {
 		coerced_type := coerce_expr(data.expr, target_type, node.scope)
 
 		if coerced_type == nil {
+			error_span(
+				node.span,
+				"Type mismatch, expected %s, got %s",
+				type_expr_type.name,
+				initializer_expr_type.name,
+			)
 			// Keep natural types so the checker can report a meaningful mismatch
 			data.symbol.type = target_type
 			data.expr.type = initializer_expr_type

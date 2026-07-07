@@ -13,11 +13,17 @@ Ast_Union_Variant :: struct {
 union_decl_parse :: proc(p: ^Parser) -> ^Ast_Union_Decl {
 	decl := new(Ast_Union_Decl)
 	name_token := expect(p, .Identifier)
+	if p.error_occured {
+		return decl
+	}
 
 	union_name := name_token.value.(string)
 	decl.name = union_name
 
 	expect(p, .LBrace)
+	if p.error_occured {
+		return decl
+	}
 
 	for keep_parsing_block(p) {
 		// Ignore empty lines
@@ -43,6 +49,7 @@ union_bind :: proc(node: ^Ast_Node, scope: ^Scope) {
 	if !ok {
 		type := new(Type)
 		type.kind = .Union
+		type.name = data.name
 
 		sym := make_symbol(.Type)
 		sym.name = data.name

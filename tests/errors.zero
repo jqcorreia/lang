@@ -1,8 +1,26 @@
 struct S {
-    x: bananas
+    x: i32
+}
+
+struct R {
+    a: f32
+}
+
+union foo {
+    f32
+    u32
+}
+
+union bar {
+    f64
+    cstr
 }
 
 fn main() {
     a := 100
     c := a
+
+    d: S = R{} 
+    b: bar = 100
+    u: foo = b
 }

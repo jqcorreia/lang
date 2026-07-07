@@ -4,6 +4,7 @@ package main
 
 //@Note: We need to split this. This struct encodes a bunch of different meanings
 Type :: struct {
+	name:            string,
 	kind:            Type_Kind,
 	compiled:        Compiled_Type,
 	signed:          bool, // not sure if this is the best place or I should have a kind union a be done with it
@@ -91,6 +92,7 @@ create_type :: proc(
 	t.numeric_integer = numeric_integer
 	t.numeric_float = numeric_float
 	t.signed = signed
+	t.name = type_name
 	scope.symbols[type_name] = make_symbol(.Type, t)
 }
 

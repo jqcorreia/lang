@@ -125,6 +125,8 @@ struct_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 		type := new(Type)
 		type.kind = .Struct
 		type.fields = {}
+		type.name = data.name
+
 		sym := make_symbol(.Type)
 		sym.name = data.name
 		sym.type = type
