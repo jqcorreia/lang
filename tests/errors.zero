@@ -1,3 +1,5 @@
+import "std:c"
+
 struct S {
     x: i32
 }
@@ -17,10 +19,14 @@ union bar {
 }
 
 fn main() {
-    a := 100
-    c := a
 
-    d: S = R{} 
-    b: bar = 100
-    u: foo = b
+//     e: S = R{} 
+//     b: bar = 100
+//     u: foo = b
+    // a := 100
+    // c := a
+
+    d: [4]u32 = 100
+
+    printf("%d\n", d[0])
 }

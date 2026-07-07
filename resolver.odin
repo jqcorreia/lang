@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Const_Decl:
@@ -50,12 +51,13 @@ resolve_types :: proc(node: ^Ast_Node) {
 		target_type = data.type_expr.data == nil ? initializer_expr_type : type_expr_type
 		coerced_type := coerce_expr(data.expr, target_type, node.scope)
 
+		fmt.println(coerced_type)
 		if coerced_type == nil {
 			error_span(
 				node.span,
 				"Type mismatch, expected %s, got %s",
-				type_expr_type.name,
-				initializer_expr_type.name,
+				serialize_type(type_expr_type),
+				serialize_type(initializer_expr_type),
 			)
 			// Keep natural types so the checker can report a meaningful mismatch
 			data.symbol.type = target_type

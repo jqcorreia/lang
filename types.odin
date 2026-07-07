@@ -2,6 +2,8 @@
 
 package main
 
+import "core:fmt"
+
 //@Note: We need to split this. This struct encodes a bunch of different meanings
 Type :: struct {
 	name:            string,
@@ -561,4 +563,16 @@ is_array :: proc(type: ^Type) -> bool {
 
 is_scalar :: proc(type: ^Type) -> bool {
 	return type.numeric_float || type.numeric_integer
+}
+
+serialize_type :: proc(type: ^Type) -> string {
+	sz_str := ""
+	if type.elem_type != nil {
+		sz_str = type.kind == .Array ? fmt.tprintf("[%d]", type.size) : "[]"
+		return fmt.tprintf("%s%s", sz_str, serialize_type(type.elem_type))
+	}
+	if type.pointee_type != nil {
+		return fmt.tprintf("&%s", sz_str, serialize_type(type.elem_type))
+	}
+	return type.name
 }
