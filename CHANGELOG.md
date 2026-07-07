@@ -1,3 +1,11 @@
+<a name="v0.0.9"></a>
+### v0.0.9 (2026-07-07)
+
+#### Features
+
+*   Statically link LLVM into the final binary
+
+
 <a name="v0.0.8"></a>
 ### v0.0.8 (2026-07-02)
 
