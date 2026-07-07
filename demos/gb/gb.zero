@@ -750,14 +750,22 @@ fn load_rom(file: cstr) -> &FILE {
 }
 
 fn main() {
+    if len(__args) < 2 {
+        printf("Provide a rom file.")
+        exit(1)
+    }
+
+    rom_file := load_rom(__args[1])
+
+    if rom_file == null {
+        printf("Error opening rom file")
+        exit(1)
+    }
+
     init_dev()
 
     InitWindow(SCREEN_W * 4, SCREEN_H * 4, "Zero GB")
     SetTargetFPS(60)
-    rom_file := load_rom(__args[1])
-    if rom_file == null {
-        exit(1)
-    }
 
     img := Image{
         data = &dev.framebuffer[0],

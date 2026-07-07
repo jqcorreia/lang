@@ -1,5 +1,9 @@
 package main
 
+// Links dynamically against the system LLVM-21 shared object by default, so a
+// plain `odin build .` / `make` just works. To link LLVM statically instead,
+// use ./build-static.sh — it shadows the -lLLVM-21 this emits with a stub archive
+// and resolves the symbols from the static component libs (no source changes needed).
 foreign import LLVM_C "system:LLVM-21"
 
 import _c "core:c"
