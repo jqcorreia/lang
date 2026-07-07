@@ -1,0 +1,8 @@
+struct S {
+    x: i33
+}
+
+fn main() {
+    a := 100
+    c := a
+}

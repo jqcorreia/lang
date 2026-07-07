@@ -141,7 +141,7 @@ check_expr :: proc(c: ^Checker, expr: ^Expr, scope: ^Scope, span: Span) {
 
 check_var_decl :: proc(c: ^Checker, s: ^Ast_Var_Decl, scope: ^Scope, span: Span) {
 	if s.symbol.type == nil || s.symbol.type.kind == .Error {
-		if s.type_expr != nil {
+		if s.type_expr.data != nil {
 			error_span(span, "Unresolved type '%s' for '%s'", s.type_expr, s.name)
 		}
 		return

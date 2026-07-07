@@ -385,6 +385,12 @@ parse_assignment_operator :: proc(p: ^Parser, original: Token_Kind, op: Token_Ki
 }
 
 parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
+	span := Span {
+		start    = current(p).span.start,
+		filename = p.filename,
+	}
+	te := Type_Expr{}
+
 	#partial switch current(p).kind {
 	case .Ampersand:
 		advance(p)
@@ -394,9 +400,9 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 		expr := Type_Expr_Pointer {
 			pointee = elem_expr,
 		}
-		return expr
+		te.data = expr
 	case .Identifier:
-		return advance(p).value.(string)
+		te.data = advance(p).value.(string)
 	case .LBracket:
 		advance(p)
 		if current(p).kind == .RBracket {
@@ -407,7 +413,8 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 			expr := Type_Expr_Slice {
 				elem = elem_expr,
 			}
-			return expr
+			te.data = expr
+			return te
 		}
 
 		size_expr := parse_expression(p, 0)
@@ -418,7 +425,7 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 			size = size_expr,
 			elem = elem_expr,
 		}
-		return expr
+		te.data = expr
 	case .Func_Keyword:
 		params: [dynamic]^Type_Expr
 
@@ -440,14 +447,22 @@ parse_type_expr :: proc(p: ^Parser) -> Type_Expr {
 			advance(p)
 			ret^ = parse_type_expr(p)
 		} else {
-			ret^ = Type_Expr_Name("") // void, matches function_ret_type_parse convention
+			ret^ = Type_Expr {
+				data = Type_Expr_Name(""),
+			} // void, matches function_ret_type_parse convention
 		}
 
-		return Type_Expr_Function{params = params[:], return_type = ret}
+		te.data = Type_Expr_Function {
+			params      = params[:],
+			return_type = ret,
+		}
 	case:
 		fatal_token(p, current(p), "Unexpected token in type expression")
 	}
-	return Type_Expr{}
+
+	span.end = current(p).span.end
+	te.span = span
+	return te
 }
 
 expr_int_literal :: proc(value: i64) -> ^Expr {

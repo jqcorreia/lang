@@ -32,11 +32,11 @@ resolve_types :: proc(node: ^Ast_Node) {
 		}
 
 		// Resolve type expression effective type
-		if data.type_expr != nil {
+		if data.type_expr.data != nil {
 			type_expr_type = resolve_type_expr(&data.type_expr, node.scope, node.span)
 		}
 
-		if data.expr == nil && data.type_expr == nil {
+		if data.expr == nil && data.type_expr.data == nil {
 			error_span(node.span, "Could not infer type")
 			return
 		}
@@ -48,7 +48,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 		}
 
 		// Inherit initializer type if type expression not present
-		target_type = data.type_expr == nil ? initializer_expr_type : type_expr_type
+		target_type = data.type_expr.data == nil ? initializer_expr_type : type_expr_type
 		coerced_type := coerce_expr(data.expr, target_type, node.scope)
 
 		if coerced_type == nil {

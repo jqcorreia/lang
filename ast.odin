@@ -28,7 +28,12 @@ Ast_Data :: union {
 	Ast_Import,
 }
 
-Type_Expr :: union {
+Type_Expr :: struct {
+	data: Type_Expr_Data,
+	span: Span,
+}
+
+Type_Expr_Data :: union {
 	Type_Expr_Name,
 	Type_Expr_Array,
 	Type_Expr_Slice,

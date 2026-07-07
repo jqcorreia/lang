@@ -51,7 +51,7 @@ Type_Kind :: enum {
 	Error,
 	Void,
 	Any,
-    CVarArgs,
+	CVarArgs,
 	Bool,
 	Untyped_Int,
 	Untyped_Float,
@@ -359,33 +359,33 @@ coerce_expr :: proc(expr: ^Expr, target: ^Type, scope: ^Scope) -> ^Type {
 expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 	#partial switch d in e.data {
 	case Expr_Identifier:
-		return Type_Expr_Name(d.value), true
+		return Type_Expr{span = e.span, data = Type_Expr_Name(d.value)}, true
 
 	case Expr_Unary:
 		if d.op != .Ampersand {
-			return nil, false
+			return Type_Expr{}, false
 		}
 		pointee := new(Type_Expr)
 		ok: bool
 		pointee^, ok = expr_to_type_expr(d.expr)
 		if !ok {
-			return nil, false
+			return Type_Expr{}, false
 		}
-		return Type_Expr_Pointer{pointee = pointee}, true
+		return Type_Expr{data = Type_Expr_Pointer{pointee = pointee}, span = e.span}, true
 
 	case Expr_Array_Type:
 		elem := new(Type_Expr)
 		ok: bool
 		elem^, ok = expr_to_type_expr(d.elem)
 		if !ok {
-			return nil, false
+			return Type_Expr{}, false
 		}
-		return Type_Expr_Array{size = d.size, elem = elem}, true
+		return Type_Expr{data = Type_Expr_Array{size = d.size, elem = elem}, span = e.span}, true
 
 	case Expr_Function:
 		// A non-nil body would make this a lambda value, not a type.
 		if d.body != nil {
-			return nil, false
+			return Type_Expr{}, false
 		}
 		params := make([]^Type_Expr, len(d.params))
 		for param, i in d.params {
@@ -393,7 +393,7 @@ expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 			ok: bool
 			pe^ = param.type_expr
 			if !ok {
-				return nil, false
+				return Type_Expr{}, false
 			}
 			params[i] = pe
 		}
@@ -402,22 +402,29 @@ expr_to_type_expr :: proc(e: ^Expr) -> (Type_Expr, bool) {
 			ok: bool
 			ret^, ok = expr_to_type_expr(d.ret_type_expr)
 			if !ok {
-				return nil, false
+				return Type_Expr{}, false
 			}
 		} else {
-			ret^ = Type_Expr_Name("") // void
+			ret^ = Type_Expr {
+				data = Type_Expr_Name(""),
+				span = d.ret_type_expr.span,
+			} // void
 		}
-		return Type_Expr_Function{params = params, return_type = ret}, true
+		return Type_Expr {
+				data = Type_Expr_Function{params = params, return_type = ret},
+				span = e.span,
+			},
+			true
 	}
-	return nil, false
+	return Type_Expr{}, false
 }
 
 resolve_type_expr :: proc(type_expr: ^Type_Expr, scope: ^Scope, span: Span) -> ^Type {
-	switch te in type_expr {
+	switch te in type_expr.data {
 	case Type_Expr_Name:
 		sym, ok := resolve_symbol(scope, te)
 		if !ok {
-			error_span(span, "Undefined type '%s'", te)
+			error_span(type_expr.span, "Undefined type '%s'", te)
 			return &error_type
 		}
 		return sym.type

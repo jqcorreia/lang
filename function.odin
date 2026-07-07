@@ -90,7 +90,7 @@ function_ret_type_parse :: proc(p: ^Parser) -> Type_Expr {
 		return type_expr
 	}
 
-	return ""
+	return Type_Expr{data = ""}
 }
 
 function_external_block_parse :: proc(p: ^Parser, lib_name: string) -> ^Ast_Block {

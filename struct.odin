@@ -54,7 +54,9 @@ struct_literal_parse :: proc(p: ^Parser, struct_name: string) -> ^Expr {
 	result := new(Expr)
 
 	lit := Expr_Struct_Literal{}
-	lit.type_expr = struct_name
+	lit.type_expr = Type_Expr {
+		data = struct_name,
+	}
 
 	struct_literal_fields_parse(p, &lit)
 	result.data = lit
