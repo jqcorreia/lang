@@ -7,6 +7,7 @@ Right now this is an LLVM project and it will be for a while. Trying not to tie 
 Potentially this README can look a lot different in a couple of months if this becomes a serious project.
 
 # Upcoming work
+- [ ] Real modules with separate compiling units
 - [ ] Proper string with bound check and not null-terminated
 - [ ] Struct untyped literals
 - [ ] Array swizzling
