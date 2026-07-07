@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Const_Decl:
@@ -51,7 +50,6 @@ resolve_types :: proc(node: ^Ast_Node) {
 		target_type = data.type_expr.data == nil ? initializer_expr_type : type_expr_type
 		coerced_type := coerce_expr(data.expr, target_type, node.scope)
 
-		fmt.println(coerced_type)
 		if coerced_type == nil {
 			error_span(
 				node.span,
@@ -246,8 +244,8 @@ resolve_expr_type :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type {
 			scalar_expr := is_scalar(left) ? e.left : e.right
 			array_expr := is_array(left) ? e.left : e.right
 
-			// Coerce the scalar into the array type (or fail)
-			scalar_coerced_type := coerce(scalar, array, scope)
+			// Broadcast: coerce the scalar to the array's element type (or fail)
+			scalar_coerced_type := coerce(scalar, array.elem_type, scope)
 
 			// Set the specific types
 			set_expr_type(scalar_expr, scalar_coerced_type, scope)

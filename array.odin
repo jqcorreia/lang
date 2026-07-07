@@ -301,17 +301,7 @@ coerce_to_array :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 		else do return nil
 	}
 
-	// Decide which is the scalar and the array
-	scalar := is_scalar(from) ? from : to
-	array := is_array(from) ? from : to
-
-	// Coerce from scalar to the array elem_type
-	coerced_scalar_type := coerce(scalar, array.elem_type, scope)
-	if coerced_scalar_type != nil do return coerced_scalar_type
-
-	// Different element size/type, return nil to flag error
 	return nil
-
 }
 
 array_expr_index_emit_address :: proc(
