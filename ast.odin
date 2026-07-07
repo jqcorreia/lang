@@ -1,7 +1,5 @@
 package main
 
-Ast_Module :: []^Ast_Node
-
 Ast_Node :: struct {
 	data:  Ast_Data,
 	span:  Span,
@@ -26,6 +24,7 @@ Ast_Data :: union {
 	Ast_Enum_Decl,
 	Ast_Union_Decl,
 	Ast_Import,
+	Ast_Module,
 }
 
 Type_Expr :: struct {

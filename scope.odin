@@ -31,7 +31,7 @@ Scope :: struct {
 
 ScopeKind :: enum {
 	Global,
-	Package,
+	Module,
 	Function,
 	Block,
 	Loop,
@@ -53,6 +53,8 @@ create_global_scope :: proc() -> ^Scope {
 bind_scopes :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	node.scope = cur_scope
 	switch &data in node.data {
+	case Ast_Module:
+		module_bind(node, cur_scope)
 	case Ast_Block:
 		for s in data.statements {
 			bind_scopes(s, cur_scope)
