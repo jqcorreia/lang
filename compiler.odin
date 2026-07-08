@@ -28,6 +28,7 @@ Compiler :: struct {
 	target:               string,
 	verify_only:          bool,
 	config:               CompilerConfig,
+	modules:              [dynamic]^Module,
 }
 
 Compiler_Error :: struct {
@@ -49,6 +50,11 @@ CompilerConfig :: struct {
 Backend_Type :: enum {
 	LLVM,
 	Custom,
+}
+
+Module :: struct {
+	name:       string,
+	statements: []^Ast_Node,
 }
 
 compiler := Compiler{}
