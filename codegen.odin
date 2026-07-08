@@ -598,7 +598,7 @@ make_zero_value :: proc(gen: ^Generator, type: ^Type) -> ValueRef {
 
 generate :: proc(stmts: []^Ast_Node) -> bool {
 	ctx := ContextCreate()
-	module := ModuleCreateWithNameInContext("calc", ctx)
+	module := ModuleCreateWithNameInContext("program", ctx)
 	builder := CreateBuilderInContext(ctx)
 
 	InitializeX86Target()
