@@ -124,7 +124,12 @@ create_primitive_types :: proc(scope: ^Scope) {
 }
 
 coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
-	// In case the destination is .CVarArgs just return `from` unconditionally 
+	// Guard for nil types so it doesn't segfault below
+	if from == nil || to == nil {
+		return nil
+	}
+
+	// In case the destination is .CVarArgs just return `from` unconditionally
 	if to.kind == .CVarArgs {
 		return from
 	}
@@ -146,6 +151,11 @@ coerce :: proc(from: ^Type, to: ^Type, scope: ^Scope) -> ^Type {
 	}
 
 	if from.kind == .Array && to.kind == .Slice {
+		// An empty array literal `[]` has no element type yet.
+		// This must coerce to the target type
+		if from.elem_type == nil {
+			return to
+		}
 		if coerce(from.elem_type, to.elem_type, scope) != nil {
 			return to
 		}
