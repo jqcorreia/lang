@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+
 resolve_types :: proc(node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Const_Decl:
@@ -9,6 +11,8 @@ resolve_types :: proc(node: ^Ast_Node) {
 		}
 	case Ast_Break, Ast_Continue:
 	case Ast_Import:
+	case Ast_Module:
+		module_resolve(node)
 	case Ast_Block:
 		for n in data.statements {
 			resolve_types(n)
@@ -85,7 +89,7 @@ resolve_types :: proc(node: ^Ast_Node) {
 	case Ast_Return:
 		flow_return_resolve(node)
 	case:
-		compiler_bug(node.span, "Unimplemented resolve for node %v")
+		compiler_bug(node.span, "Unimplemented resolve for node %v", node)
 	}
 }
 

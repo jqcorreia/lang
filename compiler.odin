@@ -268,7 +268,7 @@ build :: proc() -> (ok: bool) {
 // 4. Functions
 stmt_priority :: proc(node: ^Ast_Node) -> int {
 	#partial switch &data in node.data {
-	case Ast_Import, Ast_Const_Decl:
+	case Ast_Import, Ast_Const_Decl, Ast_Module:
 		return 0
 	case Ast_Block:
 		return 1

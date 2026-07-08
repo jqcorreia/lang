@@ -88,6 +88,10 @@ emit_stmt :: proc(gen: ^Generator, node: ^Ast_Node) {
 	#partial switch &data in node.data {
 	case Ast_Block, Ast_Import, Ast_Enum_Decl, Ast_Const_Decl, Ast_Union_Decl:
 	// Do nothing
+	case Ast_Module:
+		for st in data.statements {
+			emit_stmt(gen, st)
+		}
 	case Ast_Expr:
 		emit_value(gen, data.expr, node.scope, node.span)
 	case Ast_Var_Assign:

@@ -243,6 +243,10 @@ traverse_ast :: proc(
 		for child in node.statements {
 			traverse_ast(child, func, userdata)
 		}
+	case Ast_Module:
+		for child in node.statements {
+			traverse_ast(child, func, userdata)
+		}
 	case Ast_Import:
 		func(ast, userdata)
 	case Ast_Enum_Decl:

@@ -175,8 +175,8 @@ struct_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type 
 						error_span(
 							arg.span,
 							"Invalid field type, expected %s, got %s",
-							field.type.kind,
-							arg_type.kind,
+							serialize_type(field.type),
+							serialize_type(arg_type),
 						)
 						arg.type = &error_type
 					}
@@ -194,8 +194,8 @@ struct_literal_resolve :: proc(expr: ^Expr, scope: ^Scope, span: Span) -> ^Type 
 				error_span(
 					arg.span,
 					"Invalid field type, expected %s, got %s",
-					field.type.kind,
-					arg_type.kind,
+					serialize_type(field.type),
+					serialize_type(arg_type),
 				)
 				arg.type = arg_type
 			}

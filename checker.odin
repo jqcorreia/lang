@@ -79,6 +79,8 @@ check_stmt :: proc(c: ^Checker, node: ^Ast_Node) {
 		flow_continue_check(c, &data, node.scope, node.span)
 	case Ast_Import:
 		check_import(c, &data, node.scope, node.span)
+	case Ast_Module:
+		module_check(c, &data, node.scope, node.span)
 	case:
 		compiler_bug(node.span, "Unimplemented check")
 	}

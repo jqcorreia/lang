@@ -576,6 +576,11 @@ is_scalar :: proc(type: ^Type) -> bool {
 }
 
 serialize_type :: proc(type: ^Type) -> string {
+	// A nil type reaches here when a symbol/field failed to resolve. Render a
+	// placeholder instead of dereferencing nil so error reporting never crashes.
+	if type == nil {
+		return "<unresolved>"
+	}
 	sz_str := ""
 	if type.elem_type != nil {
 		sz_str = type.kind == .Array ? fmt.tprintf("[%d]", type.size) : "[]"
