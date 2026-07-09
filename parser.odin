@@ -149,12 +149,12 @@ parse_program :: proc(p: ^Parser) -> []^Ast_Node {
 				filename = resolved_path,
 			}
 
-			module := new(Ast_Node)
-			module.data = Ast_Module {
-				statements = parse_program(&import_parser),
-			}
-			append(&stmts, module)
-			// for s in import_stmts do append(&stmts, s)
+			// module := new(Ast_Node)
+			// module.data = Ast_Module {
+			// 	statements = parse_program(&import_parser),
+			// }
+			// append(&stmts, module)
+			for s in parse_program(&import_parser) do append(&stmts, s)
 			continue
 		}
 
