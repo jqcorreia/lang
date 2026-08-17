@@ -52,10 +52,6 @@ Backend_Type :: enum {
 	Custom,
 }
 
-Module :: struct {
-	name:       string,
-	statements: []^Ast_Node,
-}
 
 compiler := Compiler{}
 

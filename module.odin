@@ -4,6 +4,13 @@ Ast_Module :: struct {
 	statements: []^Ast_Node,
 }
 
+Module :: struct {
+	id:           string,
+	path:         string,
+	statements:   []^Ast_Node,
+	compiled_obj: string,
+}
+
 module_bind :: proc(node: ^Ast_Node, cur_scope: ^Scope) {
 	data := node.data.(Ast_Module)
 	// new_scope := new(Scope)
